@@ -10,7 +10,7 @@
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
 >
 
-<title>AR Camera + 3D</title>
+<title>AR Camera 3D Tracking</title>
 
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
@@ -33,14 +33,16 @@ body {
     background: #000;
 
     font-family: Arial, sans-serif;
+
+    touch-action: none;
 }
 
 #app {
 
-    width: 100%;
-    height: 100%;
-
     position: relative;
+
+    width: 100%;
+    height: 100dvh;
 
     overflow: hidden;
 
@@ -49,7 +51,7 @@ body {
 
 
 /* =========================================
-   КАМЕРА
+   CAMERA
 ========================================= */
 
 #camera {
@@ -72,7 +74,7 @@ body {
 
 
 /* =========================================
-   THREE.JS CANVAS
+   THREE
 ========================================= */
 
 #threeCanvas {
@@ -95,7 +97,7 @@ body {
 
 
 /* =========================================
-   СТАРТОВЫЙ ЭКРАН
+   START
 ========================================= */
 
 #start {
@@ -104,7 +106,7 @@ body {
 
     inset: 0;
 
-    z-index: 10;
+    z-index: 50;
 
     display: flex;
 
@@ -123,18 +125,16 @@ body {
     text-align: center;
 }
 
-
 #start h1 {
 
-    font-size: 40px;
+    font-size: 38px;
 
     margin-bottom: 15px;
 }
 
-
 #start p {
 
-    max-width: 350px;
+    max-width: 360px;
 
     line-height: 1.5;
 
@@ -142,7 +142,6 @@ body {
 
     margin-bottom: 30px;
 }
-
 
 #cameraButton {
 
@@ -165,6 +164,45 @@ body {
 
 
 /* =========================================
+   TOP
+========================================= */
+
+#topBar {
+
+    position: absolute;
+
+    top: 15px;
+
+    left: 15px;
+
+    right: 15px;
+
+    z-index: 20;
+
+    display: none;
+
+    justify-content: space-between;
+
+    pointer-events: none;
+}
+
+.badge {
+
+    padding: 9px 13px;
+
+    border-radius: 12px;
+
+    background: rgba(0,0,0,.65);
+
+    color: white;
+
+    backdrop-filter: blur(10px);
+
+    font-size: 13px;
+}
+
+
+/* =========================================
    STATUS
 ========================================= */
 
@@ -172,25 +210,29 @@ body {
 
     position: absolute;
 
-    left: 50%;
+    top: 65px;
 
-    bottom: 30px;
+    left: 50%;
 
     transform: translateX(-50%);
 
+    z-index: 25;
+
     width: calc(100% - 40px);
 
-    padding: 14px;
+    max-width: 420px;
 
-    border-radius: 14px;
+    padding: 10px 13px;
 
-    background: rgba(0,0,0,.75);
+    border-radius: 12px;
+
+    background: rgba(0,0,0,.65);
 
     color: white;
 
-    text-align: center;
+    font-size: 12px;
 
-    z-index: 20;
+    text-align: center;
 }
 
 
@@ -202,59 +244,21 @@ body {
 
     position: absolute;
 
-    top: 20px;
+    top: 15px;
 
-    right: 20px;
+    right: 15px;
 
-    z-index: 30;
+    z-index: 40;
 
     display: none;
-
-    padding: 12px 16px;
 
     border: 0;
 
     border-radius: 12px;
+
+    padding: 10px 14px;
 
     background: rgba(0,0,0,.7);
-
-    color: white;
-}
-
-
-/* =========================================
-   3D CONTROL
-========================================= */
-
-#controls {
-
-    position: absolute;
-
-    left: 50%;
-
-    bottom: 85px;
-
-    transform: translateX(-50%);
-
-    z-index: 25;
-
-    display: none;
-
-    gap: 8px;
-}
-
-
-#controls button {
-
-    min-width: 55px;
-
-    min-height: 45px;
-
-    border: 0;
-
-    border-radius: 12px;
-
-    background: rgba(0,0,0,.75);
 
     color: white;
 
@@ -262,11 +266,218 @@ body {
 }
 
 
-#reset {
+/* =========================================
+   CONTROLS
+========================================= */
 
-    min-width: 100px !important;
+#controls {
 
-    font-size: 14px !important;
+    position: absolute;
+
+    right: 15px;
+
+    top: 120px;
+
+    z-index: 30;
+
+    display: none;
+
+    flex-direction: column;
+
+    gap: 8px;
+}
+
+.control {
+
+    min-width: 52px;
+
+    min-height: 46px;
+
+    border: 0;
+
+    border-radius: 13px;
+
+    background: rgba(0,0,0,.7);
+
+    color: white;
+
+    font-size: 18px;
+}
+
+#motion {
+
+    font-size: 11px;
+
+    padding: 5px;
+}
+
+
+/* =========================================
+   BOTTOM PANEL
+========================================= */
+
+#scenePanel {
+
+    position: absolute;
+
+    left: 0;
+
+    right: 0;
+
+    bottom: 0;
+
+    z-index: 30;
+
+    display: none;
+
+    padding: 12px 12px
+        calc(12px + env(safe-area-inset-bottom));
+
+    background:
+        linear-gradient(
+            to top,
+            rgba(0,0,0,.95),
+            rgba(0,0,0,.72)
+        );
+
+    backdrop-filter: blur(18px);
+
+    color: white;
+}
+
+#sceneHeader {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    margin-bottom: 9px;
+}
+
+#sceneTitle {
+
+    font-size: 14px;
+
+    font-weight: bold;
+}
+
+#sceneHint {
+
+    font-size: 11px;
+
+    opacity: .55;
+}
+
+#sceneList {
+
+    display: flex;
+
+    gap: 9px;
+
+    overflow-x: auto;
+
+    scrollbar-width: none;
+}
+
+#sceneList::-webkit-scrollbar {
+
+    display: none;
+}
+
+.sceneCard {
+
+    flex: 0 0 80px;
+
+    width: 80px;
+
+    height: 90px;
+
+    padding: 0;
+
+    border: 1px solid
+        rgba(255,255,255,.15);
+
+    border-radius: 13px;
+
+    overflow: hidden;
+
+    background:
+        rgba(255,255,255,.08);
+
+    color: white;
+}
+
+.sceneCard.active {
+
+    border: 2px solid white;
+
+    background:
+        rgba(255,255,255,.18);
+}
+
+.scenePreview {
+
+    height: 61px;
+
+    display: flex;
+
+    justify-content: center;
+
+    align-items: center;
+
+    background:
+        linear-gradient(
+            135deg,
+            #26333b,
+            #101518
+        );
+
+    font-size: 28px;
+}
+
+.sceneName {
+
+    height: 29px;
+
+    display: flex;
+
+    justify-content: center;
+
+    align-items: center;
+
+    font-size: 10px;
+}
+
+
+/* =========================================
+   SENSOR DEBUG
+========================================= */
+
+#debug {
+
+    position: absolute;
+
+    left: 10px;
+
+    bottom: 150px;
+
+    z-index: 20;
+
+    display: none;
+
+    padding: 8px;
+
+    border-radius: 8px;
+
+    background: rgba(0,0,0,.65);
+
+    color: white;
+
+    font-family: monospace;
+
+    font-size: 10px;
+
+    line-height: 1.4;
 }
 
 </style>
@@ -276,112 +487,248 @@ body {
 
 <body>
 
-
 <div id="app">
 
 
-    <!-- =================================
-         КАМЕРА
-    ================================= -->
+<!-- =====================================
+     CAMERA
+===================================== -->
 
-    <video
-        id="camera"
-        autoplay
-        playsinline
-        muted>
-    </video>
-
-
-    <!-- =================================
-         THREE.JS
-    ================================= -->
-
-    <canvas
-        id="threeCanvas">
-    </canvas>
+<video
+    id="camera"
+    autoplay
+    playsinline
+    muted>
+</video>
 
 
-    <!-- =================================
-         START
-    ================================= -->
+<!-- =====================================
+     THREE CANVAS
+===================================== -->
 
-    <section id="start">
-
-        <h1>
-            AR CAMERA
-        </h1>
-
-        <p>
-
-            Камера работает внутри
-            Telegram Mini App.
-
-            <br><br>
-
-            После включения камеры
-            будет загружен 3D-объект.
-
-        </p>
+<canvas
+    id="threeCanvas">
+</canvas>
 
 
-        <button
-            id="cameraButton">
+<!-- =====================================
+     START
+===================================== -->
 
-            Включить камеру
+<section id="start">
 
-        </button>
+    <h1>AR CAMERA</h1>
 
-    </section>
+    <p>
 
+        Включите камеру, разрешите
+        движение устройства и
+        перемещайтесь вокруг 3D-сцены.
 
-    <!-- =================================
-         CLOSE
-    ================================= -->
+    </p>
 
-    <button id="close">
+    <button id="cameraButton">
 
-        Закрыть
+        Включить камеру
 
     </button>
 
+</section>
 
-    <!-- =================================
-         CONTROLS
-    ================================= -->
 
-    <div id="controls">
+<!-- =====================================
+     TOP
+===================================== -->
 
-        <button id="minus">
-            −
-        </button>
+<div id="topBar">
 
-        <button id="reset">
-            Центр
-        </button>
+    <div class="badge">
+        AR 3D
+    </div>
 
-        <button id="plus">
-            +
-        </button>
+    <div
+        class="badge"
+        id="tracking">
+
+        TRACKING OFF
+
+    </div>
+
+</div>
+
+
+<!-- =====================================
+     STATUS
+===================================== -->
+
+<div id="status">
+
+    Нажмите «Включить камеру»
+
+</div>
+
+
+<!-- =====================================
+     CLOSE
+===================================== -->
+
+<button id="close">
+
+    ×
+
+</button>
+
+
+<!-- =====================================
+     CONTROLS
+===================================== -->
+
+<div id="controls">
+
+    <button
+        class="control"
+        id="minus">
+
+        −
+
+    </button>
+
+    <button
+        class="control"
+        id="reset">
+
+        Центр
+
+    </button>
+
+    <button
+        class="control"
+        id="motion">
+
+        Датчики
+
+    </button>
+
+    <button
+        class="control"
+        id="plus">
+
+        +
+
+    </button>
+
+</div>
+
+
+<!-- =====================================
+     DEBUG
+===================================== -->
+
+<div id="debug">
+
+    orientation: OFF<br>
+    motion: OFF<br>
+    x: 0<br>
+    y: 0<br>
+    z: 0
+
+</div>
+
+
+<!-- =====================================
+     SCENE PANEL
+===================================== -->
+
+<div id="scenePanel">
+
+    <div id="sceneHeader">
+
+        <div id="sceneTitle">
+            3D СЦЕНЫ
+        </div>
+
+        <div id="sceneHint">
+            Выберите сцену
+        </div>
 
     </div>
 
 
-    <!-- =================================
-         STATUS
-    ================================= -->
+    <div id="sceneList">
 
-    <div id="status">
+        <button
+            class="sceneCard active"
+            data-model="creature.glb"
+            data-name="Creature">
 
-        Нажмите «Включить камеру»
+            <div class="scenePreview">
+                🐾
+            </div>
+
+            <div class="sceneName">
+                Creature
+            </div>
+
+        </button>
+
+
+        <button
+            class="sceneCard"
+            data-model="skeleton.glb"
+            data-name="Skeleton">
+
+            <div class="scenePreview">
+                🦴
+            </div>
+
+            <div class="sceneName">
+                Skeleton
+            </div>
+
+        </button>
+
+
+        <button
+            class="sceneCard"
+            data-model="museum.glb"
+            data-name="Museum">
+
+            <div class="scenePreview">
+                🏛
+            </div>
+
+            <div class="sceneName">
+                Museum
+            </div>
+
+        </button>
+
+
+        <button
+            class="sceneCard"
+            data-model="tree.glb"
+            data-name="Tree">
+
+            <div class="scenePreview">
+                🌳
+            </div>
+
+            <div class="sceneName">
+                Tree
+            </div>
+
+        </button>
 
     </div>
+
+</div>
 
 
 </div>
 
 
 <!-- =====================================
-     THREE.JS
+     THREE IMPORT MAP
 ===================================== -->
 
 <script type="importmap">
@@ -406,7 +753,6 @@ body {
 import * as THREE
     from "three";
 
-
 import {
     GLTFLoader
 }
@@ -419,7 +765,6 @@ from "three/addons/loaders/GLTFLoader.js";
 
 const tg =
     window.Telegram?.WebApp;
-
 
 if (tg) {
 
@@ -434,82 +779,165 @@ if (tg) {
    ELEMENTS
 ========================================= */
 
-const button =
-    document.getElementById(
-        "cameraButton"
-    );
-
-
 const video =
-    document.getElementById(
-        "camera"
-    );
-
+    document.getElementById("camera");
 
 const canvas =
-    document.getElementById(
-        "threeCanvas"
-    );
-
+    document.getElementById("threeCanvas");
 
 const start =
-    document.getElementById(
-        "start"
-    );
+    document.getElementById("start");
 
+const cameraButton =
+    document.getElementById("cameraButton");
 
 const status =
-    document.getElementById(
-        "status"
-    );
-
+    document.getElementById("status");
 
 const closeButton =
-    document.getElementById(
-        "close"
-    );
-
+    document.getElementById("close");
 
 const controls =
-    document.getElementById(
-        "controls"
-    );
+    document.getElementById("controls");
+
+const scenePanel =
+    document.getElementById("scenePanel");
+
+const tracking =
+    document.getElementById("tracking");
+
+const debug =
+    document.getElementById("debug");
+
+const motionButton =
+    document.getElementById("motion");
 
 
 /* =========================================
-   THREE VARIABLES
+   THREE
 ========================================= */
 
-let renderer;
+let renderer = null;
 
-let scene;
+let scene = null;
 
-let camera3D;
+let camera3D = null;
 
-let model;
+let model = null;
 
 
 /* =========================================
-   MODEL SETTINGS
+   MODEL
 ========================================= */
 
 let modelScale = 1;
 
-
-/*
- * Положение модели
- *
- * Z = расстояние перед камерой.
- *
- * -2 = примерно 2 метра.
- */
-
-const modelPosition =
+const MODEL_START =
     new THREE.Vector3(
         0,
-        -0.4,
-        -2
+        -0.5,
+        -3
     );
+
+
+/* =========================================
+   VIRTUAL CAMERA POSITION
+========================================= */
+
+/*
+ * Позиция телефона
+ * относительно стартовой точки.
+ */
+
+const phonePosition =
+    new THREE.Vector3(
+        0,
+        0,
+        0
+    );
+
+
+/*
+ * Скорость.
+ */
+
+const velocity =
+    new THREE.Vector3(
+        0,
+        0,
+        0
+    );
+
+
+/* =========================================
+   SENSOR STATE
+========================================= */
+
+let orientationEnabled =
+    false;
+
+let motionEnabled =
+    false;
+
+
+/*
+ * Последние данные ориентации.
+ */
+
+let alpha = 0;
+
+let beta = 0;
+
+let gamma = 0;
+
+
+/*
+ * Начальная ориентация.
+ */
+
+let initialQuaternion =
+    new THREE.Quaternion();
+
+
+let orientationInitialized =
+    false;
+
+
+/*
+ * Время motion.
+ */
+
+let lastMotionTime =
+    null;
+
+
+/*
+ * Motion filter.
+ */
+
+let filteredAcceleration =
+    new THREE.Vector3(
+        0,
+        0,
+        0
+    );
+
+
+/*
+ * Настройки движения.
+ */
+
+const ACCELERATION_THRESHOLD =
+    0.35;
+
+const MOVEMENT_SCALE =
+    0.9;
+
+const DAMPING =
+    0.86;
+
+const MAX_SPEED =
+    2.0;
 
 
 /* =========================================
@@ -525,23 +953,14 @@ function setStatus(text) {
 
 
 /* =========================================
-   THREE INITIALIZATION
+   THREE INIT
 ========================================= */
 
 function initThree() {
 
-
-    /* -------------------------------------
-       SCENE
-    ------------------------------------- */
-
     scene =
         new THREE.Scene();
 
-
-    /* -------------------------------------
-       CAMERA
-    ------------------------------------- */
 
     camera3D =
         new THREE.PerspectiveCamera(
@@ -558,21 +977,12 @@ function initThree() {
         );
 
 
-    /*
-     * Камера находится
-     * в центре пространства.
-     */
-
     camera3D.position.set(
         0,
         0,
         0
     );
 
-
-    /* -------------------------------------
-       RENDERER
-    ------------------------------------- */
 
     renderer =
         new THREE.WebGLRenderer({
@@ -604,13 +1014,6 @@ function initThree() {
     );
 
 
-    /*
-     * Прозрачный фон.
-     *
-     * Поэтому под canvas
-     * будет видна камера.
-     */
-
     renderer.setClearColor(
         0x000000,
         0
@@ -621,21 +1024,18 @@ function initThree() {
         THREE.SRGBColorSpace;
 
 
-    /* -------------------------------------
+    /* =====================================
        LIGHT
-    ------------------------------------- */
+    ===================================== */
 
     const hemisphere =
         new THREE.HemisphereLight(
 
             0xffffff,
-
             0x555555,
-
             2
 
         );
-
 
     scene.add(
         hemisphere
@@ -646,11 +1046,9 @@ function initThree() {
         new THREE.DirectionalLight(
 
             0xffffff,
-
             2
 
         );
-
 
     directional.position.set(
         2,
@@ -658,19 +1056,82 @@ function initThree() {
         2
     );
 
-
     scene.add(
         directional
     );
 
 
-    /* -------------------------------------
-       LOAD GLB
-    ------------------------------------- */
+    animate();
+
+}
+
+
+/* =========================================
+   LOAD MODEL
+========================================= */
+
+function loadModel(
+    filename,
+    name
+) {
 
     setStatus(
-        "Загрузка 3D-модели..."
+        "Загрузка " +
+        name +
+        "..."
     );
+
+
+    if (model) {
+
+        scene.remove(
+            model
+        );
+
+
+        model.traverse(
+            object => {
+
+                if (
+                    object.geometry
+                ) {
+
+                    object.geometry.dispose();
+
+                }
+
+                if (
+                    object.material
+                ) {
+
+                    if (
+                        Array.isArray(
+                            object.material
+                        )
+                    ) {
+
+                        object.material
+                            .forEach(
+                                material =>
+                                    material.dispose()
+                            );
+
+                    }
+                    else {
+
+                        object.material.dispose();
+
+                    }
+
+                }
+
+            }
+        );
+
+
+        model = null;
+
+    }
 
 
     const loader =
@@ -679,18 +1140,20 @@ function initThree() {
 
     loader.load(
 
-        "./models/creature.glb",
+        "./models/" +
+        filename,
 
 
-        function(gltf) {
+        gltf => {
 
             model =
                 gltf.scene;
 
 
-            /*
-             * Начальный масштаб.
-             */
+            model.position.copy(
+                MODEL_START
+            );
+
 
             model.scale.set(
                 modelScale,
@@ -699,96 +1162,43 @@ function initThree() {
             );
 
 
-            /*
-             * Положение.
-             */
-
-            model.position.copy(
-                modelPosition
-            );
-
-
-            /*
-             * Модель видима.
-             */
-
-            model.visible =
-                true;
-
-
             scene.add(
                 model
             );
 
 
-            console.log(
-                "3D MODEL LOADED",
-                model
-            );
-
-
             setStatus(
-                "3D-объект загружен"
+                name +
+                " загружен"
             );
 
         },
 
 
-        function(progress) {
-
-            if (
-                progress.total > 0
-            ) {
-
-                const percent =
-                    Math.round(
-
-                        progress.loaded /
-                        progress.total *
-                        100
-
-                    );
+        undefined,
 
 
-                setStatus(
-                    "Загрузка 3D: " +
-                    percent +
-                    "%"
-                );
-
-            }
-
-        },
-
-
-        function(error) {
+        error => {
 
             console.error(
-                "GLB LOAD ERROR:",
                 error
             );
 
 
             setStatus(
-                "Ошибка загрузки models/creature.glb"
+                "Ошибка загрузки " +
+                filename
             );
 
         }
 
     );
 
-
-    /* -------------------------------------
-       START RENDER
-    ------------------------------------- */
-
-    animate();
-
 }
 
 
 /* =========================================
-   RENDER LOOP
+   RENDER
 ========================================= */
 
 function animate() {
@@ -798,9 +1208,7 @@ function animate() {
     );
 
 
-    if (
-        model
-    ) {
+    if (model) {
 
         model.scale.set(
             modelScale,
@@ -833,33 +1241,16 @@ function animate() {
 
 async function openCamera() {
 
-
-    setStatus(
-        "Запрашиваем доступ к камере..."
-    );
-
-
     try {
 
-
-        /* ---------------------------------
-           CHECK
-        --------------------------------- */
-
-        if (
-            !navigator.mediaDevices
-        ) {
-
-            throw new Error(
-                "mediaDevices недоступен"
-            );
-
-        }
+        setStatus(
+            "Запрашиваем камеру..."
+        );
 
 
         if (
-            !navigator.mediaDevices
-                .getUserMedia
+            !navigator.mediaDevices ||
+            !navigator.mediaDevices.getUserMedia
         ) {
 
             throw new Error(
@@ -869,13 +1260,9 @@ async function openCamera() {
         }
 
 
-        /* ---------------------------------
-           CAMERA
-        --------------------------------- */
-
         const stream =
-
-            await navigator.mediaDevices
+            await navigator
+                .mediaDevices
                 .getUserMedia({
 
                     video: {
@@ -900,26 +1287,12 @@ async function openCamera() {
                 });
 
 
-        console.log(
-            "CAMERA STREAM",
-            stream
-        );
-
-
-        /* ---------------------------------
-           VIDEO
-        --------------------------------- */
-
         video.srcObject =
             stream;
 
 
         await video.play();
 
-
-        /* ---------------------------------
-           SHOW
-        --------------------------------- */
 
         video.style.display =
             "block";
@@ -933,29 +1306,49 @@ async function openCamera() {
             "none";
 
 
-        closeButton.style.display =
-            "block";
+        topBar.style.display =
+            "flex";
 
 
         controls.style.display =
             "flex";
 
 
-        setStatus(
-            "Камера включена. Загружаем 3D..."
-        );
+        scenePanel.style.display =
+            "block";
 
 
-        /*
-         * Запускаем Three.js
-         */
+        closeButton.style.display =
+            "block";
+
+
+        debug.style.display =
+            "block";
+
 
         initThree();
 
 
+        loadModel(
+            "creature.glb",
+            "Creature"
+        );
+
+
+        /*
+         * Пытаемся включить
+         * сенсоры сразу.
+         */
+
+        await enableSensors();
+
+
+        setStatus(
+            "Выберите сцену и двигайтесь вокруг неё"
+        );
+
     }
     catch (error) {
-
 
         console.error(
             "CAMERA ERROR:",
@@ -964,15 +1357,10 @@ async function openCamera() {
 
 
         setStatus(
-
-            "Ошибка камеры: " +
-
+            "Ошибка: " +
             error.name +
-
             " — " +
-
             error.message
-
         );
 
     }
@@ -981,16 +1369,699 @@ async function openCamera() {
 
 
 /* =========================================
-   CAMERA BUTTON
+   ENABLE SENSORS
 ========================================= */
 
-button.addEventListener(
+async function enableSensors() {
+
+    /*
+     * iOS permission.
+     */
+
+    if (
+
+        typeof DeviceOrientationEvent !==
+        "undefined" &&
+
+        typeof DeviceOrientationEvent
+            .requestPermission ===
+        "function"
+
+    ) {
+
+        const orientationPermission =
+            await DeviceOrientationEvent
+                .requestPermission();
+
+
+        if (
+            orientationPermission !==
+            "granted"
+        ) {
+
+            setStatus(
+                "Нет разрешения на ориентацию"
+            );
+
+            return;
+
+        }
+
+    }
+
+
+    /*
+     * iOS motion permission.
+     */
+
+    if (
+
+        typeof DeviceMotionEvent !==
+        "undefined" &&
+
+        typeof DeviceMotionEvent
+            .requestPermission ===
+        "function"
+
+    ) {
+
+        const motionPermission =
+            await DeviceMotionEvent
+                .requestPermission();
+
+
+        if (
+            motionPermission !==
+            "granted"
+        ) {
+
+            setStatus(
+                "Нет разрешения на движение"
+            );
+
+            return;
+
+        }
+
+    }
+
+
+    window.addEventListener(
+
+        "deviceorientation",
+
+        handleOrientation,
+
+        true
+
+    );
+
+
+    window.addEventListener(
+
+        "devicemotion",
+
+        handleMotion,
+
+        true
+
+    );
+
+
+    orientationEnabled =
+        true;
+
+    motionEnabled =
+        true;
+
+
+    motionButton.textContent =
+        "ON";
+
+
+    tracking.textContent =
+        "TRACKING ON";
+
+
+    setStatus(
+        "Гироскоп и акселерометр включены"
+    );
+
+}
+
+
+/* =========================================
+   ORIENTATION
+========================================= */
+
+function handleOrientation(
+    event
+) {
+
+    alpha =
+        event.alpha || 0;
+
+    beta =
+        event.beta || 0;
+
+    gamma =
+        event.gamma || 0;
+
+
+    /*
+     * Телефонная ориентация.
+     */
+
+    const euler =
+        new THREE.Euler(
+
+            THREE.MathUtils.degToRad(
+                beta
+            ),
+
+            THREE.MathUtils.degToRad(
+                alpha
+            ),
+
+            THREE.MathUtils.degToRad(
+                -gamma
+            ),
+
+            "YXZ"
+
+        );
+
+
+    const currentQuaternion =
+        new THREE.Quaternion();
+
+
+    currentQuaternion.setFromEuler(
+        euler
+    );
+
+
+    /*
+     * Первое положение телефона
+     * становится начальной
+     * точкой.
+     */
+
+    if (
+        !orientationInitialized
+    ) {
+
+        initialQuaternion.copy(
+            currentQuaternion
+        );
+
+
+        orientationInitialized =
+            true;
+
+    }
+
+
+    /*
+     * Получаем изменение
+     * относительно стартовой
+     * ориентации.
+     */
+
+    const relativeQuaternion =
+        new THREE.Quaternion();
+
+
+    relativeQuaternion
+        .copy(
+            initialQuaternion
+        )
+        .invert();
+
+
+    relativeQuaternion
+        .multiply(
+            currentQuaternion
+        );
+
+
+    /*
+     * Плавно вращаем
+     * виртуальную камеру.
+     */
+
+    camera3D.quaternion.slerp(
+
+        relativeQuaternion,
+
+        0.15
+
+    );
+
+
+    debug.innerHTML =
+
+        "orientation: ON<br>" +
+
+        "motion: " +
+        (motionEnabled
+            ? "ON"
+            : "OFF") +
+        "<br>" +
+
+        "α: " +
+        alpha.toFixed(1) +
+        "<br>" +
+
+        "β: " +
+        beta.toFixed(1) +
+        "<br>" +
+
+        "γ: " +
+        gamma.toFixed(1) +
+        "<br>" +
+
+        "X: " +
+        phonePosition.x.toFixed(2) +
+        "<br>" +
+
+        "Y: " +
+        phonePosition.y.toFixed(2) +
+        "<br>" +
+
+        "Z: " +
+        phonePosition.z.toFixed(2);
+
+}
+
+
+/* =========================================
+   MOTION
+========================================= */
+
+function handleMotion(
+    event
+) {
+
+    if (
+        !camera3D
+    ) {
+
+        return;
+
+    }
+
+
+    const acceleration =
+        event.acceleration;
+
+
+    /*
+     * Используем acceleration
+     * без gravity, если браузер
+     * его предоставляет.
+     */
+
+    if (
+        !acceleration
+    ) {
+
+        return;
+
+    }
+
+
+    let ax =
+        acceleration.x || 0;
+
+    let ay =
+        acceleration.y || 0;
+
+    let az =
+        acceleration.z || 0;
+
+
+    /*
+     * Фильтр шума.
+     */
+
+    filteredAcceleration.lerp(
+
+        new THREE.Vector3(
+            ax,
+            ay,
+            az
+        ),
+
+        0.2
+
+    );
+
+
+    ax =
+        filteredAcceleration.x;
+
+    ay =
+        filteredAcceleration.y;
+
+    az =
+        filteredAcceleration.z;
+
+
+    const magnitude =
+        Math.sqrt(
+
+            ax * ax +
+            ay * ay +
+            az * az
+
+        );
+
+
+    /*
+     * Если движение очень маленькое,
+     * постепенно останавливаемся.
+     */
+
+    if (
+        magnitude <
+        ACCELERATION_THRESHOLD
+    ) {
+
+        velocity.multiplyScalar(
+            0.82
+        );
+
+        return;
+
+    }
+
+
+    const now =
+        performance.now();
+
+
+    if (
+        lastMotionTime ===
+        null
+    ) {
+
+        lastMotionTime =
+            now;
+
+        return;
+
+    }
+
+
+    let dt =
+        (now -
+            lastMotionTime) /
+        1000;
+
+
+    lastMotionTime =
+        now;
+
+
+    /*
+     * Защита от скачка времени.
+     */
+
+    dt =
+        Math.min(
+            dt,
+            0.05
+        );
+
+
+    /*
+     * Вектор ускорения.
+     */
+
+    const accelerationVector =
+        new THREE.Vector3(
+            ax,
+            ay,
+            az
+        );
+
+
+    /*
+     * Переводим движение
+     * из системы координат
+     * телефона в мировую.
+     */
+
+    accelerationVector
+        .applyQuaternion(
+            camera3D.quaternion
+        );
+
+
+    /*
+     * Ускоряем виртуальную
+     * камеру.
+     */
+
+    velocity.addScaledVector(
+
+        accelerationVector,
+
+        MOVEMENT_SCALE *
+        dt
+
+    );
+
+
+    /*
+     * Ограничиваем скорость.
+     */
+
+    if (
+        velocity.length() >
+        MAX_SPEED
+    ) {
+
+        velocity.setLength(
+            MAX_SPEED
+        );
+
+    }
+
+
+    /*
+     * Перемещение камеры.
+     */
+
+    phonePosition
+        .addScaledVector(
+
+            velocity,
+
+            dt
+
+        );
+
+
+    /*
+     * Плавное торможение.
+     */
+
+    velocity.multiplyScalar(
+        DAMPING
+    );
+
+
+    /*
+     * Применяем позицию.
+     */
+
+    camera3D.position.copy(
+        phonePosition
+    );
+
+}
+
+
+/* =========================================
+   SENSOR BUTTON
+========================================= */
+
+motionButton.addEventListener(
 
     "click",
 
-    openCamera
+    async () => {
+
+        if (
+            motionEnabled
+        ) {
+
+            setStatus(
+                "Tracking уже включен"
+            );
+
+            return;
+
+        }
+
+
+        await enableSensors();
+
+    }
 
 );
+
+
+/* =========================================
+   SCENE SELECTION
+========================================= */
+
+document
+    .querySelectorAll(
+        ".sceneCard"
+    )
+    .forEach(
+
+        card => {
+
+            card.addEventListener(
+
+                "click",
+
+                () => {
+
+                    document
+                        .querySelectorAll(
+                            ".sceneCard"
+                        )
+                        .forEach(
+                            item =>
+                                item.classList
+                                    .remove(
+                                        "active"
+                                    )
+                        );
+
+
+                    card.classList.add(
+                        "active"
+                    );
+
+
+                    modelScale =
+                        1;
+
+
+                    loadModel(
+
+                        card.dataset.model,
+
+                        card.dataset.name
+
+                    );
+
+                }
+
+            );
+
+        }
+
+    );
+
+
+/* =========================================
+   SCALE -
+========================================= */
+
+document
+    .getElementById("minus")
+    .addEventListener(
+
+        "click",
+
+        () => {
+
+            modelScale =
+                Math.max(
+                    0.1,
+                    modelScale - 0.1
+                );
+
+        }
+
+    );
+
+
+/* =========================================
+   SCALE +
+========================================= */
+
+document
+    .getElementById("plus")
+    .addEventListener(
+
+        "click",
+
+        () => {
+
+            modelScale =
+                Math.min(
+                    5,
+                    modelScale + 0.1
+                );
+
+        }
+
+    );
+
+
+/* =========================================
+   RESET
+========================================= */
+
+document
+    .getElementById("reset")
+    .addEventListener(
+
+        "click",
+
+        () => {
+
+            /*
+             * Возвращаем телефон
+             * в стартовую позицию.
+             */
+
+            phonePosition.set(
+                0,
+                0,
+                0
+            );
+
+
+            velocity.set(
+                0,
+                0,
+                0
+            );
+
+
+            camera3D.position.set(
+                0,
+                0,
+                0
+            );
+
+
+            camera3D.quaternion.identity();
+
+
+            /*
+             * Новая стартовая
+             * ориентация.
+             */
+
+            orientationInitialized =
+                false;
+
+
+            /*
+             * Сбрасываем размер.
+             */
+
+            modelScale =
+                1;
+
+
+            setStatus(
+                "Положение камеры сброшено"
+            );
+
+        }
+
+    );
 
 
 /* =========================================
@@ -1001,8 +2072,7 @@ closeButton.addEventListener(
 
     "click",
 
-    function() {
-
+    () => {
 
         const stream =
             video.srcObject;
@@ -1034,7 +2104,7 @@ closeButton.addEventListener(
             "none";
 
 
-        closeButton.style.display =
+        scenePanel.style.display =
             "none";
 
 
@@ -1042,113 +2112,37 @@ closeButton.addEventListener(
             "none";
 
 
+        topBar.style.display =
+            "none";
+
+
+        closeButton.style.display =
+            "none";
+
+
+        debug.style.display =
+            "none";
+
+
         start.style.display =
             "flex";
 
 
+        motionEnabled =
+            false;
+
+
+        orientationEnabled =
+            false;
+
+
         setStatus(
-            "Нажмите «Включить камеру»"
+            "Камера выключена"
         );
 
     }
 
 );
-
-
-/* =========================================
-   SCALE DOWN
-========================================= */
-
-document
-    .getElementById(
-        "minus"
-    )
-    .addEventListener(
-
-        "click",
-
-        function() {
-
-            modelScale =
-                Math.max(
-                    0.1,
-                    modelScale - 0.1
-                );
-
-        }
-
-    );
-
-
-/* =========================================
-   SCALE UP
-========================================= */
-
-document
-    .getElementById(
-        "plus"
-    )
-    .addEventListener(
-
-        "click",
-
-        function() {
-
-            modelScale =
-                Math.min(
-                    5,
-                    modelScale + 0.1
-                );
-
-        }
-
-    );
-
-
-/* =========================================
-   RESET
-========================================= */
-
-document
-    .getElementById(
-        "reset"
-    )
-    .addEventListener(
-
-        "click",
-
-        function() {
-
-            if (
-                model
-            ) {
-
-                model.position.set(
-                    0,
-                    -0.4,
-                    -2
-                );
-
-                model.rotation.set(
-                    0,
-                    0,
-                    0
-                );
-
-            }
-
-
-            modelScale =
-                1;
-
-
-            setStatus(
-                "3D-объект сброшен"
-            );
-
-        }
-
-    );
 
 
 /* =========================================
@@ -1159,8 +2153,7 @@ window.addEventListener(
 
     "resize",
 
-    function() {
-
+    () => {
 
         if (
             !renderer ||
@@ -1192,8 +2185,20 @@ window.addEventListener(
 
 );
 
-</script>
 
+/* =========================================
+   START
+========================================= */
+
+cameraButton.addEventListener(
+
+    "click",
+
+    openCamera
+
+);
+
+</script>
 
 </body>
 
