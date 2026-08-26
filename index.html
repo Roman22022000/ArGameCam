@@ -3,288 +3,450 @@
 
 <head>
 
-<meta charset="UTF-8">
+    <meta charset="UTF-8">
 
-<meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
->
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    >
 
-<title>AR Game Cam</title>
+    <meta
+        http-equiv="Permissions-Policy"
+        content="camera=(self), microphone=(), xr-spatial-tracking=(self)"
+    >
 
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <title>AR Game Cam</title>
 
-<style>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-}
 
-html,
-body {
+    <style>
 
-    width: 100%;
-    height: 100%;
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
-    overflow: hidden;
 
-    background: #000;
+        html,
+        body {
 
-    font-family: Arial, sans-serif;
+            width: 100%;
+            height: 100%;
 
-    touch-action: none;
-}
+            overflow: hidden;
 
-#app {
+            background: #000;
 
-    position: relative;
+            font-family:
+                Arial,
+                sans-serif;
 
-    width: 100%;
-    height: 100dvh;
+            touch-action: none;
+        }
 
-    overflow: hidden;
-}
 
+        body {
 
-/* =========================
-   CAMERA
-========================= */
+            color: #fff;
+        }
 
-#camera {
 
-    position: absolute;
+        #app {
 
-    inset: 0;
+            position: relative;
 
-    width: 100%;
-    height: 100%;
+            width: 100%;
 
-    object-fit: cover;
+            height: 100dvh;
 
-    background: #000;
+            overflow: hidden;
 
-    z-index: 1;
-}
+            background: #000;
+        }
 
 
-/* =========================
-   THREE.JS
-========================= */
+        /* =================================
+           START SCREEN
+        ================================= */
 
-#three {
+        #startScreen {
 
-    position: absolute;
+            position: absolute;
 
-    inset: 0;
+            inset: 0;
 
-    width: 100%;
-    height: 100%;
+            z-index: 100;
 
-    z-index: 2;
+            display: flex;
 
-    pointer-events: none;
-}
+            flex-direction: column;
 
+            justify-content: center;
 
-/* =========================
-   START
-========================= */
+            align-items: center;
 
-#start {
+            padding: 25px;
 
-    position: absolute;
+            text-align: center;
 
-    inset: 0;
+            background:
+                radial-gradient(
+                    circle at center,
+                    #1c2730,
+                    #070a0d
+                );
+        }
 
-    z-index: 20;
 
-    display: flex;
+        #startScreen h1 {
 
-    flex-direction: column;
+            font-size:
+                clamp(34px, 10vw, 52px);
 
-    justify-content: center;
+            margin-bottom: 15px;
+        }
 
-    align-items: center;
 
-    padding: 25px;
+        #startScreen p {
 
-    background: #111820;
+            max-width: 380px;
 
-    color: white;
+            line-height: 1.5;
 
-    text-align: center;
-}
+            opacity: .75;
 
+            margin-bottom: 30px;
+        }
 
-#start h1 {
 
-    font-size: 40px;
+        #startButton {
 
-    margin-bottom: 15px;
-}
+            min-width: 230px;
 
+            min-height: 52px;
 
-#start p {
+            border: 0;
 
-    max-width: 350px;
+            border-radius: 16px;
 
-    line-height: 1.5;
+            padding: 15px 25px;
 
-    opacity: .7;
+            background: #fff;
 
-    margin-bottom: 30px;
-}
+            color: #111;
 
+            font-size: 17px;
 
-button {
+            font-weight: 700;
+        }
 
-    border: 0;
 
-    border-radius: 16px;
+        #startButton:disabled {
 
-    padding: 17px 28px;
+            opacity: .45;
+        }
 
-    background: white;
 
-    color: #111;
+        /* =================================
+           WEBXR CANVAS
+        ================================= */
 
-    font-size: 18px;
+        #xrCanvas {
 
-    font-weight: bold;
-}
+            position: absolute;
 
+            inset: 0;
 
-/* =========================
-   TOP
-========================= */
+            width: 100%;
 
-#top {
+            height: 100%;
 
-    position: absolute;
+            display: none;
 
-    top: 15px;
+            z-index: 1;
 
-    left: 15px;
+            background: transparent;
+        }
 
-    right: 15px;
 
-    z-index: 10;
+        /* =================================
+           UI
+        ================================= */
 
-    display: none;
+        #ui {
 
-    justify-content: space-between;
-}
+            position: absolute;
 
+            inset: 0;
 
-.panel {
+            z-index: 20;
 
-    padding: 10px 14px;
+            display: none;
 
-    border-radius: 12px;
+            pointer-events: none;
+        }
 
-    background: rgba(0,0,0,.6);
 
-    color: white;
+        #topBar {
 
-    backdrop-filter: blur(8px);
-}
+            position: absolute;
 
+            top:
+                calc(
+                    12px +
+                    env(safe-area-inset-top)
+                );
 
-/* =========================
-   CENTER RETICLE
-========================= */
+            left: 12px;
 
-#reticle {
+            right: 12px;
 
-    position: absolute;
+            display: flex;
 
-    left: 50%;
-    top: 50%;
+            justify-content:
+                space-between;
 
-    transform:
-        translate(-50%, -50%);
+            gap: 10px;
+        }
 
-    width: 45px;
-    height: 45px;
 
-    border: 2px solid white;
+        .badge {
 
-    border-radius: 50%;
+            padding: 10px 14px;
 
-    z-index: 5;
+            border-radius: 13px;
 
-    display: none;
+            background:
+                rgba(0, 0, 0, .55);
 
-    pointer-events: none;
-}
+            backdrop-filter:
+                blur(10px);
 
+            font-size: 14px;
+        }
 
-/* =========================
-   STATUS
-========================= */
 
-#status {
+        /* =================================
+           RETICLE
+        ================================= */
 
-    position: absolute;
+        #reticle {
 
-    left: 50%;
+            position: absolute;
 
-    bottom: 80px;
+            left: 50%;
 
-    transform:
-        translateX(-50%);
+            top: 50%;
 
-    z-index: 10;
+            width: 48px;
 
-    width: calc(100% - 40px);
+            height: 48px;
 
-    max-width: 400px;
+            transform:
+                translate(-50%, -50%);
 
-    padding: 12px;
+            border:
+                2px solid white;
 
-    border-radius: 12px;
+            border-radius: 50%;
 
-    background: rgba(0,0,0,.7);
+            display: none;
 
-    color: white;
+            opacity: .9;
+        }
 
-    text-align: center;
-}
 
+        #reticle::before {
 
-/* =========================
-   CONTROLS
-========================= */
+            content: "";
 
-#controls {
+            position: absolute;
 
-    position: absolute;
+            left: 50%;
 
-    bottom: 20px;
+            top: 50%;
 
-    left: 50%;
+            width: 14px;
 
-    transform:
-        translateX(-50%);
+            height: 2px;
 
-    z-index: 10;
+            transform:
+                translate(-50%, -50%);
 
-    display: none;
+            background: white;
+        }
 
-    gap: 10px;
-}
 
+        #reticle::after {
 
-#controls button {
+            content: "";
 
-    padding: 12px 18px;
+            position: absolute;
 
-    font-size: 15px;
-}
+            left: 50%;
 
-</style>
+            top: 50%;
+
+            width: 2px;
+
+            height: 14px;
+
+            transform:
+                translate(-50%, -50%);
+
+            background: white;
+        }
+
+
+        /* =================================
+           STATUS
+        ================================= */
+
+        #status {
+
+            position: absolute;
+
+            left: 50%;
+
+            bottom:
+                calc(
+                    85px +
+                    env(safe-area-inset-bottom)
+                );
+
+            transform:
+                translateX(-50%);
+
+            width:
+                calc(100% - 40px);
+
+            max-width: 420px;
+
+            padding: 12px 15px;
+
+            border-radius: 14px;
+
+            background:
+                rgba(0, 0, 0, .68);
+
+            backdrop-filter:
+                blur(10px);
+
+            text-align: center;
+
+            line-height: 1.4;
+
+            font-size: 14px;
+        }
+
+
+        /* =================================
+           PLACE BUTTON
+        ================================= */
+
+        #placeButton {
+
+            position: absolute;
+
+            left: 50%;
+
+            bottom:
+                calc(
+                    22px +
+                    env(safe-area-inset-bottom)
+                );
+
+            transform:
+                translateX(-50%);
+
+            min-width: 210px;
+
+            min-height: 50px;
+
+            border: 0;
+
+            border-radius: 16px;
+
+            padding: 14px 22px;
+
+            background: #fff;
+
+            color: #111;
+
+            font-size: 16px;
+
+            font-weight: 700;
+
+            pointer-events: auto;
+
+            display: none;
+        }
+
+
+        /* =================================
+           EXIT
+        ================================= */
+
+        #exitButton {
+
+            position: absolute;
+
+            right: 12px;
+
+            bottom:
+                calc(
+                    22px +
+                    env(safe-area-inset-bottom)
+                );
+
+            min-height: 46px;
+
+            border: 0;
+
+            border-radius: 14px;
+
+            padding: 12px 15px;
+
+            background:
+                rgba(0, 0, 0, .65);
+
+            color: white;
+
+            pointer-events: auto;
+
+            display: none;
+        }
+
+
+        /* =================================
+           ERROR
+        ================================= */
+
+        #errorBox {
+
+            display: none;
+
+            margin-top: 20px;
+
+            max-width: 380px;
+
+            padding: 12px;
+
+            border-radius: 12px;
+
+            background:
+                rgba(120, 20, 20, .75);
+
+            color: #fff;
+
+            font-size: 13px;
+
+            line-height: 1.4;
+        }
+
+    </style>
 
 </head>
 
@@ -295,112 +457,109 @@ button {
 <div id="app">
 
 
-<!-- =========================
-     CAMERA
-========================= -->
+    <!-- =================================
+         START
+    ================================= -->
 
-<video
-    id="camera"
-    autoplay
-    playsinline
-    muted>
-</video>
+    <section id="startScreen">
 
-
-<!-- =========================
-     THREE
-========================= -->
-
-<canvas id="three"></canvas>
+        <h1>
+            AR GAME
+        </h1>
 
 
-<!-- =========================
-     START
-========================= -->
+        <p>
 
-<section id="start">
+            Камера и AR работают
+            непосредственно внутри
+            Telegram Mini App.
 
-    <h1>AR GAME</h1>
+            <br><br>
 
-    <p>
+            Наведи телефон на пол,
+            дождись обнаружения поверхности
+            и размести 3D-объект.
 
-        Камера будет работать
-        непосредственно внутри
-        Telegram Mini App.
-
-        <br><br>
-
-        После запуска наведи телефон
-        на окружающее пространство.
-
-    </p>
+        </p>
 
 
-    <button id="startButton">
+        <button
+            id="startButton"
+            disabled>
 
-        Включить камеру
+            Проверка AR...
 
-    </button>
-
-</section>
+        </button>
 
 
-<!-- =========================
-     TOP
-========================= -->
+        <div id="errorBox"></div>
 
-<div id="top">
+    </section>
 
-    <div class="panel">
-        AR MODE
+
+    <!-- =================================
+         WEBXR CANVAS
+    ================================= -->
+
+    <canvas id="xrCanvas"></canvas>
+
+
+    <!-- =================================
+         UI
+    ================================= -->
+
+    <div id="ui">
+
+
+        <div id="topBar">
+
+
+            <div class="badge">
+
+                AR MODE
+
+            </div>
+
+
+            <div
+                class="badge"
+                id="userName">
+
+                Player
+
+            </div>
+
+
+        </div>
+
+
+        <div id="reticle"></div>
+
+
+        <div id="status">
+
+            Поиск AR...
+
+        </div>
+
+
+        <button
+            id="placeButton">
+
+            Поставить объект
+
+        </button>
+
+
+        <button
+            id="exitButton">
+
+            Выйти
+
+        </button>
+
+
     </div>
-
-    <div
-        class="panel"
-        id="user">
-        Player
-    </div>
-
-</div>
-
-
-<!-- =========================
-     RETICLE
-========================= -->
-
-<div id="reticle"></div>
-
-
-<!-- =========================
-     STATUS
-========================= -->
-
-<div id="status">
-
-    Камера выключена
-
-</div>
-
-
-<!-- =========================
-     CONTROLS
-========================= -->
-
-<div id="controls">
-
-    <button id="minus">
-        −
-    </button>
-
-    <button id="reset">
-        Центр
-    </button>
-
-    <button id="plus">
-        +
-    </button>
-
-</div>
 
 
 </div>
@@ -408,23 +567,24 @@ button {
 
 <script type="module">
 
-/* ==================================================
-   THREE.JS
-================================================== */
 
-import * as THREE
-from "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
+/* =====================================================
+   THREE.JS
+===================================================== */
+
+import * as THREE from
+    "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
 
 
 import {
     GLTFLoader
-}
-from "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/GLTFLoader.js";
+} from
+    "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/GLTFLoader.js";
 
 
-/* ==================================================
+/* =====================================================
    TELEGRAM
-================================================== */
+===================================================== */
 
 const tg =
     window.Telegram?.WebApp;
@@ -439,25 +599,13 @@ if (tg) {
 }
 
 
-/* ==================================================
+/* =====================================================
    ELEMENTS
-================================================== */
+===================================================== */
 
-const video =
+const startScreen =
     document.getElementById(
-        "camera"
-    );
-
-
-const canvas =
-    document.getElementById(
-        "three"
-    );
-
-
-const start =
-    document.getElementById(
-        "start"
+        "startScreen"
     );
 
 
@@ -467,21 +615,27 @@ const startButton =
     );
 
 
+const errorBox =
+    document.getElementById(
+        "errorBox"
+    );
+
+
+const canvas =
+    document.getElementById(
+        "xrCanvas"
+    );
+
+
+const ui =
+    document.getElementById(
+        "ui"
+    );
+
+
 const status =
     document.getElementById(
         "status"
-    );
-
-
-const top =
-    document.getElementById(
-        "top"
-    );
-
-
-const controls =
-    document.getElementById(
-        "controls"
     );
 
 
@@ -491,9 +645,21 @@ const reticle =
     );
 
 
-/* ==================================================
+const placeButton =
+    document.getElementById(
+        "placeButton"
+    );
+
+
+const exitButton =
+    document.getElementById(
+        "exitButton"
+    );
+
+
+/* =====================================================
    TELEGRAM USER
-================================================== */
+===================================================== */
 
 if (
     tg?.initDataUnsafe?.user
@@ -504,7 +670,7 @@ if (
 
 
     document.getElementById(
-        "user"
+        "userName"
     ).textContent =
 
         user.first_name ||
@@ -516,55 +682,63 @@ if (
 }
 
 
-/* ==================================================
+/* =====================================================
    THREE VARIABLES
-================================================== */
+===================================================== */
+
+let renderer;
 
 let scene;
 
 let camera;
 
-let renderer;
+let model = null;
 
-let model;
+let xrSession = null;
 
-let modelRoot;
+let referenceSpace = null;
 
-let modelLoaded = false;
+let viewerSpace = null;
 
+let hitTestSource = null;
 
-/* ==================================================
-   MODEL POSITION
-================================================== */
+let hitTestRequested = false;
 
-let objectX = 0;
+let currentHitPose = null;
 
-let objectY = 0;
-
-let objectZ = -2;
+let objectPlaced = false;
 
 
-/* ==================================================
-   MODEL SCALE
-================================================== */
+/* =====================================================
+   STATUS
+===================================================== */
 
-let objectScale = 1;
+function setStatus(text) {
 
+    status.textContent =
+        text;
 
-/* ==================================================
-   DEVICE ROTATION
-================================================== */
-
-let alpha = 0;
-
-let beta = 0;
-
-let gamma = 0;
+}
 
 
-/* ==================================================
-   INIT THREE
-================================================== */
+/* =====================================================
+   ERROR
+===================================================== */
+
+function showError(text) {
+
+    errorBox.textContent =
+        text;
+
+    errorBox.style.display =
+        "block";
+
+}
+
+
+/* =====================================================
+   INITIALIZE THREE
+===================================================== */
 
 function initThree() {
 
@@ -573,15 +747,23 @@ function initThree() {
         new THREE.Scene();
 
 
+    /*
+     * Camera
+     */
+
     camera =
         new THREE.PerspectiveCamera(
-            60,
+            70,
             window.innerWidth /
             window.innerHeight,
             0.01,
             100
         );
 
+
+    /*
+     * Renderer
+     */
 
     renderer =
         new THREE.WebGLRenderer({
@@ -590,7 +772,10 @@ function initThree() {
 
             alpha: true,
 
-            antialias: true
+            antialias: true,
+
+            preserveDrawingBuffer: false
+
         });
 
 
@@ -608,34 +793,39 @@ function initThree() {
     );
 
 
+    renderer.xr.enabled =
+        true;
+
+
     renderer.outputColorSpace =
         THREE.SRGBColorSpace;
 
 
-    /* =========================
-       LIGHT
-    ========================= */
+    /*
+     * Lighting
+     */
 
-    const ambient =
-        new THREE.AmbientLight(
+    const ambientLight =
+        new THREE.HemisphereLight(
             0xffffff,
+            0x666666,
             2
         );
 
 
     scene.add(
-        ambient
+        ambientLight
     );
 
 
-    const directional =
+    const directionalLight =
         new THREE.DirectionalLight(
             0xffffff,
             2
         );
 
 
-    directional.position.set(
+    directionalLight.position.set(
         2,
         4,
         2
@@ -643,13 +833,13 @@ function initThree() {
 
 
     scene.add(
-        directional
+        directionalLight
     );
 
 
-    /* =========================
-       LOAD GLB
-    ========================= */
+    /*
+     * Load GLB
+     */
 
     const loader =
         new GLTFLoader();
@@ -665,6 +855,13 @@ function initThree() {
                 gltf.scene;
 
 
+            /*
+             * Начальный размер.
+             *
+             * GLB желательно экспортировать
+             * из Blender в реальном размере.
+             */
+
             model.scale.set(
                 1,
                 1,
@@ -672,11 +869,8 @@ function initThree() {
             );
 
 
-            model.position.set(
-                0,
-                0,
-                -2
-            );
+            model.visible =
+                false;
 
 
             scene.add(
@@ -684,16 +878,13 @@ function initThree() {
             );
 
 
-            modelLoaded =
-                true;
-
-
-            status.textContent =
-                "Модель готова";
-
-
             console.log(
-                "CREATURE GLB LOADED"
+                "creature.glb loaded"
+            );
+
+
+            setStatus(
+                "Модель загружена"
             );
 
         },
@@ -704,62 +895,540 @@ function initThree() {
         error => {
 
             console.error(
+                "GLB ERROR",
                 error
             );
 
 
-            status.textContent =
-                "Ошибка creature.glb";
+            showError(
+                "Не удалось загрузить models/creature.glb"
+            );
 
         }
 
     );
 
 
-    /* =========================
-       LOOP
-    ========================= */
+    /*
+     * Resize
+     */
 
-    animate();
+    window.addEventListener(
+        "resize",
+        resize
+    );
 
 }
 
 
-/* ==================================================
-   ANIMATION
-================================================== */
+/* =====================================================
+   RESIZE
+===================================================== */
 
-function animate() {
+function resize() {
 
-    requestAnimationFrame(
-        animate
+    if (!renderer) {
+
+        return;
+
+    }
+
+
+    renderer.setSize(
+        window.innerWidth,
+        window.innerHeight
     );
 
 
+    camera.aspect =
+        window.innerWidth /
+        window.innerHeight;
+
+
+    camera.updateProjectionMatrix();
+
+}
+
+
+/* =====================================================
+   CHECK WEBXR
+===================================================== */
+
+async function checkAR() {
+
+
+    /*
+     * HTTPS
+     */
+
     if (
-        model
+        location.protocol !==
+        "https:"
     ) {
 
-        model.position.x =
-            objectX;
+        showError(
+            "AR требует HTTPS."
+        );
 
 
-        model.position.y =
-            objectY;
+        startButton.textContent =
+            "Требуется HTTPS";
 
 
-        model.position.z =
-            objectZ;
+        return false;
+
+    }
 
 
-        model.scale.set(
-            objectScale,
-            objectScale,
-            objectScale
+    /*
+     * WebXR
+     */
+
+    if (
+        !navigator.xr
+    ) {
+
+        showError(
+            "WebXR API отсутствует в Telegram WebView. На этом устройстве Telegram не предоставляет immersive AR."
+        );
+
+
+        startButton.textContent =
+            "AR недоступен";
+
+
+        return false;
+
+    }
+
+
+    try {
+
+        const supported =
+            await navigator.xr
+                .isSessionSupported(
+                    "immersive-ar"
+                );
+
+
+        console.log(
+            "immersive-ar:",
+            supported
+        );
+
+
+        if (!supported) {
+
+            showError(
+                "immersive-ar не поддерживается текущим Telegram WebView."
+            );
+
+
+            startButton.textContent =
+                "AR не поддерживается";
+
+
+            return false;
+
+        }
+
+
+        /*
+         * Всё хорошо
+         */
+
+        startButton.disabled =
+            false;
+
+
+        startButton.textContent =
+            "Включить камеру";
+
+
+        setStatus(
+            "AR готов"
+        );
+
+
+        return true;
+
+    }
+    catch (error) {
+
+        console.error(
+            error
+        );
+
+
+        showError(
+            "Ошибка проверки WebXR: " +
+            error.message
+        );
+
+
+        startButton.textContent =
+            "Ошибка WebXR";
+
+
+        return false;
+
+    }
+
+}
+
+
+/* =====================================================
+   START AR
+===================================================== */
+
+startButton.addEventListener(
+    "click",
+    startAR
+);
+
+
+async function startAR() {
+
+
+    try {
+
+        startButton.disabled =
+            true;
+
+
+        setStatus(
+            "Запуск камеры и AR..."
+        );
+
+
+        /*
+         * Запрашиваем настоящую AR-сессию.
+         *
+         * Важно:
+         * никакого Chrome,
+         * никакого Scene Viewer.
+         */
+
+        xrSession =
+            await navigator.xr
+                .requestSession(
+                    "immersive-ar",
+                    {
+
+                        requiredFeatures: [
+                            "hit-test"
+                        ],
+
+                        optionalFeatures: [
+                            "local-floor",
+                            "dom-overlay"
+                        ],
+
+                        domOverlay: {
+                            root: document.body
+                        }
+
+                    }
+                );
+
+
+        /*
+         * Передаём XR session Three.js
+         */
+
+        await renderer.xr.setSession(
+            xrSession
+        );
+
+
+        /*
+         * Reference spaces
+         */
+
+        referenceSpace =
+            await xrSession
+                .requestReferenceSpace(
+                    "local"
+                );
+
+
+        viewerSpace =
+            await xrSession
+                .requestReferenceSpace(
+                    "viewer"
+                );
+
+
+        /*
+         * Состояние
+         */
+
+        hitTestSource =
+            null;
+
+        hitTestRequested =
+            false;
+
+        currentHitPose =
+            null;
+
+        objectPlaced =
+            false;
+
+
+        /*
+         * UI
+         */
+
+        startScreen.style.display =
+            "none";
+
+
+        canvas.style.display =
+            "block";
+
+
+        ui.style.display =
+            "block";
+
+
+        reticle.style.display =
+            "block";
+
+
+        placeButton.style.display =
+            "block";
+
+
+        exitButton.style.display =
+            "block";
+
+
+        setStatus(
+            "Медленно двигайте телефоном и ищите поверхность"
+        );
+
+
+        /*
+         * AR закончился
+         */
+
+        xrSession.addEventListener(
+            "end",
+            onSessionEnd
+        );
+
+
+        /*
+         * Запускаем XR render loop
+         */
+
+        renderer.setAnimationLoop(
+            onXRFrame
+        );
+
+    }
+    catch (error) {
+
+        console.error(
+            "AR START ERROR:",
+            error
+        );
+
+
+        startButton.disabled =
+            false;
+
+
+        setStatus(
+            "Не удалось запустить AR"
+        );
+
+
+        showError(
+            error.name +
+            ": " +
+            error.message
         );
 
     }
 
+}
+
+
+/* =====================================================
+   HIT TEST SOURCE
+===================================================== */
+
+async function requestHitTestSource() {
+
+
+    if (
+        hitTestRequested ||
+        !xrSession ||
+        !viewerSpace
+    ) {
+
+        return;
+
+    }
+
+
+    hitTestRequested =
+        true;
+
+
+    try {
+
+        hitTestSource =
+            await xrSession
+                .requestHitTestSource({
+                    space:
+                        viewerSpace
+                });
+
+
+        console.log(
+            "Hit test source ready"
+        );
+
+    }
+    catch (error) {
+
+        console.error(
+            "HIT TEST ERROR",
+            error
+        );
+
+
+        setStatus(
+            "Hit-test недоступен"
+        );
+
+    }
+
+}
+
+
+/* =====================================================
+   XR FRAME
+===================================================== */
+
+function onXRFrame(
+    time,
+    frame
+) {
+
+
+    if (
+        !xrSession ||
+        !frame
+    ) {
+
+        return;
+
+    }
+
+
+    /*
+     * Создаём hit-test source
+     */
+
+    requestHitTestSource();
+
+
+    /*
+     * Получаем положение
+     * камеры телефона
+     */
+
+    const pose =
+        frame.getViewerPose(
+            referenceSpace
+        );
+
+
+    /*
+     * Если hit-test source готов
+     */
+
+    if (
+        hitTestSource
+    ) {
+
+        const results =
+            frame.getHitTestResults(
+                hitTestSource
+            );
+
+
+        if (
+            results.length > 0
+        ) {
+
+            const hit =
+                results[0];
+
+
+            const hitPose =
+                hit.getPose(
+                    referenceSpace
+                );
+
+
+            if (
+                hitPose
+            ) {
+
+                currentHitPose =
+                    hitPose;
+
+
+                /*
+                 * Показываем точку
+                 */
+
+                reticle.style.display =
+                    "block";
+
+
+                if (
+                    !objectPlaced
+                ) {
+
+                    setStatus(
+                        "Поверхность найдена — нажмите «Поставить объект»"
+                    );
+
+                }
+
+            }
+
+        }
+        else {
+
+            currentHitPose =
+                null;
+
+
+            if (
+                !objectPlaced
+            ) {
+
+                setStatus(
+                    "Ищем поверхность..."
+                );
+
+            }
+
+        }
+
+    }
+
+
+    /*
+     * Render
+     */
 
     renderer.render(
         scene,
@@ -769,456 +1438,227 @@ function animate() {
 }
 
 
-/* ==================================================
-   CAMERA
-================================================== */
-
-async function startCamera() {
-
-
-    try {
-
-        status.textContent =
-            "Запрашиваем камеру...";
-
-
-        /*
-         * Основная камера
-         */
-
-        const stream =
-            await navigator.mediaDevices
-                .getUserMedia({
-
-                    video: {
-
-                        facingMode: {
-                            ideal:
-                                "environment"
-                        },
-
-                        width: {
-                            ideal: 1920
-                        },
-
-                        height: {
-                            ideal: 1080
-                        }
-
-                    },
-
-                    audio: false
-
-                });
-
-
-        video.srcObject =
-            stream;
-
-
-        await video.play();
-
-
-        /*
-         * UI
-         */
-
-        start.style.display =
-            "none";
-
-
-        top.style.display =
-            "flex";
-
-
-        controls.style.display =
-            "flex";
-
-
-        reticle.style.display =
-            "block";
-
-
-        status.textContent =
-            "Камера включена";
-
-
-        /*
-         * Device Orientation
-         */
-
-        await enableOrientation();
-
-
-    }
-    catch (error) {
-
-        console.error(
-            "CAMERA ERROR:",
-            error
-        );
-
-
-        status.textContent =
-            "Камера недоступна: " +
-            error.name;
-
-    }
-
-}
-
-
-/* ==================================================
-   DEVICE ORIENTATION
-================================================== */
-
-async function enableOrientation() {
-
-
-    /*
-     * iPhone требует
-     * специального permission.
-     */
-
-    if (
-        typeof DeviceOrientationEvent !==
-        "undefined" &&
-
-        typeof DeviceOrientationEvent
-            .requestPermission ===
-            "function"
-    ) {
-
-        try {
-
-            const permission =
-                await DeviceOrientationEvent
-                    .requestPermission();
-
-
-            if (
-                permission !==
-                "granted"
-            ) {
-
-                status.textContent =
-                    "Доступ к датчикам запрещён.";
-
-                return;
-
-            }
-
-        }
-        catch (error) {
-
-            console.error(
-                error
-            );
-
-        }
-
-    }
-
-
-    window.addEventListener(
-
-        "deviceorientation",
-
-        event => {
-
-            alpha =
-                event.alpha || 0;
-
-            beta =
-                event.beta || 0;
-
-            gamma =
-                event.gamma || 0;
-
-
-            updateCameraOrientation();
-
-        },
-
-        true
-
-    );
-
-}
-
-
-/* ==================================================
-   CAMERA ORIENTATION
-================================================== */
-
-function updateCameraOrientation() {
-
-
-    /*
-     * Переводим данные
-     * телефона в вращение
-     * Three.js камеры.
-     */
-
-    const alphaRad =
-        THREE.MathUtils.degToRad(
-            alpha
-        );
-
-
-    const betaRad =
-        THREE.MathUtils.degToRad(
-            beta
-        );
-
-
-    const gammaRad =
-        THREE.MathUtils.degToRad(
-            gamma
-        );
-
-
-    const euler =
-        new THREE.Euler(
-            betaRad,
-            alphaRad,
-            -gammaRad,
-            "YXZ"
-        );
-
-
-    camera.rotation.copy(
-        euler
-    );
-
-}
-
-
-/* ==================================================
-   START BUTTON
-================================================== */
-
-startButton.addEventListener(
-
+/* =====================================================
+   PLACE OBJECT
+===================================================== */
+
+placeButton.addEventListener(
     "click",
+    placeObject
+);
 
+
+function placeObject() {
+
+
+    if (!model) {
+
+        setStatus(
+            "Модель ещё загружается..."
+        );
+
+
+        return;
+
+    }
+
+
+    if (!currentHitPose) {
+
+        setStatus(
+            "Поверхность ещё не найдена"
+        );
+
+
+        return;
+
+    }
+
+
+    /*
+     * Позиция поверхности
+     */
+
+    const position =
+        currentHitPose.transform
+            .position;
+
+
+    /*
+     * Ориентация поверхности
+     */
+
+    const orientation =
+        currentHitPose.transform
+            .orientation;
+
+
+    /*
+     * Устанавливаем модель
+     */
+
+    model.position.set(
+        position.x,
+        position.y,
+        position.z
+    );
+
+
+    model.quaternion.set(
+        orientation.x,
+        orientation.y,
+        orientation.z,
+        orientation.w
+    );
+
+
+    model.visible =
+        true;
+
+
+    objectPlaced =
+        true;
+
+
+    /*
+     * UI
+
+     */
+
+    reticle.style.display =
+        "none";
+
+
+    setStatus(
+        "Объект размещён. Двигайтесь вокруг него."
+    );
+
+}
+
+
+/* =====================================================
+   EXIT
+===================================================== */
+
+exitButton.addEventListener(
+    "click",
     async () => {
 
-        initThree();
-
-        await startCamera();
-
-    }
-
-);
-
-
-/* ==================================================
-   SCALE DOWN
-================================================== */
-
-document
-    .getElementById("minus")
-    .addEventListener(
-
-        "click",
-
-        () => {
-
-            objectScale =
-                Math.max(
-                    0.1,
-                    objectScale - 0.1
-                );
-
-        }
-
-    );
-
-
-/* ==================================================
-   SCALE UP
-================================================== */
-
-document
-    .getElementById("plus")
-    .addEventListener(
-
-        "click",
-
-        () => {
-
-            objectScale =
-                Math.min(
-                    5,
-                    objectScale + 0.1
-                );
-
-        }
-
-    );
-
-
-/* ==================================================
-   RESET
-================================================== */
-
-document
-    .getElementById("reset")
-    .addEventListener(
-
-        "click",
-
-        () => {
-
-            objectX =
-                0;
-
-            objectY =
-                0;
-
-            objectZ =
-                -2;
-
-            objectScale =
-                1;
-
-            status.textContent =
-                "Объект сброшен";
-
-        }
-
-    );
-
-
-/* ==================================================
-   TOUCH MOVE
-================================================== */
-
-let lastX = 0;
-
-let lastY = 0;
-
-
-canvas.addEventListener(
-
-    "touchstart",
-
-    event => {
-
         if (
-            event.touches.length !== 1
+            xrSession
         ) {
 
-            return;
+            await xrSession.end();
 
         }
 
-
-        lastX =
-            event.touches[0].clientX;
-
-
-        lastY =
-            event.touches[0].clientY;
-
-    },
-
-    {
-        passive: true
     }
-
 );
 
 
-canvas.addEventListener(
+/* =====================================================
+   SESSION END
+===================================================== */
 
-    "touchmove",
-
-    event => {
-
-        if (
-            event.touches.length !== 1
-        ) {
-
-            return;
-
-        }
+function onSessionEnd() {
 
 
-        const x =
-            event.touches[0].clientX;
+    renderer.setAnimationLoop(
+        null
+    );
 
 
-        const y =
-            event.touches[0].clientY;
+    if (model) {
 
-
-        const dx =
-            x - lastX;
-
-
-        const dy =
-            y - lastY;
-
-
-        objectX +=
-            dx * 0.005;
-
-
-        objectY -=
-            dy * 0.005;
-
-
-        lastX =
-            x;
-
-
-        lastY =
-            y;
-
-    },
-
-    {
-        passive: true
-    }
-
-);
-
-
-/* ==================================================
-   RESIZE
-================================================== */
-
-window.addEventListener(
-
-    "resize",
-
-    () => {
-
-        if (!renderer) {
-            return;
-        }
-
-
-        renderer.setSize(
-            window.innerWidth,
-            window.innerHeight
-        );
-
-
-        camera.aspect =
-            window.innerWidth /
-            window.innerHeight;
-
-
-        camera.updateProjectionMatrix();
+        model.visible =
+            false;
 
     }
 
-);
+
+    xrSession =
+        null;
+
+
+    referenceSpace =
+        null;
+
+
+    viewerSpace =
+        null;
+
+
+    hitTestSource =
+        null;
+
+
+    hitTestRequested =
+        false;
+
+
+    currentHitPose =
+        null;
+
+
+    objectPlaced =
+        false;
+
+
+    canvas.style.display =
+        "none";
+
+
+    ui.style.display =
+        "none";
+
+
+    reticle.style.display =
+        "none";
+
+
+    placeButton.style.display =
+        "none";
+
+
+    exitButton.style.display =
+        "none";
+
+
+    startScreen.style.display =
+        "flex";
+
+
+    startButton.disabled =
+        false;
+
+
+    startButton.textContent =
+        "Включить камеру";
+
+
+    setStatus(
+        "AR завершён"
+    );
+
+}
+
+
+/* =====================================================
+   INITIALIZATION
+===================================================== */
+
+initThree();
+
+
+/*
+ * Проверяем поддержку
+ * immersive AR.
+ */
+
+checkAR();
 
 </script>
+
 
 </body>
 
