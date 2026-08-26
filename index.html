@@ -21,9 +21,10 @@
     content="#000000"
 >
 
-<title>AR World Tracking</title>
+<title>AR World 6DoF</title>
 
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
 
 <style>
 
@@ -87,7 +88,7 @@ body {
 
 
 /* =========================================================
-   CAMERA
+   CAMERA VIDEO
 ========================================================= */
 
 #camera {
@@ -112,7 +113,7 @@ body {
 
 
 /* =========================================================
-   THREE
+   THREE CANVAS
 ========================================================= */
 
 #threeCanvas {
@@ -135,7 +136,7 @@ body {
 
 
 /* =========================================================
-   START
+   START SCREEN
 ========================================================= */
 
 #start {
@@ -166,7 +167,7 @@ body {
 
             circle at center,
 
-            #263842 0%,
+            #273a44 0%,
 
             #11191e 55%,
 
@@ -188,7 +189,7 @@ body {
 
 #start p {
 
-    max-width: 380px;
+    max-width: 390px;
 
     font-size: 14px;
 
@@ -196,7 +197,7 @@ body {
 
     opacity: .72;
 
-    margin-bottom: 22px;
+    margin-bottom: 20px;
 
 }
 
@@ -249,16 +250,18 @@ body {
 
         calc(
 
-            58px +
+            60px +
 
             env(safe-area-inset-top)
 
         );
 
     transform:
+
         translateX(-50%);
 
     width:
+
         calc(100% - 30px);
 
     max-width: 500px;
@@ -270,6 +273,7 @@ body {
     border-radius: 12px;
 
     background:
+
         rgba(0,0,0,.68);
 
     color: white;
@@ -287,7 +291,7 @@ body {
 
 
 /* =========================================================
-   TOP
+   TOP BAR
 ========================================================= */
 
 #topBar {
@@ -312,10 +316,10 @@ body {
 
     display: none;
 
+    align-items: center;
+
     justify-content:
         space-between;
-
-    align-items: center;
 
 }
 
@@ -327,6 +331,7 @@ body {
     border-radius: 12px;
 
     background:
+
         rgba(0,0,0,.68);
 
     color: white;
@@ -361,15 +366,16 @@ body {
 
     z-index: 70;
 
-    width: 42px;
+    width: 43px;
 
-    height: 42px;
+    height: 43px;
 
     border: none;
 
     border-radius: 12px;
 
     background:
+
         rgba(0,0,0,.72);
 
     color: white;
@@ -397,13 +403,14 @@ body {
 
     display: none;
 
-    min-width: 175px;
+    min-width: 190px;
 
     padding: 10px;
 
     border-radius: 10px;
 
     background:
+
         rgba(0,0,0,.72);
 
     color: white;
@@ -445,9 +452,9 @@ body {
 
 .control {
 
-    min-width: 55px;
+    min-width: 58px;
 
-    min-height: 43px;
+    min-height: 44px;
 
     padding: 7px;
 
@@ -456,11 +463,12 @@ body {
     border-radius: 12px;
 
     background:
+
         rgba(0,0,0,.72);
 
     color: white;
 
-    font-size: 14px;
+    font-size: 13px;
 
     backdrop-filter:
         blur(10px);
@@ -468,11 +476,88 @@ body {
 }
 
 
-#place {
+#placeButton {
 
     display: none;
 
     font-weight: bold;
+
+}
+
+
+/* =========================================================
+   RETICLE
+========================================================= */
+
+#reticle {
+
+    position: absolute;
+
+    left: 50%;
+
+    top: 50%;
+
+    width: 44px;
+
+    height: 44px;
+
+    transform:
+        translate(-50%,-50%);
+
+    border:
+        2px solid white;
+
+    border-radius: 50%;
+
+    z-index: 35;
+
+    display: none;
+
+    opacity: .8;
+
+}
+
+
+#reticle::before {
+
+    content: "";
+
+    position: absolute;
+
+    left: 50%;
+
+    top: 50%;
+
+    width: 14px;
+
+    height: 2px;
+
+    transform:
+        translate(-50%,-50%);
+
+    background: white;
+
+}
+
+
+#reticle::after {
+
+    content: "";
+
+    position: absolute;
+
+    left: 50%;
+
+    top: 50%;
+
+    width: 2px;
+
+    height: 14px;
+
+    transform:
+        translate(-50%,-50%);
+
+    background: white;
 
 }
 
@@ -535,7 +620,8 @@ body {
 
     align-items: center;
 
-    justify-content: space-between;
+    justify-content:
+        space-between;
 
     margin-bottom: 8px;
 
@@ -592,7 +678,9 @@ body {
 
     height: 88px;
 
-    border: 1px solid
+    border:
+
+        1px solid
         rgba(255,255,255,.15);
 
     border-radius: 13px;
@@ -600,6 +688,7 @@ body {
     overflow: hidden;
 
     background:
+
         rgba(255,255,255,.08);
 
     color: white;
@@ -613,6 +702,7 @@ body {
         2px solid white;
 
     background:
+
         rgba(255,255,255,.18);
 
 }
@@ -659,83 +749,6 @@ body {
 
 }
 
-
-/* =========================================================
-   CENTER
-========================================================= */
-
-#reticle {
-
-    position: absolute;
-
-    left: 50%;
-
-    top: 50%;
-
-    width: 42px;
-
-    height: 42px;
-
-    transform:
-        translate(-50%,-50%);
-
-    border:
-        2px solid white;
-
-    border-radius: 50%;
-
-    z-index: 35;
-
-    display: none;
-
-    opacity: .8;
-
-}
-
-
-#reticle::before {
-
-    content: "";
-
-    position: absolute;
-
-    left: 50%;
-
-    top: 50%;
-
-    width: 14px;
-
-    height: 2px;
-
-    transform:
-        translate(-50%,-50%);
-
-    background: white;
-
-}
-
-
-#reticle::after {
-
-    content: "";
-
-    position: absolute;
-
-    left: 50%;
-
-    top: 50%;
-
-    width: 2px;
-
-    height: 14px;
-
-    transform:
-        translate(-50%,-50%);
-
-    background: white;
-
-}
-
 </style>
 
 </head>
@@ -747,6 +760,10 @@ body {
 <div id="app">
 
 
+<!-- =====================================================
+     CAMERA
+===================================================== -->
+
 <video
     id="camera"
     autoplay
@@ -754,6 +771,10 @@ body {
     muted>
 </video>
 
+
+<!-- =====================================================
+     THREE
+===================================================== -->
 
 <canvas
     id="threeCanvas">
@@ -768,24 +789,24 @@ body {
 
     <h1>
 
-        AR WORLD
+        AR WORLD 6DoF
 
     </h1>
 
 
     <p>
 
-        Камера видит реальное пространство.
-
-        <br>
-
-        Телефон передаёт ориентацию,
-        гироскоп и движение.
+        Наведите телефон на пространство,
+        разместите 3D-сцену и двигайтесь
+        вокруг неё.
 
         <br><br>
 
-        При наличии WebXR используется
-        настоящее пространственное 6DoF
+        Поворот телефона меняет
+        направление просмотра.
+
+        WebXR при наличии устройства
+        использует настоящее пространственное
         отслеживание.
 
     </p>
@@ -801,10 +822,10 @@ body {
 
 
     <button
-        id="xrButton"
+        id="xrStartButton"
         class="mainButton">
 
-        Настоящий AR / WebXR
+        Запустить настоящий AR
 
     </button>
 
@@ -819,7 +840,7 @@ body {
 
     <div class="badge">
 
-        WORLD AR
+        AR WORLD
 
     </div>
 
@@ -828,7 +849,7 @@ body {
         id="trackingBadge"
         class="badge">
 
-        SENSOR OFF
+        OFF
 
     </div>
 
@@ -883,16 +904,25 @@ body {
 
 
     <button
-        id="place"
+        id="placeButton"
         class="control">
 
-        Поставить
+        ЗАКРЕПИТЬ
 
     </button>
 
 
     <button
-        id="minus"
+        id="resetButton"
+        class="control">
+
+        RESET
+
+    </button>
+
+
+    <button
+        id="minusButton"
         class="control">
 
         −
@@ -901,28 +931,10 @@ body {
 
 
     <button
-        id="reset"
-        class="control">
-
-        Центр
-
-    </button>
-
-
-    <button
-        id="plus"
+        id="plusButton"
         class="control">
 
         +
-
-    </button>
-
-
-    <button
-        id="webxr"
-        class="control">
-
-        6DoF
 
     </button>
 
@@ -931,7 +943,7 @@ body {
 
 
 <!-- =====================================================
-     SCENE PANEL
+     SCENES
 ===================================================== -->
 
 <div id="scenePanel">
@@ -1093,8 +1105,9 @@ const tg =
     null;
 
 
-
-if (tg) {
+if (
+    tg
+) {
 
     tg.ready();
 
@@ -1114,10 +1127,10 @@ if (tg) {
 
 
 /* =========================================================
-   DOM
+   ELEMENTS
 ========================================================= */
 
-const start =
+const startScreen =
     document.getElementById(
         "start"
     );
@@ -1129,19 +1142,13 @@ const startButton =
     );
 
 
-const xrButton =
+const xrStartButton =
     document.getElementById(
-        "xrButton"
+        "xrStartButton"
     );
 
 
-const webxrButton =
-    document.getElementById(
-        "webxr"
-    );
-
-
-const camera =
+const cameraVideo =
     document.getElementById(
         "camera"
     );
@@ -1183,39 +1190,45 @@ const controls =
     );
 
 
+const placeButton =
+    document.getElementById(
+        "placeButton"
+    );
+
+
+const resetButton =
+    document.getElementById(
+        "resetButton"
+    );
+
+
+const minusButton =
+    document.getElementById(
+        "minusButton"
+    );
+
+
+const plusButton =
+    document.getElementById(
+        "plusButton"
+    );
+
+
 const closeButton =
     document.getElementById(
         "close"
     );
 
 
-const placeButton =
-    document.getElementById(
-        "place"
-    );
-
-
-const resetButton =
-    document.getElementById(
-        "reset"
-    );
-
-
-const minusButton =
-    document.getElementById(
-        "minus"
-    );
-
-
-const plusButton =
-    document.getElementById(
-        "plus"
-    );
-
-
 const scenePanel =
     document.getElementById(
         "scenePanel"
+    );
+
+
+const reticle =
+    document.getElementById(
+        "reticle"
     );
 
 
@@ -1245,10 +1258,6 @@ let model =
    MODEL
 ========================================================= */
 
-let modelScale =
-    1;
-
-
 let currentModel =
     "creature.glb";
 
@@ -1257,77 +1266,34 @@ let currentName =
     "Creature";
 
 
+let modelScale =
+    1;
+
+
 /*
- * Мировая позиция объекта.
+ * ЭТО КООРДИНАТА ОБЪЕКТА
+ * В WORLD SPACE.
  *
- * Она изменяется только
- * при первоначальной установке.
+ * После закрепления она
+ * не изменяется при движении
+ * телефона.
  */
 
 const objectWorldPosition =
-    new THREE.Vector3(
-        0,
-        -0.5,
-        -3
-    );
+    new THREE.Vector3();
 
 
 const objectWorldQuaternion =
     new THREE.Quaternion();
 
 
-let objectPlaced =
+let objectLocked =
     false;
 
 
 
 /* =========================================================
-   CAMERA WORLD POSE
-========================================================= */
-
-const cameraWorldPosition =
-    new THREE.Vector3(
-        0,
-        0,
-        0
-    );
-
-
-const cameraVelocity =
-    new THREE.Vector3(
-        0,
-        0,
-        0
-    );
-
-
-const cameraAcceleration =
-    new THREE.Vector3(
-        0,
-        0,
-        0
-    );
-
-
-const gravity =
-    new THREE.Vector3(
-        0,
-        0,
-        0
-    );
-
-
-const accelerationBias =
-    new THREE.Vector3(
-        0,
-        0,
-        0
-    );
-
-
-
-/* =========================================================
-   ORIENTATION
+   TELEGRAM ORIENTATION
 ========================================================= */
 
 let alpha =
@@ -1342,20 +1308,24 @@ let gamma =
     0;
 
 
-let initialQuaternion =
-    new THREE.Quaternion();
-
-
-let currentQuaternion =
-    new THREE.Quaternion();
-
-
-let cameraQuaternion =
-    new THREE.Quaternion();
-
-
-let orientationReady =
+let orientationAvailable =
     false;
+
+
+let orientationInitialized =
+    false;
+
+
+let initialOrientation =
+    new THREE.Quaternion();
+
+
+let currentOrientation =
+    new THREE.Quaternion();
+
+
+let relativeOrientation =
+    new THREE.Quaternion();
 
 
 
@@ -1392,72 +1362,45 @@ let accZ =
     0;
 
 
-
-/* =========================================================
-   SENSOR FLAGS
-========================================================= */
-
-let orientationOK =
-    false;
-
-
-let gyroOK =
-    false;
-
-
-let accelerometerOK =
+let accelerationAvailable =
     false;
 
 
 
 /* =========================================================
-   CALIBRATION
+   ESTIMATED CAMERA POSITION
 ========================================================= */
+
+const estimatedCameraPosition =
+    new THREE.Vector3();
+
+
+const estimatedVelocity =
+    new THREE.Vector3();
+
+
+const estimatedAcceleration =
+    new THREE.Vector3();
+
+
+const gravityVector =
+    new THREE.Vector3();
+
+
+const gravityAccumulator =
+    new THREE.Vector3();
+
 
 let gravitySamples =
     0;
 
 
-let gravityAccumulator =
-    new THREE.Vector3();
-
-
-const GRAVITY_SAMPLES =
-    40;
-
-
-let calibrated =
+let gravityReady =
     false;
 
 
-
-/* =========================================================
-   TIMING
-========================================================= */
-
-let lastTime =
-    performance.now();
-
-
-
-/* =========================================================
-   MOVEMENT PARAMETERS
-========================================================= */
-
-const ACCEL_DEAD_ZONE =
-    0.15;
-
-
-const VELOCITY_DAMPING =
-    0.90;
-
-
-const MAX_SPEED =
-    1.5;
-
-
-const MOVEMENT_GAIN =
-    0.75;
+const GRAVITY_SAMPLE_COUNT =
+    40;
 
 
 
@@ -1485,13 +1428,34 @@ let xrActive =
     false;
 
 
-let xrPlaced =
+let xrObjectPlaced =
     false;
+
+
+let xrHasHit =
+    false;
+
+
+let xrLastHitPosition =
+    new THREE.Vector3();
+
+
+let xrLastHitQuaternion =
+    new THREE.Quaternion();
 
 
 
 /* =========================================================
-   STATUS
+   TIME
+========================================================= */
+
+let previousTime =
+    performance.now();
+
+
+
+/* =========================================================
+   HELPERS
 ========================================================= */
 
 function setStatus(
@@ -1546,6 +1510,9 @@ function initThree() {
         0
 
     );
+
+
+    camera3D.quaternion.identity();
 
 
     renderer =
@@ -1643,18 +1610,17 @@ function initThree() {
     );
 
 
-    renderer.setAnimationLoop(
-
-        render
-
-    );
+    /*
+     * Не привязываем модель
+     * к камере.
+     */
 
 }
 
 
 
 /* =========================================================
-   MODEL LOAD
+   LOAD MODEL
 ========================================================= */
 
 function loadModel(
@@ -1690,72 +1656,6 @@ function loadModel(
             model
         );
 
-
-        model.traverse(
-
-            object => {
-
-                if (
-                    object.geometry
-                ) {
-
-                    object.geometry.dispose();
-
-                }
-
-
-                if (
-                    object.material
-                ) {
-
-                    if (
-                        Array.isArray(
-                            object.material
-                        )
-                    ) {
-
-                        object.material.forEach(
-
-                            material => {
-
-                                if (
-                                    material.map
-                                ) {
-
-                                    material.map.dispose();
-
-                                }
-
-
-                                material.dispose();
-
-                            }
-
-                        );
-
-                    }
-                    else {
-
-                        if (
-                            object.material.map
-                        ) {
-
-                            object.material.map.dispose();
-
-                        }
-
-
-                        object.material.dispose();
-
-                    }
-
-                }
-
-            }
-
-        );
-
-
         model =
             null;
 
@@ -1788,29 +1688,75 @@ function loadModel(
 
 
             /*
-             * =================================================
-             * WORLD SPACE
-             *
-             * Модель не является дочерним
-             * объектом камеры.
-             *
-             * Поэтому она не вращается
-             * вместе с телефоном.
-             * =================================================
+             * Если объект уже был
+             * закреплён, новый объект
+             * получает ту же мировую
+             * координату.
              */
 
-            model.position.copy(
+            if (
+                objectLocked
+            ) {
 
-                objectWorldPosition
+                model.position.copy(
 
-            );
+                    objectWorldPosition
+
+                );
 
 
-            model.quaternion.copy(
+                model.quaternion.copy(
 
-                objectWorldQuaternion
+                    objectWorldQuaternion
 
-            );
+                );
+
+            }
+            else {
+
+                /*
+                 * Пока не закреплён —
+                 * временная позиция
+                 * перед камерой.
+                 */
+
+                const forward =
+                    new THREE.Vector3(
+
+                        0,
+                        0,
+                        -1
+
+                    );
+
+
+                forward.applyQuaternion(
+
+                    camera3D.quaternion
+
+                );
+
+
+                model.position.copy(
+
+                    camera3D.position
+
+                );
+
+
+                model.position.addScaledVector(
+
+                    forward,
+
+                    3
+
+                );
+
+
+                model.position.y -=
+                    0.5;
+
+            }
 
 
             scene.add(
@@ -1818,14 +1764,10 @@ function loadModel(
             );
 
 
-            objectPlaced =
-                true;
-
-
             setStatus(
 
                 name +
-                " находится в World Space"
+                " загружен"
 
             );
 
@@ -1858,21 +1800,10 @@ function loadModel(
 
 
 /* =========================================================
-   DEVICE ORIENTATION -> QUATERNION
+   DEVICE ORIENTATION
 ========================================================= */
 
-function getDeviceQuaternion() {
-
-    /*
-     * Telegram:
-     *
-     * alpha = Z
-     * beta  = X
-     * gamma = Y
-     *
-     * Все значения Telegram
-     * находятся в радианах.
-     */
+function getOrientationQuaternion() {
 
     const euler =
         new THREE.Euler(
@@ -1888,17 +1819,17 @@ function getDeviceQuaternion() {
         );
 
 
-    const q =
+    const quaternion =
         new THREE.Quaternion();
 
 
-    q.setFromEuler(
+    quaternion.setFromEuler(
         euler
     );
 
 
     /*
-     * Ориентация экрана.
+     * Поворот экрана.
      */
 
     const screenAngle =
@@ -1930,25 +1861,25 @@ function getDeviceQuaternion() {
     );
 
 
-    q.multiply(
+    quaternion.multiply(
         screenQuaternion
     );
 
 
-    return q;
+    return quaternion;
 
 }
 
 
 
 /* =========================================================
-   ORIENTATION UPDATE
+   UPDATE ORIENTATION
 ========================================================= */
 
 function updateOrientation() {
 
     if (
-        !camera3D
+        xrActive
     ) {
 
         return;
@@ -1956,468 +1887,64 @@ function updateOrientation() {
     }
 
 
-    currentQuaternion.copy(
+    currentOrientation.copy(
 
-        getDeviceQuaternion()
+        getOrientationQuaternion()
 
     );
 
 
-    /*
-     * Первая ориентация
-     * становится нулевой.
-     */
-
     if (
-        !orientationReady
+        !orientationInitialized
     ) {
 
-        initialQuaternion.copy(
+        initialOrientation.copy(
 
-            currentQuaternion
+            currentOrientation
 
         );
 
 
-        orientationReady =
+        orientationInitialized =
             true;
 
     }
 
 
-    const inverse =
-        initialQuaternion
+    const inverseInitial =
+
+        initialOrientation
             .clone()
             .invert();
 
 
-    const relative =
-        inverse.multiply(
+    relativeOrientation.copy(
 
-            currentQuaternion
+        inverseInitial
+            .multiply(
 
-        );
+                currentOrientation
 
-
-    cameraQuaternion.copy(
-
-        relative
+            )
 
     );
 
 
     /*
-     * Плавное вращение камеры.
+     * ВАЖНО:
+     *
+     * Меняем КАМЕРУ.
+     *
+     * Не модель.
      */
 
     camera3D.quaternion.slerp(
 
-        cameraQuaternion,
+        relativeOrientation,
 
-        0.30
-
-    );
-
-}
-
-
-
-/* =========================================================
-   ACCELERATION -> WORLD
-========================================================= */
-
-function calculateWorldAcceleration() {
-
-    const raw =
-        new THREE.Vector3(
-
-            accX,
-
-            accY,
-
-            accZ
-
-        );
-
-
-    /*
-     * Переводим ускорение
-     * из координат телефона
-     * в мировую систему.
-     */
-
-    raw.applyQuaternion(
-
-        currentQuaternion
+        0.25
 
     );
-
-
-    /*
-     * Первые измерения:
-     * определяем gravity.
-     */
-
-    if (
-        !calibrated
-    ) {
-
-        gravityAccumulator.add(
-            raw
-        );
-
-
-        gravitySamples++;
-
-
-        if (
-            gravitySamples >=
-            GRAVITY_SAMPLES
-        ) {
-
-            gravity.copy(
-
-                gravityAccumulator
-                    .clone()
-                    .multiplyScalar(
-
-                        1 /
-                        gravitySamples
-
-                    )
-
-            );
-
-
-            calibrated =
-                true;
-
-
-            setStatus(
-
-                "Калибровка завершена. " +
-                "Можно двигаться."
-
-            );
-
-        }
-
-
-        return;
-
-    }
-
-
-    /*
-     * Убираем gravity.
-     */
-
-    cameraAcceleration.copy(
-        raw
-    );
-
-
-    cameraAcceleration.sub(
-        gravity
-    );
-
-
-    /*
-     * Убираем маленький шум.
-     */
-
-    if (
-        Math.abs(
-            cameraAcceleration.x
-        )
-        <
-        ACCEL_DEAD_ZONE
-    ) {
-
-        cameraAcceleration.x =
-            0;
-
-    }
-
-
-    if (
-        Math.abs(
-            cameraAcceleration.y
-        )
-        <
-        ACCEL_DEAD_ZONE
-    ) {
-
-        cameraAcceleration.y =
-            0;
-
-    }
-
-
-    if (
-        Math.abs(
-            cameraAcceleration.z
-        )
-        <
-        ACCEL_DEAD_ZONE
-    ) {
-
-        cameraAcceleration.z =
-            0;
-
-    }
-
-}
-
-
-
-/* =========================================================
-   POSITION ESTIMATION
-========================================================= */
-
-function updateEstimatedPosition(
-    dt
-) {
-
-    calculateWorldAcceleration();
-
-
-    if (
-        !calibrated
-    ) {
-
-        return;
-
-    }
-
-
-    /*
-     * Acceleration -> velocity.
-     */
-
-    cameraVelocity.addScaledVector(
-
-        cameraAcceleration,
-
-        dt
-
-    );
-
-
-    /*
-     * Damping.
-     */
-
-    cameraVelocity.multiplyScalar(
-
-        Math.pow(
-
-            VELOCITY_DAMPING,
-
-            dt * 60
-
-        )
-
-    );
-
-
-    /*
-     * Ограничение.
-     */
-
-    if (
-        cameraVelocity.length()
-        >
-        MAX_SPEED
-    ) {
-
-        cameraVelocity.setLength(
-
-            MAX_SPEED
-
-        );
-
-    }
-
-
-    /*
-     * Velocity -> position.
-     */
-
-    cameraWorldPosition.addScaledVector(
-
-        cameraVelocity,
-
-        dt *
-        MOVEMENT_GAIN
-
-    );
-
-
-    /*
-     * Очень маленькие
-     * перемещения убираем.
-     */
-
-    if (
-        cameraVelocity.length()
-        <
-        0.015
-    ) {
-
-        cameraVelocity.set(
-
-            0,
-            0,
-            0
-
-        );
-
-    }
-
-
-    /*
-     * =================================================
-     * ВАЖНО
-     *
-     * Мы НЕ меняем:
-     *
-     * model.position
-     *
-     * =================================================
-     *
-     * Меняется только:
-     *
-     * camera3D.position
-     * =================================================
-     */
-
-    camera3D.position.copy(
-
-        cameraWorldPosition
-
-    );
-
-}
-
-
-
-/* =========================================================
-   DEBUG
-========================================================= */
-
-function updateDebug() {
-
-    debug.innerHTML =
-
-        "TRACKING: " +
-
-        (
-
-            xrActive
-
-                ? "TRUE 6DoF"
-
-                : "SENSOR ESTIMATE"
-
-        ) +
-
-        "<br><br>" +
-
-        "CAMERA XYZ<br>" +
-
-        "X: " +
-        cameraWorldPosition.x
-            .toFixed(3) +
-
-        "<br>" +
-
-        "Y: " +
-        cameraWorldPosition.y
-            .toFixed(3) +
-
-        "<br>" +
-
-        "Z: " +
-        cameraWorldPosition.z
-            .toFixed(3) +
-
-        "<br><br>" +
-
-        "ROTATION<br>" +
-
-        "α: " +
-        THREE.MathUtils
-            .radToDeg(alpha)
-            .toFixed(1) +
-
-        "<br>" +
-
-        "β: " +
-        THREE.MathUtils
-            .radToDeg(beta)
-            .toFixed(1) +
-
-        "<br>" +
-
-        "γ: " +
-        THREE.MathUtils
-            .radToDeg(gamma)
-            .toFixed(1) +
-
-        "<br><br>" +
-
-        "GYRO<br>" +
-
-        "X: " +
-        gyroX.toFixed(2) +
-
-        "<br>" +
-
-        "Y: " +
-        gyroY.toFixed(2) +
-
-        "<br>" +
-
-        "Z: " +
-        gyroZ.toFixed(2) +
-
-        "<br><br>" +
-
-        "ACC<br>" +
-
-        "X: " +
-        accX.toFixed(2) +
-
-        "<br>" +
-
-        "Y: " +
-        accY.toFixed(2) +
-
-        "<br>" +
-
-        "Z: " +
-        accZ.toFixed(2) +
-
-        "<br><br>" +
-
-        "OBJECT XYZ<br>" +
-
-        "X: " +
-        objectWorldPosition.x
-            .toFixed(3) +
-
-        "<br>" +
-
-        "Y: " +
-        objectWorldPosition.y
-            .toFixed(3) +
-
-        "<br>" +
-
-        "Z: " +
-        objectWorldPosition.z
-            .toFixed(3);
 
 }
 
@@ -2454,8 +1981,10 @@ function startTelegramOrientation() {
         success => {
 
             console.log(
-                "Orientation started",
+
+                "DeviceOrientation:",
                 success
+
             );
 
         }
@@ -2469,23 +1998,23 @@ function startTelegramOrientation() {
 
         () => {
 
-            const sensor =
+            const data =
                 tg.DeviceOrientation;
 
 
             alpha =
-                sensor.alpha || 0;
+                data.alpha || 0;
 
 
             beta =
-                sensor.beta || 0;
+                data.beta || 0;
 
 
             gamma =
-                sensor.gamma || 0;
+                data.gamma || 0;
 
 
-            orientationOK =
+            orientationAvailable =
                 true;
 
         }
@@ -2500,7 +2029,10 @@ function startTelegramOrientation() {
         error => {
 
             console.error(
+
+                "Orientation:",
                 error
+
             );
 
         }
@@ -2539,8 +2071,10 @@ function startTelegramGyroscope() {
         success => {
 
             console.log(
-                "Gyroscope started",
+
+                "Gyroscope:",
                 success
+
             );
 
         }
@@ -2554,39 +2088,20 @@ function startTelegramGyroscope() {
 
         () => {
 
-            const sensor =
+            const data =
                 tg.Gyroscope;
 
 
             gyroX =
-                sensor.x || 0;
+                data.x || 0;
 
 
             gyroY =
-                sensor.y || 0;
+                data.y || 0;
 
 
             gyroZ =
-                sensor.z || 0;
-
-
-            gyroOK =
-                true;
-
-        }
-
-    );
-
-
-    tg.onEvent(
-
-        "gyroscopeFailed",
-
-        error => {
-
-            console.error(
-                error
-            );
+                data.z || 0;
 
         }
 
@@ -2624,8 +2139,10 @@ function startTelegramAccelerometer() {
         success => {
 
             console.log(
-                "Accelerometer started",
+
+                "Accelerometer:",
                 success
+
             );
 
         }
@@ -2639,39 +2156,24 @@ function startTelegramAccelerometer() {
 
         () => {
 
-            const sensor =
+            const data =
                 tg.Accelerometer;
 
 
             accX =
-                sensor.x || 0;
+                data.x || 0;
 
 
             accY =
-                sensor.y || 0;
+                data.y || 0;
 
 
             accZ =
-                sensor.z || 0;
+                data.z || 0;
 
 
-            accelerometerOK =
+            accelerationAvailable =
                 true;
-
-        }
-
-    );
-
-
-    tg.onEvent(
-
-        "accelerometerFailed",
-
-        error => {
-
-            console.error(
-                error
-            );
 
         }
 
@@ -2687,25 +2189,14 @@ function startTelegramAccelerometer() {
 
 function startBrowserSensors() {
 
-    /*
-     * DeviceOrientation fallback.
-     */
-
     window.addEventListener(
 
         "deviceorientation",
 
         event => {
 
-            /*
-             * Если Telegram уже
-             * даёт данные —
-             * браузерный источник
-             * не нужен.
-             */
-
             if (
-                orientationOK
+                orientationAvailable
             ) {
 
                 return;
@@ -2714,6 +2205,7 @@ function startBrowserSensors() {
 
 
             alpha =
+
                 THREE.MathUtils
                     .degToRad(
 
@@ -2723,6 +2215,7 @@ function startBrowserSensors() {
 
 
             beta =
+
                 THREE.MathUtils
                     .degToRad(
 
@@ -2732,6 +2225,7 @@ function startBrowserSensors() {
 
 
             gamma =
+
                 THREE.MathUtils
                     .degToRad(
 
@@ -2740,7 +2234,7 @@ function startBrowserSensors() {
                     );
 
 
-            orientationOK =
+            orientationAvailable =
                 true;
 
         },
@@ -2750,10 +2244,6 @@ function startBrowserSensors() {
     );
 
 
-    /*
-     * DeviceMotion fallback.
-     */
-
     window.addEventListener(
 
         "devicemotion",
@@ -2761,25 +2251,24 @@ function startBrowserSensors() {
         event => {
 
             if (
+                !accelerationAvailable &&
                 event.acceleration
             ) {
 
-                if (
-                    !accelerometerOK
-                ) {
-
-                    accX =
-                        event.acceleration.x || 0;
+                accX =
+                    event.acceleration.x || 0;
 
 
-                    accY =
-                        event.acceleration.y || 0;
+                accY =
+                    event.acceleration.y || 0;
 
 
-                    accZ =
-                        event.acceleration.z || 0;
+                accZ =
+                    event.acceleration.z || 0;
 
-                }
+
+                accelerationAvailable =
+                    true;
 
             }
 
@@ -2788,40 +2277,37 @@ function startBrowserSensors() {
                 event.rotationRate
             ) {
 
-                if (
-                    !gyroOK
-                ) {
+                gyroX =
 
-                    gyroX =
-                        THREE.MathUtils
-                            .degToRad(
+                    THREE.MathUtils
+                        .degToRad(
 
-                                event.rotationRate
-                                    .alpha || 0
+                            event.rotationRate
+                                .alpha || 0
 
-                            );
+                        );
 
 
-                    gyroY =
-                        THREE.MathUtils
-                            .degToRad(
+                gyroY =
 
-                                event.rotationRate
-                                    .beta || 0
+                    THREE.MathUtils
+                        .degToRad(
 
-                            );
+                            event.rotationRate
+                                .beta || 0
+
+                        );
 
 
-                    gyroZ =
-                        THREE.MathUtils
-                            .degToRad(
+                gyroZ =
 
-                                event.rotationRate
-                                    .gamma || 0
+                    THREE.MathUtils
+                        .degToRad(
 
-                            );
+                            event.rotationRate
+                                .gamma || 0
 
-                }
+                        );
 
             }
 
@@ -2844,31 +2330,25 @@ function startSensors() {
     startBrowserSensors();
 
 
-    if (
-        tg
-    ) {
+    startTelegramOrientation();
 
-        startTelegramOrientation();
+    startTelegramGyroscope();
 
-        startTelegramGyroscope();
-
-        startTelegramAccelerometer();
-
-    }
+    startTelegramAccelerometer();
 
 
     setTimeout(
 
         () => {
 
-            const active = [];
+            const states = [];
 
 
             if (
-                orientationOK
+                orientationAvailable
             ) {
 
-                active.push(
+                states.push(
                     "ROT"
                 );
 
@@ -2876,10 +2356,13 @@ function startSensors() {
 
 
             if (
-                gyroOK
+                Math.abs(gyroX) +
+                Math.abs(gyroY) +
+                Math.abs(gyroZ)
+                > 0.001
             ) {
 
-                active.push(
+                states.push(
                     "GYRO"
                 );
 
@@ -2887,10 +2370,10 @@ function startSensors() {
 
 
             if (
-                accelerometerOK
+                accelerationAvailable
             ) {
 
-                active.push(
+                states.push(
                     "ACC"
                 );
 
@@ -2899,9 +2382,9 @@ function startSensors() {
 
             trackingBadge.textContent =
 
-                active.length
+                states.length
 
-                    ? active.join(
+                    ? states.join(
                         " + "
                     )
 
@@ -2909,7 +2392,7 @@ function startSensors() {
 
         },
 
-        1200
+        1500
 
     );
 
@@ -2918,28 +2401,974 @@ function startSensors() {
 
 
 /* =========================================================
-   CAMERA
+   ACCELEROMETER POSITION ESTIMATE
 ========================================================= */
 
-async function startCamera() {
+function updateEstimatedPosition(
+    dt
+) {
 
-    try {
+    if (
+        xrActive
+    ) {
 
-        setStatus(
-            "Запрашиваем камеру..."
+        return;
+
+    }
+
+
+    if (
+        !accelerationAvailable
+    ) {
+
+        return;
+
+    }
+
+
+    const raw =
+        new THREE.Vector3(
+
+            accX,
+            accY,
+            accZ
+
         );
 
 
+    /*
+     * Переводим ускорение
+     * в мировую систему.
+     */
+
+    raw.applyQuaternion(
+
+        currentOrientation
+
+    );
+
+
+    /*
+     * Калибровка gravity.
+     */
+
+    if (
+        gravitySamples
+        <
+        GRAVITY_SAMPLE_COUNT
+    ) {
+
+        gravityAccumulator.add(
+            raw
+        );
+
+
+        gravitySamples++;
+
+
+        if (
+            gravitySamples ===
+            GRAVITY_SAMPLE_COUNT
+        ) {
+
+            gravity.copy(
+
+                gravityAccumulator
+                    .clone()
+                    .multiplyScalar(
+
+                        1 /
+                        GRAVITY_SAMPLE_COUNT
+
+                    )
+
+            );
+
+
+            gravityReady =
+                true;
+
+        }
+
+
+        return;
+
+    }
+
+
+    if (
+        !gravityReady
+    ) {
+
+        return;
+
+    }
+
+
+    /*
+     * Убираем gravity.
+     */
+
+    estimatedAcceleration.copy(
+        raw
+    );
+
+
+    estimatedAcceleration.sub(
+        gravity
+    );
+
+
+    /*
+     * Dead zone.
+     */
+
+    const deadZone =
+        0.18;
+
+
+    if (
+        Math.abs(
+            estimatedAcceleration.x
+        )
+        <
+        deadZone
+    ) {
+
+        estimatedAcceleration.x =
+            0;
+
+    }
+
+
+    if (
+        Math.abs(
+            estimatedAcceleration.y
+        )
+        <
+        deadZone
+    ) {
+
+        estimatedAcceleration.y =
+            0;
+
+    }
+
+
+    if (
+        Math.abs(
+            estimatedAcceleration.z
+        )
+        <
+        deadZone
+    ) {
+
+        estimatedAcceleration.z =
+            0;
+
+    }
+
+
+    /*
+     * Acceleration -> velocity.
+     */
+
+    estimatedVelocity.addScaledVector(
+
+        estimatedAcceleration,
+
+        dt
+
+    );
+
+
+    /*
+     * Сильное затухание.
+     */
+
+    estimatedVelocity.multiplyScalar(
+
+        Math.pow(
+
+            0.90,
+
+            dt * 60
+
+        )
+
+    );
+
+
+    /*
+     * Ограничение.
+     */
+
+    if (
+        estimatedVelocity.length()
+        >
+        1.5
+    ) {
+
+        estimatedVelocity.setLength(
+            1.5
+        );
+
+    }
+
+
+    /*
+     * Velocity -> position.
+     */
+
+    estimatedCameraPosition
+        .addScaledVector(
+
+            estimatedVelocity,
+
+            dt
+
+        );
+
+
+    /*
+     * В sensor fallback
+     * виртуальная камера
+     * получает позицию.
+     */
+
+    camera3D.position.copy(
+
+        estimatedCameraPosition
+
+    );
+
+}
+
+
+
+/* =========================================================
+   TRUE WEBXR
+========================================================= */
+
+async function startWebXR() {
+
+    if (
+        !navigator.xr
+    ) {
+
+        setStatus(
+
+            "WebXR не поддерживается " +
+            "этим браузером."
+
+        );
+
+        return;
+
+    }
+
+
+    let supported =
+        false;
+
+
+    try {
+
+        supported =
+
+            await navigator.xr
+                .isSessionSupported(
+
+                    "immersive-ar"
+
+                );
+
+    }
+    catch (
+        error
+    ) {
+
+        console.error(
+            error
+        );
+
+    }
+
+
+    if (
+        !supported
+    ) {
+
+        setStatus(
+
+            "immersive-ar недоступен. " +
+            "Нужен совместимый Android/Chrome."
+
+        );
+
+        return;
+
+    }
+
+
+    try {
+
+        initThree();
+
+
+        /*
+         * Настоящая AR-сессия.
+         */
+
+        xrSession =
+
+            await navigator.xr
+                .requestSession(
+
+                    "immersive-ar",
+
+                    {
+
+                        requiredFeatures: [
+
+                            "local",
+
+                            "hit-test"
+
+                        ],
+
+                        optionalFeatures: [
+
+                            "local-floor",
+
+                            "dom-overlay"
+
+                        ],
+
+                        domOverlay: {
+
+                            root:
+                                document.body
+
+                        }
+
+                    }
+
+                );
+
+
+        xrActive =
+            true;
+
+
+        xrObjectPlaced =
+            false;
+
+
+        objectLocked =
+            false;
+
+
+        /*
+         * Reference Space.
+         *
+         * local подходит для
+         * небольшой области/комнаты.
+         */
+
+        xrReferenceSpace =
+
+            await xrSession
+                .requestReferenceSpace(
+
+                    "local"
+
+                );
+
+
+        xrViewerSpace =
+
+            await xrSession
+                .requestReferenceSpace(
+
+                    "viewer"
+
+                );
+
+
+        /*
+         * Hit Test.
+         */
+
+        xrHitTestSource =
+
+            await xrSession
+                .requestHitTestSource({
+
+                    space:
+                        xrViewerSpace
+
+                });
+
+
+        /*
+         * WebXR renderer.
+         */
+
+        renderer.xr.enabled =
+            true;
+
+
+        await renderer.xr
+            .setSession(
+
+                xrSession
+
+            );
+
+
+        /*
+         * UI.
+         */
+
+        startScreen.style.display =
+            "none";
+
+
+        cameraVideo.style.display =
+            "none";
+
+
+        canvas.style.display =
+            "block";
+
+
+        topBar.style.display =
+            "flex";
+
+
+        controls.style.display =
+            "flex";
+
+
+        scenePanel.style.display =
+            "block";
+
+
+        closeButton.style.display =
+            "block";
+
+
+        placeButton.style.display =
+            "block";
+
+
+        reticle.style.display =
+            "block";
+
+
+        debug.style.display =
+            "block";
+
+
+        trackingBadge.textContent =
+            "TRUE 6DoF";
+
+
+        /*
+         * Загружаем модель.
+         */
+
+        loadModel(
+
+            currentModel,
+
+            currentName
+
+        );
+
+
+        setStatus(
+
+            "Наведите телефон на пол " +
+            "или другую поверхность."
+
+        );
+
+
+        /*
+         * XR select.
+         */
+
+        xrSession.addEventListener(
+
+            "select",
+
+            () => {
+
+                if (
+                    xrHasHit &&
+                    !xrObjectPlaced
+                ) {
+
+                    lockXRObject();
+
+                }
+
+            }
+
+        );
+
+
+        xrSession.addEventListener(
+
+            "end",
+
+            () => {
+
+                xrActive =
+                    false;
+
+
+                xrSession =
+                    null;
+
+
+                xrReferenceSpace =
+                    null;
+
+
+                xrViewerSpace =
+                    null;
+
+
+                xrHitTestSource =
+                    null;
+
+
+                xrObjectPlaced =
+                    false;
+
+
+                xrHasHit =
+                    false;
+
+
+                trackingBadge.textContent =
+                    "AR END";
+
+
+                reticle.style.display =
+                    "none";
+
+            }
+
+        );
+
+
+    }
+    catch (
+        error
+    ) {
+
+        console.error(
+            "WebXR ERROR:",
+            error
+        );
+
+
+        xrActive =
+            false;
+
+
+        setStatus(
+
+            "WebXR ошибка: " +
+            error.message
+
+        );
+
+    }
+
+}
+
+
+
+/* =========================================================
+   XR FRAME
+========================================================= */
+
+function onXRFrame(
+    time,
+    frame
+) {
+
+    if (
+        !xrSession ||
+        !xrReferenceSpace
+    ) {
+
+        return;
+
+    }
+
+
+    /*
+     * Получаем ПОЛОЖЕНИЕ
+     * и ОРИЕНТАЦИЮ телефона.
+     */
+
+    const viewerPose =
+
+        frame.getViewerPose(
+
+            xrReferenceSpace
+
+        );
+
+
+    if (
+        viewerPose
+    ) {
+
+        const transform =
+            viewerPose
+                .transform;
+
+
+        const position =
+            transform.position;
+
+
+        const orientation =
+            transform.orientation;
+
+
+        /*
+         * =================================================
+         * НАСТОЯЩИЕ КООРДИНАТЫ ТЕЛЕФОНА
+         * =================================================
+         */
+
+        camera3D.position.set(
+
+            position.x,
+
+            position.y,
+
+            position.z
+
+        );
+
+
+        camera3D.quaternion.set(
+
+            orientation.x,
+
+            orientation.y,
+
+            orientation.z,
+
+            orientation.w
+
+        );
+
+
+        /*
+         * DEBUG.
+         */
+
+        debug.innerHTML =
+
+            "TRUE WEBXR 6DoF<br><br>" +
+
+            "PHONE POSITION<br>" +
+
+            "X: " +
+            position.x.toFixed(3) +
+
+            "<br>" +
+
+            "Y: " +
+            position.y.toFixed(3) +
+
+            "<br>" +
+
+            "Z: " +
+            position.z.toFixed(3) +
+
+            "<br><br>" +
+
+            "OBJECT POSITION<br>" +
+
+            "X: " +
+            objectWorldPosition.x
+                .toFixed(3) +
+
+            "<br>" +
+
+            "Y: " +
+            objectWorldPosition.y
+                .toFixed(3) +
+
+            "<br>" +
+
+            "Z: " +
+            objectWorldPosition.z
+                .toFixed(3);
+
+    }
+
+
+    /*
+     * =================================================
+     * HIT TEST
+     * =================================================
+     */
+
+    if (
+        xrHitTestSource
+    ) {
+
+        const hits =
+
+            frame.getHitTestResults(
+
+                xrHitTestSource
+
+            );
+
+
+        if (
+            hits.length > 0
+        ) {
+
+            const hit =
+                hits[0];
+
+
+            const hitPose =
+
+                hit.getPose(
+
+                    xrReferenceSpace
+
+                );
+
+
+            if (
+                hitPose
+            ) {
+
+                const p =
+                    hitPose
+                        .transform
+                        .position;
+
+
+                const q =
+                    hitPose
+                        .transform
+                        .orientation;
+
+
+                xrLastHitPosition.set(
+
+                    p.x,
+
+                    p.y,
+
+                    p.z
+
+                );
+
+
+                xrLastHitQuaternion.set(
+
+                    q.x,
+
+                    q.y,
+
+                    q.z,
+
+                    q.w
+
+                );
+
+
+                xrHasHit =
+                    true;
+
+
+                /*
+                 * Reticle.
+                 */
+
+                reticle.style.display =
+                    "block";
+
+
+                /*
+                 * Пока НЕ закрепили —
+                 * показываем предварительную
+                 * позицию.
+                 */
+
+                if (
+                    model &&
+                    !xrObjectPlaced
+                ) {
+
+                    model.position.copy(
+
+                        xrLastHitPosition
+
+                    );
+
+
+                    model.quaternion.copy(
+
+                        xrLastHitQuaternion
+
+                    );
+
+                }
+
+            }
+
+        }
+        else {
+
+            xrHasHit =
+                false;
+
+        }
+
+    }
+
+
+    /*
+     * =================================================
+     * ПОСЛЕ ЗАКРЕПЛЕНИЯ
+     *
+     * НИЧЕГО НЕ ДЕЛАЕМ С MODEL.
+     * =================================================
+     *
+     * Она остаётся в:
+     *
+     * objectWorldPosition
+     *
+     * =================================================
+     */
+
+}
+
+
+
+/* =========================================================
+   XR LOCK OBJECT
+========================================================= */
+
+function lockXRObject() {
+
+    if (
+        !model ||
+        !xrHasHit
+    ) {
+
+        return;
+
+    }
+
+
+    /*
+     * Записываем мировую
+     * координату ОДИН РАЗ.
+     */
+
+    objectWorldPosition.copy(
+
+        xrLastHitPosition
+
+    );
+
+
+    objectWorldQuaternion.copy(
+
+        xrLastHitQuaternion
+
+    );
+
+
+    /*
+     * Теперь объект закреплён.
+     */
+
+    model.position.copy(
+
+        objectWorldPosition
+
+    );
+
+
+    model.quaternion.copy(
+
+        objectWorldQuaternion
+
+    );
+
+
+    objectLocked =
+        true;
+
+
+    xrObjectPlaced =
+        true;
+
+
+    reticle.style.display =
+        "none";
+
+
+    setStatus(
+
+        "СЦЕНА ЗАКРЕПЛЕНА. " +
+        "Теперь можно ходить вокруг неё."
+
+    );
+
+}
+
+
+
+/* =========================================================
+   NORMAL SENSOR MODE
+========================================================= */
+
+async function startNormalCamera() {
+
+    try {
+
         if (
             !navigator.mediaDevices ||
-            !navigator.mediaDevices.getUserMedia
+            !navigator.mediaDevices
+                .getUserMedia
         ) {
 
             throw new Error(
-                "Камера недоступна"
+
+                "getUserMedia недоступен"
+
             );
 
         }
+
+
+        setStatus(
+
+            "Запрашиваем камеру..."
+
+        );
 
 
         const stream =
@@ -2979,27 +3408,27 @@ async function startCamera() {
                 });
 
 
-        camera.srcObject =
+        cameraVideo.srcObject =
             stream;
 
 
-        await camera.play();
+        await cameraVideo.play();
 
 
         /*
          * UI.
          */
 
-        camera.style.display =
+        startScreen.style.display =
+            "none";
+
+
+        cameraVideo.style.display =
             "block";
 
 
         canvas.style.display =
             "block";
-
-
-        start.style.display =
-            "none";
 
 
         topBar.style.display =
@@ -3037,14 +3466,14 @@ async function startCamera() {
 
 
         /*
-         * Сброс tracking.
+         * Сброс камеры.
          */
 
         resetTracking();
 
 
         /*
-         * Загрузка модели.
+         * Загружаем модель.
          */
 
         loadModel(
@@ -3058,8 +3487,8 @@ async function startCamera() {
 
         setStatus(
 
-            "Камера включена. " +
-            "Калибровка датчиков..."
+            "Поворот телефона управляет " +
+            "направлением камеры."
 
         );
 
@@ -3075,12 +3504,9 @@ async function startCamera() {
 
         setStatus(
 
-            "Ошибка: " +
-
+            "Камера: " +
             error.name +
-
             " — " +
-
             error.message
 
         );
@@ -3097,7 +3523,7 @@ async function startCamera() {
 
 function resetTracking() {
 
-    cameraWorldPosition.set(
+    estimatedCameraPosition.set(
 
         0,
         0,
@@ -3106,7 +3532,7 @@ function resetTracking() {
     );
 
 
-    cameraVelocity.set(
+    estimatedVelocity.set(
 
         0,
         0,
@@ -3115,7 +3541,7 @@ function resetTracking() {
     );
 
 
-    cameraAcceleration.set(
+    estimatedAcceleration.set(
 
         0,
         0,
@@ -3146,11 +3572,11 @@ function resetTracking() {
         0;
 
 
-    calibrated =
+    gravityReady =
         false;
 
 
-    orientationReady =
+    orientationInitialized =
         false;
 
 
@@ -3172,7 +3598,7 @@ function resetTracking() {
     }
 
 
-    lastTime =
+    previousTime =
         performance.now();
 
 }
@@ -3180,14 +3606,14 @@ function resetTracking() {
 
 
 /* =========================================================
-   PLACE MODEL
+   PLACE NORMAL OBJECT
 ========================================================= */
 
-function placeModel() {
+function placeNormalObject() {
 
     if (
         !model ||
-        !camera3D
+        xrActive
     ) {
 
         return;
@@ -3196,7 +3622,7 @@ function placeModel() {
 
 
     /*
-     * Направление камеры.
+     * Направление взгляда.
      */
 
     const forward =
@@ -3217,24 +3643,25 @@ function placeModel() {
 
 
     /*
-     * Мировая позиция.
+     * Фиксируем объект
+     * относительно текущей
+     * мировой позиции камеры.
      */
 
     objectWorldPosition.copy(
 
-        cameraWorldPosition
+        camera3D.position
 
     );
 
 
-    objectWorldPosition
-        .addScaledVector(
+    objectWorldPosition.addScaledVector(
 
-            forward,
+        forward,
 
-            3
+        3
 
-        );
+    );
 
 
     objectWorldPosition.y -=
@@ -3242,14 +3669,15 @@ function placeModel() {
 
 
     /*
-     * =================================================
-     * ВАЖНО:
-     *
-     * Записываем позицию модели.
-     *
-     * После этого движение камеры
-     * НЕ меняет её.
-     * =================================================
+     * Фиксируем ориентацию.
+     */
+
+    objectWorldQuaternion.identity();
+
+
+    /*
+     * Записываем объект
+     * в WORLD SPACE.
      */
 
     model.position.copy(
@@ -3266,13 +3694,13 @@ function placeModel() {
     );
 
 
-    objectPlaced =
+    objectLocked =
         true;
 
 
     setStatus(
 
-        "3D-сцена закреплена. " +
+        "СЦЕНА ЗАКРЕПЛЕНА. " +
         "Двигайтесь вокруг неё."
 
     );
@@ -3282,7 +3710,7 @@ function placeModel() {
 
 
 /* =========================================================
-   SCALE -
+   SCALE DOWN
 ========================================================= */
 
 minusButton.addEventListener(
@@ -3310,7 +3738,9 @@ minusButton.addEventListener(
             model.scale.set(
 
                 modelScale,
+
                 modelScale,
+
                 modelScale
 
             );
@@ -3324,7 +3754,7 @@ minusButton.addEventListener(
 
 
 /* =========================================================
-   SCALE +
+   SCALE UP
 ========================================================= */
 
 plusButton.addEventListener(
@@ -3352,7 +3782,9 @@ plusButton.addEventListener(
             model.scale.set(
 
                 modelScale,
+
                 modelScale,
+
                 modelScale
 
             );
@@ -3373,7 +3805,28 @@ placeButton.addEventListener(
 
     "click",
 
-    placeModel
+    () => {
+
+        if (
+            xrActive
+        ) {
+
+            if (
+                xrHasHit
+            ) {
+
+                lockXRObject();
+
+            }
+
+        }
+        else {
+
+            placeNormalObject();
+
+        }
+
+    }
 
 );
 
@@ -3390,22 +3843,29 @@ resetButton.addEventListener(
     () => {
 
         /*
-         * Сбрасываем только
-         * положение телефона.
+         * ВАЖНО:
          *
-         * Модель остаётся там,
-         * где была установлена.
+         * RESET не двигает модель.
+         *
+         * Сбрасывается только
+         * виртуальная камера.
          */
 
-        resetTracking();
+        if (
+            !xrActive
+        ) {
+
+            resetTracking();
 
 
-        setStatus(
+            setStatus(
 
-            "Точка наблюдения сброшена. " +
-            "Сцена не перемещена."
+                "Камера сброшена. " +
+                "Сцена остаётся закреплённой."
 
-        );
+            );
+
+        }
 
     }
 
@@ -3481,10 +3941,10 @@ document
 
 
 /* =========================================================
-   RENDER
+   RENDER LOOP
 ========================================================= */
 
-function render() {
+function renderNormal() {
 
     if (
         !renderer ||
@@ -3505,13 +3965,13 @@ function render() {
 
         (
             now -
-            lastTime
+            previousTime
         )
         /
         1000;
 
 
-    lastTime =
+    previousTime =
         now;
 
 
@@ -3526,31 +3986,207 @@ function render() {
 
 
     /*
-     * WebXR имеет собственное
-     * spatial tracking.
+     * Sensor mode.
      */
 
-    if (
-        !xrActive
-    ) {
-
-        updateOrientation();
-
-        updateEstimatedPosition(
-            dt
-        );
-
-    }
+    updateOrientation();
 
 
-    updateDebug();
+    updateEstimatedPosition(
+        dt
+    );
 
+
+    /*
+     * Рисуем.
+     */
 
     renderer.render(
 
         scene,
 
         camera3D
+
+    );
+
+
+    updateDebugNormal();
+
+}
+
+
+
+/* =========================================================
+   DEBUG NORMAL
+========================================================= */
+
+function updateDebugNormal() {
+
+    debug.innerHTML =
+
+        "MODE: SENSOR<br><br>" +
+
+        "CAMERA XYZ<br>" +
+
+        "X: " +
+        camera3D.position.x
+            .toFixed(3) +
+
+        "<br>" +
+
+        "Y: " +
+        camera3D.position.y
+            .toFixed(3) +
+
+        "<br>" +
+
+        "Z: " +
+        camera3D.position.z
+            .toFixed(3) +
+
+        "<br><br>" +
+
+        "ROTATION<br>" +
+
+        "α: " +
+        THREE.MathUtils
+            .radToDeg(alpha)
+            .toFixed(1) +
+
+        "<br>" +
+
+        "β: " +
+        THREE.MathUtils
+            .radToDeg(beta)
+            .toFixed(1) +
+
+        "<br>" +
+
+        "γ: " +
+        THREE.MathUtils
+            .radToDeg(gamma)
+            .toFixed(1) +
+
+        "<br><br>" +
+
+        "GYRO<br>" +
+
+        "X: " +
+        gyroX.toFixed(2) +
+
+        "<br>" +
+
+        "Y: " +
+        gyroY.toFixed(2) +
+
+        "<br>" +
+
+        "Z: " +
+        gyroZ.toFixed(2) +
+
+        "<br><br>" +
+
+        "OBJECT LOCK<br>" +
+
+        (
+            objectLocked
+                ? "YES"
+                : "NO"
+        ) +
+
+        "<br><br>" +
+
+        "OBJECT XYZ<br>" +
+
+        "X: " +
+        objectWorldPosition.x
+            .toFixed(3) +
+
+        "<br>" +
+
+        "Y: " +
+        objectWorldPosition.y
+            .toFixed(3) +
+
+        "<br>" +
+
+        "Z: " +
+        objectWorldPosition.z
+            .toFixed(3);
+
+}
+
+
+
+/* =========================================================
+   NORMAL ANIMATION
+========================================================= */
+
+function startNormalRenderLoop() {
+
+    renderer.setAnimationLoop(
+
+        () => {
+
+            if (
+                !xrActive
+            ) {
+
+                renderNormal();
+
+            }
+
+        }
+
+    );
+
+}
+
+
+
+/* =========================================================
+   XR ANIMATION LOOP
+========================================================= */
+
+function startXRRenderLoop() {
+
+    renderer.setAnimationLoop(
+
+        (
+
+            time,
+            frame
+
+        ) => {
+
+            if (
+                !xrActive ||
+                !frame
+            ) {
+
+                return;
+
+            }
+
+
+            onXRFrame(
+
+                time,
+
+                frame
+
+            );
+
+
+            renderer.render(
+
+                scene,
+
+                camera3D
+
+            );
+
+        }
 
     );
 
@@ -3602,665 +4238,6 @@ window.addEventListener(
 
 
 /* =========================================================
-   WEBXR SUPPORT
-========================================================= */
-
-async function checkWebXR() {
-
-    if (
-        !navigator.xr
-    ) {
-
-        xrButton.style.display =
-            "none";
-
-        webxrButton.style.display =
-            "none";
-
-        return false;
-
-    }
-
-
-    try {
-
-        const supported =
-
-            await navigator.xr
-                .isSessionSupported(
-
-                    "immersive-ar"
-
-                );
-
-
-        if (
-            !supported
-        ) {
-
-            xrButton.style.display =
-                "none";
-
-            webxrButton.style.display =
-                "none";
-
-            return false;
-
-        }
-
-
-        return true;
-
-    }
-    catch {
-
-        xrButton.style.display =
-            "none";
-
-        webxrButton.style.display =
-            "none";
-
-        return false;
-
-    }
-
-}
-
-
-
-/* =========================================================
-   START WEBXR
-========================================================= */
-
-async function startWebXR() {
-
-    if (
-        !navigator.xr
-    ) {
-
-        setStatus(
-            "WebXR отсутствует."
-        );
-
-        return;
-
-    }
-
-
-    try {
-
-        const supported =
-
-            await navigator.xr
-                .isSessionSupported(
-
-                    "immersive-ar"
-
-                );
-
-
-        if (
-            !supported
-        ) {
-
-            setStatus(
-
-                "Настоящий 6DoF AR " +
-                "не поддерживается."
-
-            );
-
-            return;
-
-        }
-
-
-        initThree();
-
-
-        /*
-         * Настоящая AR-сессия.
-         */
-
-        xrSession =
-
-            await navigator.xr
-                .requestSession(
-
-                    "immersive-ar",
-
-                    {
-
-                        requiredFeatures: [
-
-                            "local",
-
-                            "hit-test"
-
-                        ],
-
-                        optionalFeatures: [
-
-                            "local-floor",
-
-                            "dom-overlay"
-
-                        ],
-
-                        domOverlay: {
-
-                            root:
-                                document.body
-
-                        }
-
-                    }
-
-                );
-
-
-        renderer.xr.enabled =
-            true;
-
-
-        await renderer.xr
-            .setSession(
-
-                xrSession
-
-            );
-
-
-        xrActive =
-            true;
-
-
-        xrPlaced =
-            false;
-
-
-        trackingBadge.textContent =
-            "TRUE 6DoF";
-
-
-        start.style.display =
-            "none";
-
-
-        camera.style.display =
-            "none";
-
-
-        canvas.style.display =
-            "block";
-
-
-        topBar.style.display =
-            "flex";
-
-
-        controls.style.display =
-            "flex";
-
-
-        scenePanel.style.display =
-            "block";
-
-
-        closeButton.style.display =
-            "block";
-
-
-        placeButton.style.display =
-            "block";
-
-
-        debug.style.display =
-            "block";
-
-
-        /*
-         * Reference space.
-         */
-
-        xrReferenceSpace =
-
-            await xrSession
-                .requestReferenceSpace(
-
-                    "local"
-
-                );
-
-
-        xrViewerSpace =
-
-            await xrSession
-                .requestReferenceSpace(
-
-                    "viewer"
-
-                );
-
-
-        /*
-         * Hit test.
-         */
-
-        xrHitTestSource =
-
-            await xrSession
-                .requestHitTestSource({
-
-                    space:
-                        xrViewerSpace
-
-                });
-
-
-        /*
-         * Загружаем модель.
-         */
-
-        loadModel(
-
-            currentModel,
-
-            currentName
-
-        );
-
-
-        setStatus(
-
-            "Настоящий 6DoF AR. " +
-            "Наведите камеру на поверхность."
-
-        );
-
-
-        xrSession.addEventListener(
-
-            "select",
-
-            () => {
-
-                placeXRObject();
-
-            }
-
-        );
-
-
-        xrSession.addEventListener(
-
-            "end",
-
-            () => {
-
-                xrActive =
-                    false;
-
-
-                xrPlaced =
-                    false;
-
-
-                xrSession =
-                    null;
-
-
-                xrReferenceSpace =
-                    null;
-
-
-                xrViewerSpace =
-                    null;
-
-
-                xrHitTestSource =
-                    null;
-
-
-                placeButton.style.display =
-                    "none";
-
-
-                setStatus(
-
-                    "AR завершён."
-
-                );
-
-            }
-
-        );
-
-    }
-    catch (
-        error
-    ) {
-
-        console.error(
-            error
-        );
-
-
-        setStatus(
-
-            "WebXR: " +
-            error.message
-
-        );
-
-    }
-
-}
-
-
-
-/* =========================================================
-   XR OBJECT
-========================================================= */
-
-function placeXRObject() {
-
-    if (
-        !xrSession ||
-        !xrReferenceSpace ||
-        !xrHitTestSource ||
-        !model
-    ) {
-
-        return;
-
-    }
-
-
-    /*
-     * Установка выполняется
-     * в следующем XR frame.
-     */
-
-    xrPlaced =
-        true;
-
-
-    setStatus(
-
-        "Объект закреплён " +
-        "в реальном пространстве."
-
-    );
-
-}
-
-
-
-/* =========================================================
-   XR FRAME
-========================================================= */
-
-function processXRFrame(
-    time,
-    frame
-) {
-
-    if (
-        !xrSession ||
-        !xrReferenceSpace ||
-        !frame
-    ) {
-
-        return;
-
-    }
-
-
-    /*
-     * Позиция телефона
-     * в мировой XR системе.
-     */
-
-    const pose =
-
-        frame.getViewerPose(
-
-            xrReferenceSpace
-
-        );
-
-
-    if (
-        !pose
-    ) {
-
-        return;
-
-    }
-
-
-    const position =
-
-        pose.transform.position;
-
-
-    const orientation =
-
-        pose.transform.orientation;
-
-
-    /*
-     * =================================================
-     * НАСТОЯЩИЕ КООРДИНАТЫ
-     * =================================================
-     */
-
-    cameraWorldPosition.set(
-
-        position.x,
-
-        position.y,
-
-        position.z
-
-    );
-
-
-    camera3D.position.copy(
-
-        cameraWorldPosition
-
-    );
-
-
-    camera3D.quaternion.set(
-
-        orientation.x,
-
-        orientation.y,
-
-        orientation.z,
-
-        orientation.w
-
-    );
-
-
-    /*
-     * Hit test.
-     */
-
-    if (
-        xrHitTestSource &&
-        !xrPlaced
-    ) {
-
-        const hits =
-
-            frame.getHitTestResults(
-
-                xrHitTestSource
-
-            );
-
-
-        if (
-            hits.length > 0
-        ) {
-
-            const hit =
-                hits[0];
-
-
-            const hitPose =
-
-                hit.getPose(
-
-                    xrReferenceSpace
-
-                );
-
-
-            if (
-                hitPose
-            ) {
-
-                const p =
-                    hitPose
-                        .transform
-                        .position;
-
-
-                /*
-                 * Preview позиции.
-                 */
-
-                model?.position.set(
-
-                    p.x,
-
-                    p.y,
-
-                    p.z
-
-                );
-
-            }
-
-        }
-
-    }
-
-
-    /*
-     * После установки
-     * модель остаётся здесь.
-     */
-
-    if (
-        xrPlaced &&
-        model
-    ) {
-
-        model.position.copy(
-
-            objectWorldPosition
-
-        );
-
-    }
-
-
-    debug.innerHTML =
-
-        "TRUE WEBXR 6DoF<br><br>" +
-
-        "PHONE XYZ<br>" +
-
-        "X: " +
-        position.x.toFixed(3) +
-
-        "<br>" +
-
-        "Y: " +
-        position.y.toFixed(3) +
-
-        "<br>" +
-
-        "Z: " +
-        position.z.toFixed(3) +
-
-        "<br><br>" +
-
-        "OBJECT XYZ<br>" +
-
-        "X: " +
-        objectWorldPosition.x
-            .toFixed(3) +
-
-        "<br>" +
-
-        "Y: " +
-        objectWorldPosition.y
-            .toFixed(3) +
-
-        "<br>" +
-
-        "Z: " +
-        objectWorldPosition.z
-            .toFixed(3);
-
-}
-
-
-
-/* =========================================================
-   XR ANIMATION
-========================================================= */
-
-function xrRenderLoop(
-    time,
-    frame
-) {
-
-    if (
-        xrActive &&
-        frame
-    ) {
-
-        processXRFrame(
-
-            time,
-
-            frame
-
-        );
-
-    }
-
-
-    if (
-        renderer &&
-        scene &&
-        camera3D
-    ) {
-
-        renderer.render(
-
-            scene,
-
-            camera3D
-
-        );
-
-    }
-
-}
-
-
-
-/* =========================================================
    START CAMERA
 ========================================================= */
 
@@ -4270,7 +4247,16 @@ startButton.addEventListener(
 
     async () => {
 
-        await startCamera();
+        await startNormalCamera();
+
+
+        if (
+            renderer
+        ) {
+
+            startNormalRenderLoop();
+
+        }
 
     }
 
@@ -4279,10 +4265,10 @@ startButton.addEventListener(
 
 
 /* =========================================================
-   XR BUTTON
+   START WEBXR
 ========================================================= */
 
-xrButton.addEventListener(
+xrStartButton.addEventListener(
 
     "click",
 
@@ -4290,18 +4276,15 @@ xrButton.addEventListener(
 
         await startWebXR();
 
-    }
 
-);
+        if (
+            xrActive &&
+            renderer
+        ) {
 
+            startXRRenderLoop();
 
-webxrButton.addEventListener(
-
-    "click",
-
-    async () => {
-
-        await startWebXR();
+        }
 
     }
 
@@ -4320,7 +4303,7 @@ closeButton.addEventListener(
     async () => {
 
         /*
-         * WebXR.
+         * XR.
          */
 
         if (
@@ -4342,7 +4325,7 @@ closeButton.addEventListener(
          */
 
         const stream =
-            camera.srcObject;
+            cameraVideo.srcObject;
 
 
         if (
@@ -4364,7 +4347,7 @@ closeButton.addEventListener(
         }
 
 
-        camera.srcObject =
+        cameraVideo.srcObject =
             null;
 
 
@@ -4409,7 +4392,7 @@ closeButton.addEventListener(
          * UI.
          */
 
-        camera.style.display =
+        cameraVideo.style.display =
             "none";
 
 
@@ -4429,24 +4412,36 @@ closeButton.addEventListener(
             "none";
 
 
-        debug.style.display =
-            "none";
-
-
         closeButton.style.display =
             "none";
 
 
-        placeButton.style.display =
+        debug.style.display =
             "none";
 
 
-        start.style.display =
+        reticle.style.display =
+            "none";
+
+
+        startScreen.style.display =
             "flex";
 
 
         xrActive =
             false;
+
+
+        xrObjectPlaced =
+            false;
+
+
+        objectLocked =
+            false;
+
+
+        trackingBadge.textContent =
+            "OFF";
 
 
         setStatus(
@@ -4460,10 +4455,61 @@ closeButton.addEventListener(
 
 
 /* =========================================================
-   INITIAL CHECK
+   WEBXR AVAILABILITY
 ========================================================= */
 
-checkWebXR();
+async function checkXR() {
+
+    if (
+        !navigator.xr
+    ) {
+
+        xrStartButton.style.display =
+            "none";
+
+        return;
+
+    }
+
+
+    try {
+
+        const supported =
+
+            await navigator.xr
+                .isSessionSupported(
+
+                    "immersive-ar"
+
+                );
+
+
+        if (
+            !supported
+        ) {
+
+            xrStartButton.style.display =
+                "none";
+
+        }
+
+    }
+    catch {
+
+        xrStartButton.style.display =
+            "none";
+
+    }
+
+}
+
+
+
+/* =========================================================
+   INIT
+========================================================= */
+
+checkXR();
 
 
 setStatus(
@@ -4471,7 +4517,6 @@ setStatus(
 );
 
 </script>
-
 
 </body>
 
