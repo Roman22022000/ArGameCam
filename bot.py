@@ -24,7 +24,7 @@ async def start(message: Message):
                 InlineKeyboardButton(
                     text="Запустить AR",
                     web_app=WebAppInfo(
-                        url="https://your-domain.com/"
+                        url="https://roman22022000.github.io/ArGameCam/"
                     )
                 )
             ]
