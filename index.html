@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    >
+
+    <title>AR Game</title>
+
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+    <script
+        type="module"
+        src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js">
+    </script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #000;
+            font-family: Arial, sans-serif;
+        }
+
+        #app {
+            width: 100%;
+            height: 100dvh;
+            position: relative;
+        }
+
+        /* Экран запуска */
+
+        #startScreen {
+            position: absolute;
+            inset: 0;
+            z-index: 20;
+
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+
+            padding: 25px;
+
+            background:
+                radial-gradient(
+                    circle at center,
+                    #222 0%,
+                    #090909 60%,
+                    #000 100%
+                );
+
+            color: white;
+            text-align: center;
+        }
+
+        #startScreen h1 {
+            font-size: clamp(28px, 8vw, 50px);
+            margin-bottom: 12px;
+        }
+
+        #startScreen p {
+            max-width: 350px;
+            opacity: 0.7;
+            line-height: 1.5;
+            margin-bottom: 30px;
+        }
+
+        #cameraButton {
+            border: 0;
+            border-radius: 18px;
+
+            padding: 17px 30px;
+
+            background: white;
+            color: black;
+
+            font-size: 18px;
+            font-weight: bold;
+
+            cursor: pointer;
+
+            transition: transform .15s;
+        }
+
+        #cameraButton:active {
+            transform: scale(.95);
+        }
+
+        /* AR */
+
+        model-viewer {
+            width: 100%;
+            height: 100%;
+
+            background: transparent;
+        }
+
+        /* Верхний интерфейс */
+
+        #topUI {
+            position: absolute;
+            top: env(safe-area-inset-top, 15px);
+            left: 0;
+            right: 0;
+
+            z-index: 10;
+
+            display: none;
+
+            justify-content: space-between;
+            align-items: center;
+
+            padding: 15px;
+        }
+
+        .panel {
+            padding: 10px 14px;
+
+            border-radius: 14px;
+
+            background: rgba(0, 0, 0, .55);
+            color: white;
+
+            backdrop-filter: blur(10px);
+        }
+
+        /* Кнопка AR */
+
+        #arButton {
+            position: absolute;
+
+            bottom: calc(25px + env(safe-area-inset-bottom));
+            left: 50%;
+
+            transform: translateX(-50%);
+
+            z-index: 15;
+
+            border: 0;
+            border-radius: 18px;
+
+            padding: 16px 28px;
+
+            background: white;
+            color: black;
+
+            font-size: 17px;
+            font-weight: bold;
+
+            display: none;
+        }
+
+        /* Сообщение */
+
+        #status {
+            position: absolute;
+
+            bottom: 90px;
+            left: 50%;
+
+            transform: translateX(-50%);
+
+            z-index: 20;
+
+            width: calc(100% - 40px);
+
+            padding: 12px;
+
+            border-radius: 14px;
+
+            text-align: center;
+
+            background: rgba(0,0,0,.65);
+            color: white;
+
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+
+<div id="app">
+
+    <!-- Старт -->
+
+    <section id="startScreen">
+
+        <h1>AR GAME</h1>
+
+        <p>
+            Наведи камеру на поверхность,
+            чтобы разместить объект в реальном пространстве.
+        </p>
+
+        <button id="cameraButton">
+            Включить камеру
+        </button>
+
+    </section>
+
+
+    <!-- Верхний интерфейс -->
+
+    <div id="topUI">
+
+        <div class="panel">
+            AR MODE
+        </div>
+
+        <div class="panel" id="userName">
+            Player
+        </div>
+
+    </div>
+
+
+    <!-- 3D объект -->
+
+    <model-viewer
+        id="model"
+        src="models/creature.glb"
+        ios-src="models/creature.usdz"
+
+        camera-controls
+        auto-rotate
+
+        ar
+        ar-modes="webxr scene-viewer quick-look"
+
+        shadow-intensity="1"
+
+        exposure="1"
+
+        alt="AR object">
+
+        <button id="arButton" slot="ar-button">
+            Разместить объект
+        </button>
+
+    </model-viewer>
+
+
+    <div id="status"></div>
+
+</div>
+
+
+<script>
+
+    const tg = window.Telegram.WebApp;
+
+    tg.ready();
+    tg.expand();
+
+    /*
+     * Получаем данные пользователя Telegram
+     */
+
+    const user = tg.initDataUnsafe?.user;
+
+    if (user) {
+
+        const name =
+            user.first_name ||
+            user.username ||
+            "Player";
+
+        document.getElementById("userName").textContent = name;
+    }
+
+
+    const startScreen =
+        document.getElementById("startScreen");
+
+    const cameraButton =
+        document.getElementById("cameraButton");
+
+    const model =
+        document.getElementById("model");
+
+    const topUI =
+        document.getElementById("topUI");
+
+    const arButton =
+        document.getElementById("arButton");
+
+    const status =
+        document.getElementById("status");
+
+
+    function showStatus(text) {
+
+        status.textContent = text;
+        status.style.display = "block";
+
+        setTimeout(() => {
+            status.style.display = "none";
+        }, 3000);
+    }
+
+
+    /*
+     * Запуск AR
+     */
+
+    cameraButton.addEventListener("click", async () => {
+
+        try {
+
+            startScreen.style.display = "none";
+
+            topUI.style.display = "flex";
+
+            arButton.style.display = "block";
+
+            showStatus(
+                "Подготовка камеры..."
+            );
+
+            /*
+             * Загружаем 3D модель
+             */
+
+            await model.updateComplete;
+
+            /*
+             * Проверяем наличие AR
+             */
+
+            if (!model.canActivateAR) {
+
+                showStatus(
+                    "AR не поддерживается этим устройством"
+                );
+
+                return;
+            }
+
+            showStatus(
+                "Камера готова. Нажмите «Разместить объект»."
+            );
+
+        } catch (error) {
+
+            console.error(error);
+
+            showStatus(
+                "Не удалось запустить AR"
+            );
+        }
+
+    });
+
+
+    /*
+     * AR активирован
+     */
+
+    model.addEventListener(
+        "ar-status",
+        event => {
+
+            console.log(
+                "AR status:",
+                event.detail.status
+            );
+
+            if (
+                event.detail.status ===
+                "session-started"
+            ) {
+
+                showStatus(
+                    "Наведите камеру на поверхность"
+                );
+            }
+
+            if (
+                event.detail.status ===
+                "not-presenting"
+            ) {
+
+                showStatus(
+                    "AR завершён"
+                );
+            }
+
+        }
+    );
+
+
+    /*
+     * Ошибка модели
+     */
+
+    model.addEventListener(
+        "error",
+        event => {
+
+            console.error(event);
+
+            showStatus(
+                "Ошибка загрузки 3D объекта"
+            );
+
+        }
+    );
+
+</script>
+
+</body>
+</html>
