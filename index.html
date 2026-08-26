@@ -18,11 +18,15 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
 
-    <!-- Model Viewer -->
+    <!-- Three.js -->
 
-    <script
-        type="module"
-        src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js">
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
+        }
+    }
     </script>
 
 
@@ -43,29 +47,28 @@
 
             overflow: hidden;
 
-            background: #101820;
+            background: #000;
 
             font-family: Arial, sans-serif;
-        }
 
-
-        body {
-            color: white;
+            touch-action: none;
         }
 
 
         #app {
 
+            position: relative;
+
             width: 100%;
             height: 100dvh;
 
-            position: relative;
+            overflow: hidden;
         }
 
 
-        /* =========================
+        /* ==========================
            START SCREEN
-        ========================= */
+        ========================== */
 
         #startScreen {
 
@@ -88,12 +91,14 @@
             text-align: center;
 
             background: #101820;
+
+            color: white;
         }
 
 
         #startScreen h1 {
 
-            font-size: clamp(34px, 10vw, 52px);
+            font-size: 42px;
 
             margin-bottom: 15px;
         }
@@ -111,19 +116,13 @@
         }
 
 
-        /* =========================
-           MAIN BUTTON
-        ========================= */
+        #startAR {
 
-        .mainButton {
-
-            width: min(90%, 340px);
-
-            border: none;
+            border: 0;
 
             border-radius: 18px;
 
-            padding: 18px 25px;
+            padding: 18px 30px;
 
             background: white;
 
@@ -132,86 +131,35 @@
             font-size: 18px;
 
             font-weight: bold;
-
-            cursor: pointer;
         }
 
 
-        .mainButton:active {
+        #startAR:disabled {
 
-            transform: scale(.97);
+            opacity: .4;
         }
 
 
-        /* =========================
-           AR SCREEN
-        ========================= */
+        /* ==========================
+           THREE.JS CANVAS
+        ========================== */
 
-        #arScreen {
-
-            position: absolute;
-
-            inset: 0;
-
-            z-index: 5;
-
-            display: none;
-
-            flex-direction: column;
-
-            justify-content: center;
-
-            align-items: center;
-
-            text-align: center;
-
-            padding: 25px;
-
-            background: #101820;
-        }
-
-
-        #arScreen h2 {
-
-            margin-bottom: 15px;
-        }
-
-
-        #arScreen p {
-
-            max-width: 350px;
-
-            opacity: .7;
-
-            line-height: 1.5;
-
-            margin-bottom: 25px;
-        }
-
-
-        /* =========================
-           MODEL VIEWER
-        ========================= */
-
-        model-viewer {
+        #threeCanvas {
 
             position: absolute;
 
             inset: 0;
 
             width: 100%;
-
             height: 100%;
 
             display: none;
-
-            background: transparent;
         }
 
 
-        /* =========================
-           TOP PANEL
-        ========================= */
+        /* ==========================
+           TOP UI
+        ========================== */
 
         #topUI {
 
@@ -239,17 +187,82 @@
 
             border-radius: 14px;
 
-            background: rgba(0, 0, 0, .6);
+            background: rgba(0,0,0,.65);
+
+            color: white;
 
             backdrop-filter: blur(10px);
-
-            font-size: 14px;
         }
 
 
-        /* =========================
+        /* ==========================
+           RETICLE
+        ========================== */
+
+        #reticle {
+
+            position: absolute;
+
+            left: 50%;
+
+            top: 50%;
+
+            width: 45px;
+
+            height: 45px;
+
+            transform: translate(-50%, -50%);
+
+            border: 2px solid white;
+
+            border-radius: 50%;
+
+            z-index: 8;
+
+            display: none;
+
+            pointer-events: none;
+        }
+
+
+        #reticle::before,
+        #reticle::after {
+
+            content: "";
+
+            position: absolute;
+
+            background: white;
+        }
+
+
+        #reticle::before {
+
+            width: 15px;
+
+            height: 2px;
+
+            left: 13px;
+
+            top: 20px;
+        }
+
+
+        #reticle::after {
+
+            width: 2px;
+
+            height: 15px;
+
+            left: 20px;
+
+            top: 13px;
+        }
+
+
+        /* ==========================
            STATUS
-        ========================= */
+        ========================== */
 
         #status {
 
@@ -257,11 +270,11 @@
 
             left: 50%;
 
-            bottom: 100px;
+            bottom: 80px;
 
             transform: translateX(-50%);
 
-            z-index: 30;
+            z-index: 15;
 
             width: calc(100% - 40px);
 
@@ -271,12 +284,79 @@
 
             border-radius: 14px;
 
-            background: rgba(0, 0, 0, .75);
+            background: rgba(0,0,0,.75);
+
+            color: white;
 
             text-align: center;
 
+            line-height: 1.4;
+
+            pointer-events: none;
+        }
+
+
+        /* ==========================
+           PLACE BUTTON
+        ========================== */
+
+        #placeButton {
+
+            position: absolute;
+
+            left: 50%;
+
+            bottom: 25px;
+
+            transform: translateX(-50%);
+
+            z-index: 15;
+
+            border: none;
+
+            border-radius: 16px;
+
+            padding: 15px 25px;
+
+            background: white;
+
+            color: black;
+
+            font-size: 17px;
+
+            font-weight: bold;
+
             display: none;
         }
+
+
+        /* ==========================
+           EXIT
+        ========================== */
+
+        #exitButton {
+
+            position: absolute;
+
+            right: 15px;
+
+            bottom: 25px;
+
+            z-index: 15;
+
+            border: none;
+
+            border-radius: 14px;
+
+            padding: 12px 16px;
+
+            background: rgba(0,0,0,.7);
+
+            color: white;
+
+            display: none;
+        }
+
 
     </style>
 
@@ -289,78 +369,54 @@
 <div id="app">
 
 
-    <!-- =================================
-         TELEGRAM START SCREEN
-    ================================== -->
+    <!-- ==========================
+         START
+    ========================== -->
 
     <section id="startScreen">
 
         <h1>AR GAME</h1>
 
-        <p>
+        <p id="description">
 
-            Telegram не может напрямую
-            передать AR-сцену Android
-            из своего WebView.
+            Камера будет использоваться
+            для AR-навигации.
 
-            <br><br>
-
-            Открой AR в Chrome,
-            чтобы использовать камеру
-            и разместить 3D-объект.
+            Наведи телефон на пол,
+            найди поверхность и размести
+            3D-объект.
 
         </p>
 
 
         <button
-            id="openChromeButton"
-            class="mainButton">
+            id="startAR"
+            disabled>
 
-            Открыть AR в Chrome
+            Проверка AR...
 
         </button>
 
     </section>
 
 
-    <!-- =================================
-         AR SCREEN
-    ================================== -->
+    <!-- ==========================
+         THREE.JS
+    ========================== -->
 
-    <section id="arScreen">
-
-        <h2>
-            AR готов
-        </h2>
+    <canvas id="threeCanvas"></canvas>
 
 
-        <p>
-
-            Нажми кнопку ниже.
-            Chrome откроет AR-камеру.
-
-        </p>
-
-
-        <button
-            id="startARButton"
-            class="mainButton">
-
-            Запустить AR
-
-        </button>
-
-    </section>
-
-
-    <!-- =================================
+    <!-- ==========================
          TOP UI
-    ================================== -->
+    ========================== -->
 
     <div id="topUI">
 
         <div class="panel">
-            AR GAME
+
+            AR MODE
+
         </div>
 
 
@@ -375,63 +431,60 @@
     </div>
 
 
-    <!-- =================================
-         3D MODEL
-    ================================== -->
+    <!-- ==========================
+         RETICLE
+    ========================== -->
 
-    <model-viewer
-
-        id="model"
-
-        src="./models/creature.glb"
-
-        ar
-
-        ar-modes="scene-viewer webxr quick-look"
-
-        ar-placement="floor"
-
-        camera-controls
-
-        shadow-intensity="1"
-
-        exposure="1"
-
-        alt="AR Creature">
+    <div id="reticle"></div>
 
 
-        <!-- ВАЖНО:
-             кнопка находится внутри model-viewer -->
-
-        <button
-            id="placeButton"
-            slot="ar-button"
-            class="mainButton">
-
-            Разместить объект
-
-        </button>
-
-
-    </model-viewer>
-
-
-    <!-- =================================
+    <!-- ==========================
          STATUS
-    ================================== -->
+    ========================== -->
 
-    <div id="status"></div>
+    <div id="status">
+
+        Проверка устройства...
+
+    </div>
+
+
+    <!-- ==========================
+         PLACE
+    ========================== -->
+
+    <button id="placeButton">
+
+        Поставить объект
+
+    </button>
+
+
+    <!-- ==========================
+         EXIT
+    ========================== -->
+
+    <button id="exitButton">
+
+        Выйти
+
+    </button>
 
 
 </div>
 
 
-<script>
+<script type="module">
+
+    import * as THREE from "three";
+
+    import { GLTFLoader }
+        from "three/addons/loaders/GLTFLoader.js";
 
 
     /* =================================
        TELEGRAM
-    ================================== */
+    ================================= */
 
     const tg =
         window.Telegram?.WebApp;
@@ -447,62 +500,8 @@
 
 
     /* =================================
-       GITHUB PAGES URL
+       USER
     ================================= */
-
-    const AR_URL =
-        "https://https://roman22022000.github.io/ArGameCam/";
-
-
-    /* =================================
-       ELEMENTS
-    ================================= */
-
-    const startScreen =
-        document.getElementById(
-            "startScreen"
-        );
-
-
-    const arScreen =
-        document.getElementById(
-            "arScreen"
-        );
-
-
-    const openChromeButton =
-        document.getElementById(
-            "openChromeButton"
-        );
-
-
-    const startARButton =
-        document.getElementById(
-            "startARButton"
-        );
-
-
-    const model =
-        document.getElementById(
-            "model"
-        );
-
-
-    const topUI =
-        document.getElementById(
-            "topUI"
-        );
-
-
-    const status =
-        document.getElementById(
-            "status"
-        );
-
-
-    /* =================================
-       TELEGRAM USER
-    ================================== */
 
     if (tg?.initDataUnsafe?.user) {
 
@@ -520,82 +519,418 @@
 
 
     /* =================================
+       ELEMENTS
+    ================================= */
+
+    const startScreen =
+        document.getElementById(
+            "startScreen"
+        );
+
+
+    const startButton =
+        document.getElementById(
+            "startAR"
+        );
+
+
+    const canvas =
+        document.getElementById(
+            "threeCanvas"
+        );
+
+
+    const topUI =
+        document.getElementById(
+            "topUI"
+        );
+
+
+    const reticle =
+        document.getElementById(
+            "reticle"
+        );
+
+
+    const status =
+        document.getElementById(
+            "status"
+        );
+
+
+    const placeButton =
+        document.getElementById(
+            "placeButton"
+        );
+
+
+    const exitButton =
+        document.getElementById(
+            "exitButton"
+        );
+
+
+    /* =================================
+       VARIABLES
+    ================================= */
+
+    let renderer;
+
+    let scene;
+
+    let camera;
+
+    let xrSession = null;
+
+    let viewerSpace = null;
+
+    let hitTestSource = null;
+
+    let hitTestSourceRequested = false;
+
+    let hitPose = null;
+
+    let model = null;
+
+    let modelPlaced = false;
+
+
+    /* =================================
        STATUS
-    ================================== */
+    ================================= */
 
-    function showStatus(text) {
+    function setStatus(text) {
 
-        status.textContent =
-            text;
-
-        status.style.display =
-            "block";
+        status.textContent = text;
 
     }
 
 
     /* =================================
-       OPEN CHROME
-    ================================== */
-
-    openChromeButton.addEventListener(
-        "click",
-        () => {
-
-            /*
-             * Telegram официально
-             * открывает HTTPS-ссылку
-             * во внешнем браузере.
-             */
-
-            if (tg?.openLink) {
-
-                tg.openLink(
-                    AR_URL,
-                    {
-                        try_browser: "chrome"
-                    }
-                );
-
-            }
-            else {
-
-                /*
-                 * Если приложение открыто
-                 * не из Telegram
-                 */
-
-                window.location.href =
-                    AR_URL;
-
-            }
-
-        }
-    );
-
-
-    /* =================================
-       DETECT AR MODE
+       THREE.JS
     ================================= */
 
-    const params =
-        new URLSearchParams(
-            window.location.search
+    function initThree() {
+
+        scene =
+            new THREE.Scene();
+
+
+        /*
+         * AR camera
+         */
+
+        camera =
+            new THREE.PerspectiveCamera(
+                70,
+                window.innerWidth /
+                window.innerHeight,
+                0.01,
+                100
+            );
+
+
+        /*
+         * Renderer
+         */
+
+        renderer =
+            new THREE.WebGLRenderer({
+                canvas: canvas,
+                alpha: true,
+                antialias: true,
+                preserveDrawingBuffer: false
+            });
+
+
+        renderer.setPixelRatio(
+            Math.min(
+                window.devicePixelRatio,
+                2
+            )
         );
 
 
-    const isAR =
-        params.get("ar") === "1";
+        renderer.setSize(
+            window.innerWidth,
+            window.innerHeight
+        );
 
 
-    if (isAR) {
-
-        startScreen.style.display =
-            "none";
+        renderer.xr.enabled = true;
 
 
-        arScreen.style.display =
-            "flex";
+        /*
+         * Цветовая обработка
+         */
+
+        renderer.outputColorSpace =
+            THREE.SRGBColorSpace;
+
+
+        /*
+         * Свет
+         */
+
+        const hemiLight =
+            new THREE.HemisphereLight(
+                0xffffff,
+                0x777777,
+                2
+            );
+
+
+        scene.add(
+            hemiLight
+        );
+
+
+        const directionalLight =
+            new THREE.DirectionalLight(
+                0xffffff,
+                2
+            );
+
+
+        directionalLight.position.set(
+            2,
+            4,
+            2
+        );
+
+
+        scene.add(
+            directionalLight
+        );
+
+
+        /*
+         * Загружаем модель
+         */
+
+        const loader =
+            new GLTFLoader();
+
+
+        loader.load(
+
+            "./models/creature.glb",
+
+            gltf => {
+
+                model =
+                    gltf.scene;
+
+
+                /*
+                 * Масштаб.
+                 *
+                 * Если твоя модель огромная
+                 * или слишком маленькая,
+                 * здесь изменим размер.
+                 */
+
+                model.scale.set(
+                    1,
+                    1,
+                    1
+                );
+
+
+                /*
+                 * Сначала скрываем
+                 */
+
+                model.visible =
+                    false;
+
+
+                scene.add(
+                    model
+                );
+
+
+                console.log(
+                    "GLB loaded"
+                );
+
+
+                setStatus(
+                    "Модель загружена. AR готов."
+                );
+
+            },
+
+
+            undefined,
+
+            error => {
+
+                console.error(
+                    "GLB ERROR:",
+                    error
+                );
+
+
+                setStatus(
+                    "Ошибка загрузки creature.glb"
+                );
+
+            }
+
+        );
+
+
+        /*
+         * Resize
+         */
+
+        window.addEventListener(
+            "resize",
+            onResize
+        );
+
+
+        /*
+         * XR frame
+         */
+
+        renderer.setAnimationLoop(
+            renderXR
+        );
+
+    }
+
+
+    /* =================================
+       RESIZE
+    ================================= */
+
+    function onResize() {
+
+        if (!renderer) {
+            return;
+        }
+
+
+        renderer.setSize(
+            window.innerWidth,
+            window.innerHeight
+        );
+
+
+        camera.aspect =
+            window.innerWidth /
+            window.innerHeight;
+
+
+        camera.updateProjectionMatrix();
+
+    }
+
+
+    /* =================================
+       CHECK WEBXR
+    ================================= */
+
+    async function checkAR() {
+
+        /*
+         * WebXR вообще существует?
+         */
+
+        if (!navigator.xr) {
+
+            setStatus(
+                "WebXR не доступен в этом Telegram WebView."
+            );
+
+
+            startButton.disabled =
+                true;
+
+
+            startButton.textContent =
+                "AR недоступен";
+
+
+            return false;
+
+        }
+
+
+        /*
+         * Проверяем именно immersive-ar
+         */
+
+        try {
+
+            const supported =
+                await navigator.xr
+                    .isSessionSupported(
+                        "immersive-ar"
+                    );
+
+
+            if (!supported) {
+
+                setStatus(
+                    "Этот Telegram WebView не поддерживает immersive AR."
+                );
+
+
+                startButton.disabled =
+                    true;
+
+
+                startButton.textContent =
+                    "AR не поддерживается";
+
+
+                return false;
+
+            }
+
+
+            startButton.disabled =
+                false;
+
+
+            startButton.textContent =
+                "Включить камеру";
+
+
+            setStatus(
+                "AR поддерживается."
+            );
+
+
+            return true;
+
+        }
+        catch (error) {
+
+            console.error(
+                error
+            );
+
+
+            startButton.disabled =
+                true;
+
+
+            startButton.textContent =
+                "Ошибка проверки AR";
+
+
+            setStatus(
+                "Не удалось проверить WebXR."
+            );
+
+
+            return false;
+
+        }
 
     }
 
@@ -604,147 +939,551 @@
        START AR
     ================================= */
 
-    startARButton.addEventListener(
+    startButton.addEventListener(
         "click",
-        async () => {
+        startAR
+    );
 
-            arScreen.style.display =
+
+    async function startAR() {
+
+        try {
+
+            if (!navigator.xr) {
+
+                throw new Error(
+                    "WebXR unavailable"
+                );
+
+            }
+
+
+            /*
+             * Создаём AR session
+             *
+             * Никакого Scene Viewer.
+             * Никакого intent://
+             */
+
+            xrSession =
+                await navigator.xr.requestSession(
+                    "immersive-ar",
+                    {
+
+                        requiredFeatures: [
+                            "hit-test"
+                        ],
+
+                        optionalFeatures: [
+                            "local-floor",
+                            "dom-overlay"
+                        ],
+
+                        domOverlay: {
+                            root: document.body
+                        }
+
+                    }
+                );
+
+
+            /*
+             * Передаём session
+             * Three.js
+             */
+
+            await renderer.xr.setSession(
+                xrSession
+            );
+
+
+            /*
+             * Получаем reference space
+             */
+
+            viewerSpace =
+                await xrSession.requestReferenceSpace(
+                    "viewer"
+                );
+
+
+            /*
+             * Сбрасываем состояние
+             */
+
+            hitTestSource =
+                null;
+
+            hitTestSourceRequested =
+                false;
+
+            modelPlaced =
+                false;
+
+            hitPose =
+                null;
+
+
+            /*
+             * UI
+             */
+
+            startScreen.style.display =
                 "none";
+
+
+            canvas.style.display =
+                "block";
 
 
             topUI.style.display =
                 "flex";
 
 
-            model.style.display =
+            reticle.style.display =
                 "block";
 
 
-            showStatus(
-                "Подготовка AR..."
+            placeButton.style.display =
+                "block";
+
+
+            exitButton.style.display =
+                "block";
+
+
+            setStatus(
+                "Наведите камеру на пол"
             );
 
 
-            try {
+            /*
+             * Когда AR завершится
+             */
 
-                await model.updateComplete;
-
-
-                console.log(
-                    "Model loaded"
-                );
-
-
-                console.log(
-                    "AR supported:",
-                    model.canActivateAR
-                );
-
-
-                /*
-                 * Запрашиваем AR
-                 */
-
-                await model.activateAR();
-
-
-            }
-            catch (error) {
-
-                console.error(
-                    "AR ERROR:",
-                    error
-                );
-
-
-                showStatus(
-                    "Не удалось запустить AR. Проверьте поддержку ARCore."
-                );
-
-            }
-
-        }
-    );
-
-
-    /* =================================
-       AR STATUS
-    ================================== */
-
-    model.addEventListener(
-        "ar-status",
-        event => {
-
-            console.log(
-                "AR STATUS:",
-                event.detail.status
+            xrSession.addEventListener(
+                "end",
+                onSessionEnd
             );
 
 
-            if (
-                event.detail.status ===
-                "session-started"
-            ) {
-
-                showStatus(
-                    "Наведите камеру на пол"
-                );
-
-            }
-
-
-            if (
-                event.detail.status ===
-                "not-presenting"
-            ) {
-
-                showStatus(
-                    "AR завершён"
-                );
-
-            }
-
         }
-    );
-
-
-    /* =================================
-       MODEL LOADED
-    ================================== */
-
-    model.addEventListener(
-        "load",
-        () => {
-
-            console.log(
-                "3D модель загружена"
-            );
-
-        }
-    );
-
-
-    /* =================================
-       MODEL ERROR
-    ================================= */
-
-    model.addEventListener(
-        "error",
-        event => {
+        catch (error) {
 
             console.error(
-                "MODEL ERROR:",
-                event
+                "AR START ERROR:",
+                error
             );
 
 
-            showStatus(
-                "Ошибка загрузки 3D-модели"
+            setStatus(
+                "Не удалось запустить AR: " +
+                error.message
             );
+
+        }
+
+    }
+
+
+    /* =================================
+       HIT TEST
+    ================================= */
+
+    async function requestHitTestSource(
+        frame
+    ) {
+
+        if (
+            hitTestSourceRequested
+        ) {
+
+            return;
+
+        }
+
+
+        hitTestSourceRequested =
+            true;
+
+
+        try {
+
+            hitTestSource =
+                await xrSession
+                    .requestHitTestSource({
+                        space:
+                            viewerSpace
+                    });
+
+
+            xrSession.addEventListener(
+                "end",
+                () => {
+
+                    hitTestSource =
+                        null;
+
+                    hitTestSourceRequested =
+                        false;
+
+                }
+            );
+
+        }
+        catch (error) {
+
+            console.error(
+                "HIT TEST ERROR:",
+                error
+            );
+
+
+            setStatus(
+                "Hit-test не поддерживается."
+            );
+
+        }
+
+    }
+
+
+    /* =================================
+       XR FRAME
+    ================================= */
+
+    function renderXR(
+        time,
+        frame
+    ) {
+
+        if (
+            !frame ||
+            !xrSession
+        ) {
+
+            renderer.render(
+                scene,
+                camera
+            );
+
+            return;
+
+        }
+
+
+        /*
+         * Получаем viewer pose.
+         *
+         * Это положение и ориентация
+         * телефона в пространстве.
+         */
+
+        const referenceSpace =
+            renderer.xr
+                .getReferenceSpace();
+
+
+        const pose =
+            frame.getViewerPose(
+                referenceSpace
+            );
+
+
+        /*
+         * Создаём hit-test source
+         */
+
+        requestHitTestSource(
+            frame
+        );
+
+
+        /*
+         * Ищем поверхность
+         */
+
+        if (
+            hitTestSource
+        ) {
+
+            const results =
+                frame.getHitTestResults(
+                    hitTestSource
+                );
+
+
+            if (
+                results.length > 0
+            ) {
+
+                const hit =
+                    results[0];
+
+
+                const hitPoseResult =
+                    hit.getPose(
+                        referenceSpace
+                    );
+
+
+                if (
+                    hitPoseResult
+                ) {
+
+                    hitPose =
+                        hitPoseResult;
+
+
+                    /*
+                     * Показываем reticle
+                     */
+
+                    reticle.style.display =
+                        "block";
+
+
+                    setStatus(
+                        modelPlaced
+                            ? "Объект размещён"
+                            : "Поверхность найдена — нажмите «Поставить объект»"
+                    );
+
+                }
+
+            }
+            else {
+
+                hitPose =
+                    null;
+
+
+                if (
+                    !modelPlaced
+                ) {
+
+                    setStatus(
+                        "Ищем поверхность..."
+                    );
+
+                }
+
+            }
+
+        }
+
+
+        /*
+         * Рендер Three.js
+         */
+
+        renderer.render(
+            scene,
+            camera
+        );
+
+    }
+
+
+    /* =================================
+       PLACE OBJECT
+    ================================= */
+
+    placeButton.addEventListener(
+        "click",
+        placeObject
+    );
+
+
+    function placeObject() {
+
+        if (!model) {
+
+            setStatus(
+                "Модель ещё загружается..."
+            );
+
+            return;
+
+        }
+
+
+        if (!hitPose) {
+
+            setStatus(
+                "Сначала наведите камеру на пол."
+            );
+
+            return;
+
+        }
+
+
+        /*
+         * Позиция поверхности
+         */
+
+        const position =
+            hitPose.transform.position;
+
+
+        /*
+         * Поворот поверхности
+         */
+
+        const orientation =
+            hitPose.transform.orientation;
+
+
+        /*
+         * Устанавливаем объект
+         */
+
+        model.position.set(
+            position.x,
+            position.y,
+            position.z
+        );
+
+
+        model.quaternion.set(
+            orientation.x,
+            orientation.y,
+            orientation.z,
+            orientation.w
+        );
+
+
+        /*
+         * Показываем
+         */
+
+        model.visible =
+            true;
+
+
+        modelPlaced =
+            true;
+
+
+        setStatus(
+            "Объект размещён. Двигайтесь вокруг него."
+        );
+
+
+        /*
+         * Reticle можно убрать
+         */
+
+        reticle.style.display =
+            "none";
+
+    }
+
+
+    /* =================================
+       EXIT AR
+    ================================= */
+
+    exitButton.addEventListener(
+        "click",
+        async () => {
+
+            if (xrSession) {
+
+                await xrSession.end();
+
+            }
 
         }
     );
 
+
+    /* =================================
+       SESSION END
+    ================================= */
+
+    function onSessionEnd() {
+
+        xrSession =
+            null;
+
+
+        hitTestSource =
+            null;
+
+
+        hitTestSourceRequested =
+            false;
+
+
+        hitPose =
+            null;
+
+
+        modelPlaced =
+            false;
+
+
+        if (model) {
+
+            model.visible =
+                false;
+
+        }
+
+
+        startScreen.style.display =
+            "flex";
+
+
+        canvas.style.display =
+            "none";
+
+
+        topUI.style.display =
+            "none";
+
+
+        reticle.style.display =
+            "none";
+
+
+        placeButton.style.display =
+            "none";
+
+
+        exitButton.style.display =
+            "none";
+
+
+        startButton.disabled =
+            false;
+
+
+        startButton.textContent =
+            "Включить камеру";
+
+
+        setStatus(
+            "AR завершён."
+        );
+
+    }
+
+
+    /* =================================
+       INITIALIZATION
+    ================================= */
+
+    initThree();
+
+
+    /*
+     * Сначала проверяем WebXR.
+     */
+
+    checkAR();
 
 </script>
 
