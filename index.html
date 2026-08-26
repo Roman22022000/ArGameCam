@@ -7,34 +7,30 @@
 
 <meta
     name="viewport"
-    content="
-        width=device-width,
-        initial-scale=1,
-        maximum-scale=1,
-        user-scalable=no,
-        viewport-fit=cover
-    "
+    content="width=device-width,
+             initial-scale=1,
+             maximum-scale=1,
+             user-scalable=no,
+             viewport-fit=cover"
 >
 
 <meta
     http-equiv="Permissions-Policy"
-    content="
-        camera=(self),
-        microphone=(),
-        xr-spatial-tracking=(self),
-        geolocation=(self)
-    "
+    content="camera=(self),
+             microphone=(),
+             xr-spatial-tracking=(self),
+             geolocation=(self)"
 >
 
-<title>AR Game Cam</title>
+<title>AR Game</title>
 
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
 <style>
 
-/* =====================================================
-   RESET
-===================================================== */
+/* =========================================================
+   ОСНОВА
+========================================================= */
 
 * {
     box-sizing: border-box;
@@ -56,9 +52,6 @@ body {
         Arial,
         Helvetica,
         sans-serif;
-}
-
-body {
 
     touch-action: none;
 
@@ -67,10 +60,20 @@ body {
     -webkit-user-select: none;
 }
 
+button {
 
-/* =====================================================
+    border: 0;
+
+    font-family: inherit;
+
+    -webkit-tap-highlight-color:
+        transparent;
+}
+
+
+/* =========================================================
    APP
-===================================================== */
+========================================================= */
 
 #app {
 
@@ -84,9 +87,9 @@ body {
 }
 
 
-/* =====================================================
-   START SCREEN
-===================================================== */
+/* =========================================================
+   СТАРТОВЫЙ ЭКРАН
+========================================================= */
 
 #startScreen {
 
@@ -100,9 +103,9 @@ body {
 
     flex-direction: column;
 
-    justify-content: center;
-
     align-items: center;
+
+    justify-content: center;
 
     padding: 25px;
 
@@ -113,44 +116,39 @@ body {
     background:
         radial-gradient(
             circle at center,
-            #263a42 0%,
+            #263b43 0%,
             #11191d 48%,
             #050607 100%
         );
 }
 
-
 #startScreen h1 {
 
-    margin-bottom: 16px;
+    margin-bottom: 15px;
 
-    font-size: 36px;
+    font-size: 38px;
 
     font-weight: 700;
 }
 
-
 #startScreen p {
 
-    max-width: 390px;
+    max-width: 380px;
 
-    margin-bottom: 28px;
+    margin-bottom: 30px;
+
+    color: rgba(255,255,255,.72);
 
     font-size: 14px;
 
     line-height: 1.55;
-
-    opacity: .75;
 }
-
 
 #startButton {
 
     width: 280px;
 
     height: 58px;
-
-    border: 0;
 
     border-radius: 16px;
 
@@ -163,16 +161,49 @@ body {
     font-weight: 700;
 }
 
-
 #startButton:active {
 
     transform: scale(.97);
 }
 
 
-/* =====================================================
-   STATUS
-===================================================== */
+/* =========================================================
+   ОБЫЧНАЯ КАМЕРА
+========================================================= */
+
+#camera {
+
+    position: absolute;
+
+    inset: 0;
+
+    z-index: 1;
+
+    display: none;
+
+    width: 100%;
+
+    height: 100%;
+
+    object-fit: cover;
+
+    background: #000;
+}
+
+
+/* =========================================================
+   WEBXR CANVAS
+========================================================= */
+
+canvas {
+
+    touch-action: none;
+}
+
+
+/* =========================================================
+   СТАТУС
+========================================================= */
 
 #status {
 
@@ -197,7 +228,7 @@ body {
     border-radius: 13px;
 
     background:
-        rgba(0,0,0,.75);
+        rgba(0,0,0,.72);
 
     color: #fff;
 
@@ -212,9 +243,9 @@ body {
 }
 
 
-/* =====================================================
+/* =========================================================
    DEBUG
-===================================================== */
+========================================================= */
 
 #debug {
 
@@ -226,18 +257,19 @@ body {
 
     z-index: 850;
 
-    max-width: 245px;
+    max-width: 260px;
 
     padding: 9px;
 
     border-radius: 10px;
 
     background:
-        rgba(0,0,0,.72);
+        rgba(0,0,0,.70);
 
     color: #fff;
 
-    font-family: monospace;
+    font-family:
+        monospace;
 
     font-size: 9px;
 
@@ -247,9 +279,9 @@ body {
 }
 
 
-/* =====================================================
-   TOP BAR
-===================================================== */
+/* =========================================================
+   TOP
+========================================================= */
 
 #topBar {
 
@@ -271,7 +303,6 @@ body {
     pointer-events: none;
 }
 
-
 .badge {
 
     padding: 8px 10px;
@@ -287,9 +318,9 @@ body {
 }
 
 
-/* =====================================================
+/* =========================================================
    CLOSE
-===================================================== */
+========================================================= */
 
 #closeButton {
 
@@ -307,8 +338,6 @@ body {
 
     height: 42px;
 
-    border: 0;
-
     border-radius: 12px;
 
     background:
@@ -320,9 +349,9 @@ body {
 }
 
 
-/* =====================================================
-   CONTROLS
-===================================================== */
+/* =========================================================
+   ПАНЕЛЬ
+========================================================= */
 
 #controls {
 
@@ -341,19 +370,16 @@ body {
     gap: 8px;
 }
 
+.control {
 
-.controlButton {
-
-    width: 110px;
+    width: 115px;
 
     min-height: 44px;
-
-    border: 0;
 
     border-radius: 12px;
 
     background:
-        rgba(0,0,0,.76);
+        rgba(0,0,0,.78);
 
     color: #fff;
 
@@ -362,14 +388,12 @@ body {
     font-weight: 700;
 }
 
-
-.controlButton:active {
+.control:active {
 
     transform: scale(.95);
 }
 
-
-#placeButton {
+#lockButton {
 
     background: #fff;
 
@@ -377,9 +401,9 @@ body {
 }
 
 
-/* =====================================================
-   SCENE PANEL
-===================================================== */
+/* =========================================================
+   НИЖНЯЯ ПАНЕЛЬ
+========================================================= */
 
 #scenePanel {
 
@@ -407,10 +431,9 @@ body {
         linear-gradient(
             to top,
             rgba(0,0,0,.95),
-            rgba(0,0,0,.30)
+            rgba(0,0,0,.20)
         );
 }
-
 
 #sceneList {
 
@@ -423,23 +446,21 @@ body {
     scrollbar-width: none;
 }
 
-
 #sceneList::-webkit-scrollbar {
 
     display: none;
 }
 
-
-.sceneButton {
+.scene {
 
     flex:
-        0 0 86px;
+        0 0 90px;
 
     height: 72px;
 
     border:
         1px solid
-        rgba(255,255,255,.22);
+        rgba(255,255,255,.25);
 
     border-radius: 12px;
 
@@ -449,27 +470,24 @@ body {
     color: #fff;
 }
 
-
-.sceneButton.active {
+.scene.active {
 
     border:
         2px solid #fff;
 }
 
-
 .sceneIcon {
 
-    height: 38px;
+    height: 40px;
 
     display: flex;
 
-    justify-content: center;
-
     align-items: center;
 
-    font-size: 21px;
-}
+    justify-content: center;
 
+    font-size: 22px;
+}
 
 .sceneName {
 
@@ -477,17 +495,17 @@ body {
 }
 
 
-/* =====================================================
-   HELP
-===================================================== */
+/* =========================================================
+   ПОМОЩЬ
+========================================================= */
 
-#gestureHelp {
+#help {
 
     position: absolute;
 
-    bottom: 100px;
-
     left: 50%;
+
+    bottom: 100px;
 
     transform:
         translateX(-50%);
@@ -514,15 +532,15 @@ body {
 
     font-size: 10px;
 
-    line-height: 1.4;
+    line-height: 1.45;
 
     pointer-events: none;
 }
 
 
-/* =====================================================
-   TOUCH LAYER
-===================================================== */
+/* =========================================================
+   СЛОЙ ЖЕСТОВ
+========================================================= */
 
 #touchLayer {
 
@@ -534,41 +552,17 @@ body {
 
     display: none;
 
-    background: transparent;
-
     touch-action: none;
+
+    background: transparent;
 }
 
 
-/* =====================================================
-   FALLBACK CAMERA
-===================================================== */
+/* =========================================================
+   ИНДИКАТОР
+========================================================= */
 
-#fallbackCamera {
-
-    position: absolute;
-
-    inset: 0;
-
-    z-index: 1;
-
-    display: none;
-
-    width: 100%;
-
-    height: 100%;
-
-    object-fit: cover;
-
-    background: #000;
-}
-
-
-/* =====================================================
-   MODEL POSITION INDICATOR
-===================================================== */
-
-#modelIndicator {
+#placementIndicator {
 
     position: absolute;
 
@@ -583,9 +577,9 @@ body {
 
     display: none;
 
-    width: 170px;
+    width: 160px;
 
-    height: 170px;
+    height: 160px;
 
     border:
         1px solid
@@ -596,8 +590,7 @@ body {
     pointer-events: none;
 }
 
-
-#modelIndicator::before {
+#placementIndicator::after {
 
     content: "";
 
@@ -630,82 +623,73 @@ body {
 <div id="app">
 
 
-<!-- =====================================================
-     START
-===================================================== -->
+<!-- =======================================================
+     ЭТАП 1
+======================================================= -->
 
 <section id="startScreen">
 
     <h1>
-        AR WORLD
+        AR GAME
     </h1>
 
     <p>
 
-        Запустите AR.
+        Нажмите «Запуск AR».
 
         <br><br>
 
-        3D-сцена автоматически появится
-        перед камерой.
+        Затем разрешите доступ к камере.
 
         <br><br>
 
-        До закрепления:
-        один палец вращает сцену,
-        два пальца перемещают её,
-        pinch изменяет размер.
+        После загрузки 3D-модели
+        разместите её двумя пальцами
+        и закрепите.
 
         <br><br>
 
         После закрепления можно
-        физически ходить вокруг неё.
+        ходить вокруг модели.
 
     </p>
 
 
     <button id="startButton">
 
-        Запустить AR
+        Запуск AR
 
     </button>
 
 </section>
 
 
-<!-- =====================================================
-     FALLBACK CAMERA
-===================================================== -->
+<!-- =======================================================
+     КАМЕРА
+======================================================= -->
 
 <video
-    id="fallbackCamera"
+    id="camera"
     autoplay
     muted
     playsinline>
 </video>
 
 
-<!-- =====================================================
-     MODEL INDICATOR
-===================================================== -->
-
-<div id="modelIndicator"></div>
-
-
-<!-- =====================================================
-     STATUS
-===================================================== -->
+<!-- =======================================================
+     СТАТУС
+======================================================= -->
 
 <div id="status">
 
-    Проверка AR...
+    Готово
 
 </div>
 
 
-<!-- =====================================================
+<!-- =======================================================
      DEBUG
-===================================================== -->
+======================================================= -->
 
 <div id="debug">
 
@@ -714,15 +698,15 @@ body {
 </div>
 
 
-<!-- =====================================================
+<!-- =======================================================
      TOP BAR
-===================================================== -->
+======================================================= -->
 
 <div id="topBar">
 
     <div
         class="badge"
-        id="modeBadge">
+        id="mode">
 
         MODE
 
@@ -731,7 +715,7 @@ body {
 
     <div
         class="badge"
-        id="trackingBadge">
+        id="tracking">
 
         TRACKING
 
@@ -740,9 +724,9 @@ body {
 </div>
 
 
-<!-- =====================================================
+<!-- =======================================================
      CLOSE
-===================================================== -->
+======================================================= -->
 
 <button id="closeButton">
 
@@ -751,25 +735,16 @@ body {
 </button>
 
 
-<!-- =====================================================
-     CONTROLS
-===================================================== -->
+<!-- =======================================================
+     УПРАВЛЕНИЕ
+======================================================= -->
 
 <div id="controls">
 
 
     <button
-        id="showModelButton"
-        class="controlButton">
-
-        ПОКАЗАТЬ СЦЕНУ
-
-    </button>
-
-
-    <button
-        id="placeButton"
-        class="controlButton">
+        id="lockButton"
+        class="control">
 
         ЗАКРЕПИТЬ
 
@@ -778,7 +753,7 @@ body {
 
     <button
         id="unlockButton"
-        class="controlButton">
+        class="control">
 
         ИЗМЕНИТЬ
 
@@ -786,8 +761,17 @@ body {
 
 
     <button
+        id="showButton"
+        class="control">
+
+        В ЦЕНТР
+
+    </button>
+
+
+    <button
         id="plusButton"
-        class="controlButton">
+        class="control">
 
         + РАЗМЕР
 
@@ -796,7 +780,7 @@ body {
 
     <button
         id="minusButton"
-        class="controlButton">
+        class="control">
 
         − РАЗМЕР
 
@@ -805,7 +789,7 @@ body {
 
     <button
         id="gpsButton"
-        class="controlButton">
+        class="control">
 
         GPS
 
@@ -815,30 +799,42 @@ body {
 </div>
 
 
-<!-- =====================================================
-     HELP
-===================================================== -->
+<!-- =======================================================
+     ПОДСКАЗКА
+======================================================= -->
 
-<div id="gestureHelp">
+<div id="help">
 
-    Один палец — вращение.
-    Два пальца — перемещение.
-    Pinch — масштаб.
-    После «Закрепить» сцена становится неподвижной.
+    До закрепления:
+    двумя пальцами перемещайте модель,
+    pinch — размер,
+    одним пальцем — вращение.
+
+    <br><br>
+
+    После закрепления:
+    двигайтесь с телефоном вокруг модели.
 
 </div>
 
 
-<!-- =====================================================
+<!-- =======================================================
+     ИНДИКАТОР
+======================================================= -->
+
+<div id="placementIndicator"></div>
+
+
+<!-- =======================================================
      TOUCH
-===================================================== -->
+======================================================= -->
 
 <div id="touchLayer"></div>
 
 
-<!-- =====================================================
-     SCENES
-===================================================== -->
+<!-- =======================================================
+     ВЫБОР СЦЕН
+======================================================= -->
 
 <div id="scenePanel">
 
@@ -846,7 +842,7 @@ body {
 
 
         <button
-            class="sceneButton active"
+            class="scene active"
             data-model="creature.glb"
             data-name="Creature">
 
@@ -862,7 +858,7 @@ body {
 
 
         <button
-            class="sceneButton"
+            class="scene"
             data-model="museum.glb"
             data-name="Museum">
 
@@ -878,7 +874,7 @@ body {
 
 
         <button
-            class="sceneButton"
+            class="scene"
             data-model="animal.glb"
             data-name="Animal">
 
@@ -901,10 +897,9 @@ body {
 </div>
 
 
-
-<!-- =====================================================
-     THREE
-===================================================== -->
+<!-- =======================================================
+     THREE.JS
+======================================================= -->
 
 <script type="importmap">
 
@@ -923,13 +918,12 @@ body {
 </script>
 
 
-
 <script type="module">
 
 
-/* =====================================================
-   IMPORTS
-===================================================== */
+/* =========================================================
+   IMPORT
+========================================================= */
 
 import * as THREE
 from "three";
@@ -943,9 +937,9 @@ from
 
 
 
-/* =====================================================
+/* =========================================================
    TELEGRAM
-===================================================== */
+========================================================= */
 
 const tg =
     window.Telegram?.WebApp || null;
@@ -971,134 +965,115 @@ if (tg) {
 
 
 
-/* =====================================================
+/* =========================================================
    DOM
-===================================================== */
+========================================================= */
 
 const startScreen =
     document.getElementById(
         "startScreen"
     );
 
-
 const startButton =
     document.getElementById(
         "startButton"
     );
 
+const camera =
+    document.getElementById(
+        "camera"
+    );
 
-const statusElement =
+const status =
     document.getElementById(
         "status"
     );
 
-
-const debugElement =
+const debug =
     document.getElementById(
         "debug"
     );
-
-
-const fallbackCamera =
-    document.getElementById(
-        "fallbackCamera"
-    );
-
 
 const topBar =
     document.getElementById(
         "topBar"
     );
 
-
-const modeBadge =
+const mode =
     document.getElementById(
-        "modeBadge"
+        "mode"
     );
 
-
-const trackingBadge =
+const tracking =
     document.getElementById(
-        "trackingBadge"
+        "tracking"
     );
-
 
 const controls =
     document.getElementById(
         "controls"
     );
 
-
-const showModelButton =
+const lockButton =
     document.getElementById(
-        "showModelButton"
+        "lockButton"
     );
-
-
-const placeButton =
-    document.getElementById(
-        "placeButton"
-    );
-
 
 const unlockButton =
     document.getElementById(
         "unlockButton"
     );
 
+const showButton =
+    document.getElementById(
+        "showButton"
+    );
 
 const plusButton =
     document.getElementById(
         "plusButton"
     );
 
-
 const minusButton =
     document.getElementById(
         "minusButton"
     );
-
 
 const gpsButton =
     document.getElementById(
         "gpsButton"
     );
 
-
 const closeButton =
     document.getElementById(
         "closeButton"
     );
 
-
-const scenePanel =
+const help =
     document.getElementById(
-        "scenePanel"
+        "help"
     );
-
-
-const gestureHelp =
-    document.getElementById(
-        "gestureHelp"
-    );
-
 
 const touchLayer =
     document.getElementById(
         "touchLayer"
     );
 
-
-const modelIndicator =
+const scenePanel =
     document.getElementById(
-        "modelIndicator"
+        "scenePanel"
+    );
+
+const placementIndicator =
+    document.getElementById(
+        "placementIndicator"
     );
 
 
 
-/* =====================================================
+/* =========================================================
    THREE STATE
-===================================================== */
+========================================================= */
 
 let renderer = null;
 
@@ -1106,49 +1081,52 @@ let scene = null;
 
 let model = null;
 
+let camera3D = null;
 
-/* =====================================================
+
+
+/* =========================================================
    XR STATE
-===================================================== */
+========================================================= */
 
 let xrSession = null;
 
 let xrReferenceSpace = null;
 
-let webXRMode = false;
+let xrCamera = null;
 
-let firstXRFrameReceived = false;
-
-let initialModelPlaced = false;
+let xrActive = false;
 
 
-/* =====================================================
-   OBJECT STATE
-===================================================== */
 
-let objectLocked = false;
+/* =========================================================
+   APPLICATION STATE
+========================================================= */
+
+let modelLoaded = false;
+
+let modelPlaced = false;
+
+let modelLocked = false;
 
 
-/*
- * Реальная мировая позиция объекта.
- */
 
-const objectWorldPosition =
+/* =========================================================
+   WORLD POSITION
+========================================================= */
+
+const fixedPosition =
     new THREE.Vector3();
 
 
-/*
- * Реальная мировая ориентация объекта.
- */
-
-const objectWorldQuaternion =
+const fixedQuaternion =
     new THREE.Quaternion();
 
 
 
-/* =====================================================
+/* =========================================================
    MODEL
-===================================================== */
+========================================================= */
 
 let currentModel =
     "creature.glb";
@@ -1159,9 +1137,32 @@ let currentModelName =
 
 
 
-/* =====================================================
-   TELEGRAM SENSORS
-===================================================== */
+/* =========================================================
+   TOUCH STATE
+========================================================= */
+
+let touches = [];
+
+let startDistance = 0;
+
+let startScale = 1;
+
+let startCenterX = 0;
+
+let startCenterY = 0;
+
+const startPosition =
+    new THREE.Vector3();
+
+let startRotationY = 0;
+
+let startTouchX = 0;
+
+
+
+/* =========================================================
+   SENSOR STATE
+========================================================= */
 
 let orientation = {
 
@@ -1208,92 +1209,60 @@ let gps = {
 
 
 
-/* =====================================================
-   GESTURES
-===================================================== */
-
-let touches = [];
-
-let gestureStartDistance = 0;
-
-let gestureStartScale = 1;
-
-let gestureStartCenterX = 0;
-
-let gestureStartCenterY = 0;
-
-const gestureStartPosition =
-    new THREE.Vector3();
-
-let singleTouchStartX = 0;
-
-let singleTouchStartY = 0;
-
-let singleTouchStartRotation = 0;
-
-
-
-/* =====================================================
+/* =========================================================
    STATUS
-===================================================== */
+========================================================= */
 
 function setStatus(
     text
 ) {
 
-    statusElement.textContent =
+    status.textContent =
         text;
 
 }
 
 
 
-/* =====================================================
-   SHOW UI
-===================================================== */
+/* =========================================================
+   UI
+========================================================= */
 
-function showARUI(
-    mode
+function showInterface(
+    modeName
 ) {
 
     startScreen.style.display =
         "none";
 
-
     topBar.style.display =
         "flex";
-
 
     controls.style.display =
         "flex";
 
-
     scenePanel.style.display =
         "block";
 
-
-    gestureHelp.style.display =
+    help.style.display =
         "block";
-
 
     closeButton.style.display =
         "block";
 
-
     touchLayer.style.display =
         "block";
 
-
-    modeBadge.textContent =
-        mode;
+    mode.textContent =
+        modeName;
 
 }
 
 
 
-/* =====================================================
-   INIT THREE
-===================================================== */
+/* =========================================================
+   THREE INITIALIZATION
+========================================================= */
 
 function initThree() {
 
@@ -1313,11 +1282,9 @@ function initThree() {
     renderer =
         new THREE.WebGLRenderer({
 
-            antialias:
-                true,
+            alpha: true,
 
-            alpha:
-                true,
+            antialias: true,
 
             powerPreference:
                 "high-performance"
@@ -1355,46 +1322,42 @@ function initThree() {
         true;
 
 
-    const canvas =
-        renderer.domElement;
-
-
-    canvas.style.position =
+    renderer.domElement.style.position =
         "absolute";
 
 
-    canvas.style.left =
+    renderer.domElement.style.left =
         "0";
 
 
-    canvas.style.top =
+    renderer.domElement.style.top =
         "0";
 
 
-    canvas.style.width =
+    renderer.domElement.style.width =
         "100%";
 
 
-    canvas.style.height =
+    renderer.domElement.style.height =
         "100%";
 
 
-    canvas.style.zIndex =
+    renderer.domElement.style.zIndex =
         "2";
 
 
     document
         .getElementById("app")
         .appendChild(
-            canvas
+            renderer.domElement
         );
 
 
     /*
-     * Освещение.
+     * Свет.
      */
 
-    const hemi =
+    const hemisphere =
         new THREE.HemisphereLight(
 
             0xffffff,
@@ -1407,7 +1370,7 @@ function initThree() {
 
 
     scene.add(
-        hemi
+        hemisphere
     );
 
 
@@ -1423,9 +1386,9 @@ function initThree() {
 
     directional.position.set(
 
-        4,
+        5,
         8,
-        4
+        5
 
     );
 
@@ -1438,18 +1401,14 @@ function initThree() {
 
 
 
-/* =====================================================
-   LOAD MODEL
-===================================================== */
+/* =========================================================
+   ЗАГРУЗКА 3D
+========================================================= */
 
 function loadModel() {
 
     initThree();
 
-
-    /*
-     * Удаляем старую модель.
-     */
 
     if (
         model
@@ -1465,19 +1424,17 @@ function loadModel() {
     }
 
 
-    objectLocked =
+    modelLoaded =
+        false;
+
+    modelPlaced =
+        false;
+
+    modelLocked =
         false;
 
 
-    initialModelPlaced =
-        false;
-
-
-    firstXRFrameReceived =
-        false;
-
-
-    modelIndicator.style.display =
+    placementIndicator.style.display =
         "none";
 
 
@@ -1486,18 +1443,20 @@ function loadModel() {
         currentModel;
 
 
-    debugElement.innerHTML =
-
-        "LOADING MODEL<br><br>" +
-
-        url;
-
-
     setStatus(
 
-        "Загрузка 3D-модели..."
+        "Загрузка " +
+        currentModelName +
+        "..."
 
     );
+
+
+    debug.innerHTML =
+
+        "MODEL LOAD<br><br>" +
+
+        url;
 
 
     const loader =
@@ -1513,18 +1472,12 @@ function loadModel() {
             gltf
         ) {
 
-            console.log(
-                "GLTF:",
-                gltf
-            );
-
-
             model =
                 gltf.scene;
 
 
             /*
-             * Находим размеры.
+             * Bounding box.
              */
 
             const box =
@@ -1553,59 +1506,22 @@ function loadModel() {
 
 
             /*
-             * Центрируем геометрию
-             * относительно pivot.
+             * Центрируем геометрию.
              */
 
-            model.traverse(
+            model.position.set(
 
-                function (
-                    object
-                ) {
+                -center.x,
 
-                    if (
-                        object.isMesh
-                    ) {
+                -center.y,
 
-                        object.frustumCulled =
-                            false;
-
-                        object.castShadow =
-                            true;
-
-                        object.receiveShadow =
-                            true;
-
-                    }
-
-                }
+                -center.z
 
             );
 
 
             /*
-             * Перемещаем модель
-             * так, чтобы её центр
-             * был в локальном 0,0,0.
-             */
-
-            model.position.x =
-                -center.x;
-
-
-            model.position.y =
-                -center.y;
-
-
-            model.position.z =
-                -center.z;
-
-
-            /*
-             * Нормализуем размер.
-             *
-             * Максимальный размер
-             * примерно 1.5 метра.
+             * Нормализация.
              */
 
             const maxSize =
@@ -1635,11 +1551,34 @@ function loadModel() {
 
 
             /*
-             * Пока невидима.
-             *
-             * Покажем после того,
-             * как получим XR pose.
+             * Mesh настройки.
              */
+
+            model.traverse(
+
+                function (
+                    object
+                ) {
+
+                    if (
+                        object.isMesh
+                    ) {
+
+                        object.frustumCulled =
+                            false;
+
+                        object.castShadow =
+                            true;
+
+                        object.receiveShadow =
+                            true;
+
+                    }
+
+                }
+
+            );
+
 
             model.visible =
                 false;
@@ -1650,40 +1589,54 @@ function loadModel() {
             );
 
 
-            debugElement.innerHTML =
+            modelLoaded =
+                true;
 
-                "MODEL LOADED<br><br>" +
-
-                currentModel +
-                "<br><br>" +
-
-                "SIZE<br>" +
-
-                "X: " +
-                size.x.toFixed(2) +
-
-                "<br>" +
-
-                "Y: " +
-                size.y.toFixed(2) +
-
-                "<br>" +
-
-                "Z: " +
-                size.z.toFixed(2);
-
-
-            /*
-             * Если XR уже работает,
-             * позиционирование произойдёт
-             * в следующем XR кадре.
-             */
 
             setStatus(
 
                 "3D-модель загружена."
 
             );
+
+
+            debug.innerHTML =
+
+                "MODEL OK<br><br>" +
+
+                currentModel +
+
+                "<br><br>" +
+
+                "SIZE<br>" +
+
+                "X " +
+                size.x.toFixed(2) +
+
+                "<br>" +
+
+                "Y " +
+                size.y.toFixed(2) +
+
+                "<br>" +
+
+                "Z " +
+                size.z.toFixed(2);
+
+
+            /*
+             * Если XR уже имеет камеру,
+             * сразу размещаем.
+             */
+
+            if (
+                xrActive &&
+                xrCamera
+            ) {
+
+                placeModelInFrontOfCamera();
+
+            }
 
         },
 
@@ -1693,7 +1646,7 @@ function loadModel() {
         ) {
 
             if (
-                progress.total
+                progress.total > 0
             ) {
 
                 const percent =
@@ -1705,7 +1658,7 @@ function loadModel() {
 
                 setStatus(
 
-                    "3D: " +
+                    "3D загрузка: " +
                     percent.toFixed(0) +
                     "%"
 
@@ -1721,29 +1674,23 @@ function loadModel() {
         ) {
 
             console.error(
-                "GLB LOAD ERROR:",
+                "GLB ERROR",
                 error
             );
 
 
             setStatus(
-
-                "ОШИБКА ЗАГРУЗКИ 3D"
-
+                "Ошибка загрузки 3D"
             );
 
 
-            debugElement.innerHTML =
+            debug.innerHTML =
 
                 "GLB ERROR<br><br>" +
-
-                "URL:<br>" +
 
                 url +
 
                 "<br><br>" +
-
-                "ERROR:<br>" +
 
                 String(error);
 
@@ -1755,17 +1702,15 @@ function loadModel() {
 
 
 
-/* =====================================================
-   PLACE MODEL IN FRONT OF CAMERA
-===================================================== */
+/* =========================================================
+   РАЗМЕЩЕНИЕ ПЕРЕД КАМЕРОЙ
+========================================================= */
 
-function placeModelInFrontOfCamera(
-    viewerPose
-) {
+function placeModelInFrontOfCamera() {
 
     if (
         !model ||
-        initialModelPlaced
+        !xrCamera
     ) {
 
         return;
@@ -1774,54 +1719,45 @@ function placeModelInFrontOfCamera(
 
 
     /*
-     * Получаем реальную позицию
-     * телефона.
+     * Получаем положение
+     * XR камеры.
      */
 
     const cameraPosition =
-        viewerPose
-            .transform
-            .position;
+        new THREE.Vector3();
 
-
-    /*
-     * Получаем ориентацию телефона.
-     */
 
     const cameraQuaternion =
-        viewerPose
-            .transform
-            .orientation;
+        new THREE.Quaternion();
+
+
+    xrCamera.getWorldPosition(
+        cameraPosition
+    );
+
+
+    xrCamera.getWorldQuaternion(
+        cameraQuaternion
+    );
 
 
     /*
-     * Вектор направления камеры.
-     *
-     * В WebXR направление взгляда
-     * камеры — локальная ось -Z.
+     * Локальная ось -Z
+     * является направлением взгляда.
      */
-
-    const cameraQuaternionThree =
-        new THREE.Quaternion(
-
-            cameraQuaternion.x,
-            cameraQuaternion.y,
-            cameraQuaternion.z,
-            cameraQuaternion.w
-
-        );
-
 
     const forward =
         new THREE.Vector3(
+
             0,
             0,
             -1
+
         );
 
 
     forward.applyQuaternion(
-        cameraQuaternionThree
+        cameraQuaternion
     );
 
 
@@ -1829,7 +1765,7 @@ function placeModelInFrontOfCamera(
 
 
     /*
-     * Расстояние до объекта.
+     * Расстояние.
      */
 
     const distance =
@@ -1837,36 +1773,30 @@ function placeModelInFrontOfCamera(
 
 
     /*
-     * Ставим объект
-     * перед камерой.
+     * Позиция объекта.
      */
 
     const position =
-        new THREE.Vector3(
+        cameraPosition.clone()
+            .add(
 
-            cameraPosition.x +
-                forward.x * distance,
+                forward.multiplyScalar(
+                    distance
+                )
 
-            cameraPosition.y +
-                forward.y * distance,
-
-            cameraPosition.z +
-                forward.z * distance
-
-        );
+            );
 
 
     /*
-     * Для удобства слегка
-     * опускаем объект относительно
-     * глаз пользователя.
-     *
-     * Но направление взгляда
-     * сохраняем.
+     * Немного ниже уровня камеры.
      */
 
-    position.y -= 0.20;
+    position.y -= 0.2;
 
+
+    /*
+     * Ставим модель.
+     */
 
     model.position.copy(
         position
@@ -1874,52 +1804,32 @@ function placeModelInFrontOfCamera(
 
 
     /*
-     * Направляем объект
-     * примерно к пользователю.
-     *
-     * При этом это начальная
-     * ориентация.
+     * Смотрит на пользователя.
      */
 
-    const lookAt =
-        new THREE.Vector3(
-
-            cameraPosition.x,
-            position.y,
-            cameraPosition.z
-
-        );
+    const target =
+        cameraPosition.clone();
 
 
-    const temporaryObject =
-        new THREE.Object3D();
+    target.y =
+        position.y;
 
 
-    temporaryObject.position.copy(
-        position
-    );
-
-
-    temporaryObject.lookAt(
-        lookAt
-    );
-
-
-    model.quaternion.copy(
-        temporaryObject.quaternion
+    model.lookAt(
+        target
     );
 
 
     /*
-     * Запоминаем мировую позицию.
+     * Сохраняем.
      */
 
-    objectWorldPosition.copy(
+    fixedPosition.copy(
         model.position
     );
 
 
-    objectWorldQuaternion.copy(
+    fixedQuaternion.copy(
         model.quaternion
     );
 
@@ -1928,27 +1838,18 @@ function placeModelInFrontOfCamera(
         true;
 
 
-    initialModelPlaced =
+    modelPlaced =
         true;
 
 
-    modelIndicator.style.display =
+    placementIndicator.style.display =
         "block";
 
 
     setStatus(
 
-        "3D-сцена перед камерой. " +
-        "Двигайте двумя пальцами."
-
-    );
-
-
-    console.log(
-
-        "MODEL PLACED:",
-
-        objectWorldPosition
+        "Модель в кадре. " +
+        "Разместите её двумя пальцами."
 
     );
 
@@ -1956,9 +1857,9 @@ function placeModelInFrontOfCamera(
 
 
 
-/* =====================================================
-   XR START
-===================================================== */
+/* =========================================================
+   WEBXR START
+========================================================= */
 
 async function startWebXR() {
 
@@ -1967,7 +1868,7 @@ async function startWebXR() {
     ) {
 
         throw new Error(
-            "HTTPS required"
+            "HTTPS_REQUIRED"
         );
 
     }
@@ -1978,7 +1879,7 @@ async function startWebXR() {
     ) {
 
         throw new Error(
-            "WebXR unavailable"
+            "WEBXR_UNAVAILABLE"
         );
 
     }
@@ -1996,7 +1897,7 @@ async function startWebXR() {
     ) {
 
         throw new Error(
-            "immersive-ar unavailable"
+            "IMMERSIVE_AR_UNSUPPORTED"
         );
 
     }
@@ -2032,8 +1933,7 @@ async function startWebXR() {
 
 
     /*
-     * Сначала пытаемся
-     * получить local-floor.
+     * Reference Space.
      */
 
     try {
@@ -2045,15 +1945,7 @@ async function startWebXR() {
                 );
 
     }
-    catch (
-        error
-    ) {
-
-        console.warn(
-            "local-floor unavailable",
-            error
-        );
-
+    catch {
 
         xrReferenceSpace =
             await xrSession
@@ -2065,8 +1957,7 @@ async function startWebXR() {
 
 
     /*
-     * Передаём XR session
-     * Three.js.
+     * Передаём session Three.js.
      */
 
     await renderer.xr.setSession(
@@ -2074,22 +1965,26 @@ async function startWebXR() {
     );
 
 
-    webXRMode =
+    xrActive =
         true;
 
 
-    showARUI(
+    showInterface(
         "WEBXR AR"
     );
 
 
-    trackingBadge.textContent =
+    tracking.textContent =
         "6DoF";
 
 
-    setStatus(
-        "AR запущен..."
-    );
+    /*
+     * Получаем XR camera
+     * после создания session.
+     */
+
+    xrCamera =
+        renderer.xr.getCamera();
 
 
     /*
@@ -2100,13 +1995,17 @@ async function startWebXR() {
 
 
     /*
-     * XR render loop.
+     * XR loop.
      */
 
     renderer.setAnimationLoop(
         renderXR
     );
 
+
+    /*
+     * Session end.
+     */
 
     xrSession.addEventListener(
 
@@ -2120,13 +2019,18 @@ async function startWebXR() {
 
     );
 
+
+    setStatus(
+        "Камера AR запущена."
+    );
+
 }
 
 
 
-/* =====================================================
-   XR RENDER
-===================================================== */
+/* =========================================================
+   XR LOOP
+========================================================= */
 
 function renderXR(
     time,
@@ -2134,9 +2038,7 @@ function renderXR(
 ) {
 
     if (
-        !xrSession ||
-        !frame ||
-        !xrReferenceSpace
+        !xrActive
     ) {
 
         return;
@@ -2145,167 +2047,157 @@ function renderXR(
 
 
     /*
-     * ================================================
-     * ПОЛУЧАЕМ РЕАЛЬНЫЙ POSE
-     * ================================================
+     * Получаем XR camera.
      */
 
-    const viewerPose =
-        frame.getViewerPose(
-
-            xrReferenceSpace
-
-        );
-
-
-    if (
-        !viewerPose
-    ) {
-
-        return;
-
-    }
-
-
-    const position =
-        viewerPose
-            .transform
-            .position;
-
-
-    const orientation =
-        viewerPose
-            .transform
-            .orientation;
+    xrCamera =
+        renderer.xr.getCamera();
 
 
     /*
-     * ================================================
-     * ПЕРВЫЙ КАДР
-     * ================================================
-     *
-     * Как только:
-     *
-     * 1. XR работает
-     * 2. камера дала pose
-     * 3. GLB загружен
-     *
-     * ставим объект перед камерой.
+     * После загрузки модели
+     * размещаем её один раз.
      */
 
     if (
-        model &&
-        !initialModelPlaced
+        modelLoaded &&
+        !modelPlaced
     ) {
 
-        placeModelInFrontOfCamera(
-            viewerPose
-        );
+        placeModelInFrontOfCamera();
 
     }
 
 
     /*
-     * ================================================
-     * DEBUG
-     * ================================================
+     * Получаем viewer pose
+     * для диагностики.
      */
 
-    debugElement.innerHTML =
+    let pose = null;
 
-        "WEBXR AR<br><br>" +
 
-        "PHONE POSITION<br>" +
+    if (
+        frame &&
+        xrReferenceSpace
+    ) {
 
-        "X: " +
-        position.x.toFixed(3) +
+        pose =
+            frame.getViewerPose(
 
-        "<br>" +
+                xrReferenceSpace
 
-        "Y: " +
-        position.y.toFixed(3) +
+            );
 
-        "<br>" +
+    }
 
-        "Z: " +
-        position.z.toFixed(3) +
 
-        "<br><br>" +
+    if (
+        pose
+    ) {
 
-        "PHONE QUATERNION<br>" +
+        const p =
+            pose.transform.position;
 
-        "X: " +
-        orientation.x.toFixed(3) +
 
-        "<br>" +
+        const q =
+            pose.transform.orientation;
 
-        "Y: " +
-        orientation.y.toFixed(3) +
 
-        "<br>" +
+        /*
+         * ВАЖНО:
+         *
+         * Эти данные относятся
+         * к телефону/камере.
+         *
+         * Мы НЕ записываем их
+         * в model.position.
+         */
 
-        "Z: " +
-        orientation.z.toFixed(3) +
+        debug.innerHTML =
 
-        "<br>" +
+            "WEBXR 6DoF<br><br>" +
 
-        "W: " +
-        orientation.w.toFixed(3) +
+            "PHONE POSITION<br>" +
 
-        "<br><br>" +
+            "X: " +
+            p.x.toFixed(3) +
 
-        "OBJECT<br>" +
+            "<br>" +
 
-        "X: " +
-        objectWorldPosition
-            .x.toFixed(3) +
+            "Y: " +
+            p.y.toFixed(3) +
 
-        "<br>" +
+            "<br>" +
 
-        "Y: " +
-        objectWorldPosition
-            .y.toFixed(3) +
+            "Z: " +
+            p.z.toFixed(3) +
 
-        "<br>" +
+            "<br><br>" +
 
-        "Z: " +
-        objectWorldPosition
-            .z.toFixed(3) +
+            "PHONE ROTATION<br>" +
 
-        "<br><br>" +
+            "X: " +
+            q.x.toFixed(3) +
 
-        "VISIBLE: " +
-        (
-            model?.visible
-                ? "YES"
-                : "NO"
-        ) +
+            "<br>" +
 
-        "<br>" +
+            "Y: " +
+            q.y.toFixed(3) +
 
-        "LOCK: " +
-        (
-            objectLocked
-                ? "YES"
-                : "NO"
-        );
+            "<br>" +
+
+            "Z: " +
+            q.z.toFixed(3) +
+
+            "<br>" +
+
+            "W: " +
+            q.w.toFixed(3) +
+
+            "<br><br>" +
+
+            "MODEL<br>" +
+
+            "X: " +
+            fixedPosition.x.toFixed(3) +
+
+            "<br>" +
+
+            "Y: " +
+            fixedPosition.y.toFixed(3) +
+
+            "<br>" +
+
+            "Z: " +
+            fixedPosition.z.toFixed(3) +
+
+            "<br><br>" +
+
+            "LOCK: " +
+            (
+                modelLocked
+                    ? "YES"
+                    : "NO"
+            );
+
+    }
 
 
     /*
-     * ================================================
-     * RENDER
-     * ================================================
+     * РЕНДЕР.
      *
-     * Three.js сам использует
-     * XR camera, которую обновляет
-     * WebXR.
+     * XR camera движется.
+     *
+     * Model остаётся
+     * в мировой координате.
      */
 
     renderer.render(
 
         scene,
 
-        renderer.xr.getCamera()
+        xrCamera
 
     );
 
@@ -2313,11 +2205,11 @@ function renderXR(
 
 
 
-/* =====================================================
-   DISTANCE BETWEEN FINGERS
-===================================================== */
+/* =========================================================
+   TOUCH DISTANCE
+========================================================= */
 
-function getTouchDistance() {
+function touchDistance() {
 
     if (
         touches.length < 2
@@ -2349,11 +2241,11 @@ function getTouchDistance() {
 
 
 
-/* =====================================================
+/* =========================================================
    TOUCH CENTER
-===================================================== */
+========================================================= */
 
-function getTouchCenter() {
+function touchCenter() {
 
     return {
 
@@ -2375,9 +2267,9 @@ function getTouchCenter() {
 
 
 
-/* =====================================================
+/* =========================================================
    TOUCH START
-===================================================== */
+========================================================= */
 
 touchLayer.addEventListener(
 
@@ -2387,8 +2279,13 @@ touchLayer.addEventListener(
         event
     ) {
 
+        /*
+         * После lock
+         * жесты модели запрещены.
+         */
+
         if (
-            objectLocked
+            modelLocked
         ) {
 
             return;
@@ -2406,32 +2303,32 @@ touchLayer.addEventListener(
 
 
         /*
-         * TWO FINGERS
+         * Два пальца.
          */
 
         if (
             touches.length === 2
         ) {
 
-            gestureStartDistance =
-                getTouchDistance();
+            startDistance =
+                touchDistance();
 
 
-            gestureStartScale =
+            startScale =
                 model
                     ? model.scale.x
                     : 1;
 
 
             const center =
-                getTouchCenter();
+                touchCenter();
 
 
-            gestureStartCenterX =
+            startCenterX =
                 center.x;
 
 
-            gestureStartCenterY =
+            startCenterY =
                 center.y;
 
 
@@ -2439,7 +2336,7 @@ touchLayer.addEventListener(
                 model
             ) {
 
-                gestureStartPosition.copy(
+                startPosition.copy(
                     model.position
                 );
 
@@ -2449,22 +2346,18 @@ touchLayer.addEventListener(
 
 
         /*
-         * ONE FINGER
+         * Один палец.
          */
 
         if (
             touches.length === 1
         ) {
 
-            singleTouchStartX =
+            startTouchX =
                 touches[0].clientX;
 
 
-            singleTouchStartY =
-                touches[0].clientY;
-
-
-            singleTouchStartRotation =
+            startRotationY =
                 model
                     ? model.rotation.y
                     : 0;
@@ -2481,9 +2374,9 @@ touchLayer.addEventListener(
 
 
 
-/* =====================================================
+/* =========================================================
    TOUCH MOVE
-===================================================== */
+========================================================= */
 
 touchLayer.addEventListener(
 
@@ -2494,7 +2387,7 @@ touchLayer.addEventListener(
     ) {
 
         if (
-            objectLocked ||
+            modelLocked ||
             !model
         ) {
 
@@ -2514,7 +2407,7 @@ touchLayer.addEventListener(
 
         /*
          * ==============================================
-         * TWO FINGERS
+         * ДВА ПАЛЬЦА
          * ==============================================
          */
 
@@ -2523,35 +2416,27 @@ touchLayer.addEventListener(
         ) {
 
             /*
-             * ------------------------------
              * PINCH
-             * ------------------------------
              */
 
             const distance =
-                getTouchDistance();
+                touchDistance();
 
 
             if (
-                gestureStartDistance > 0
+                startDistance > 0
             ) {
 
                 const factor =
-
                     distance /
-                    gestureStartDistance;
+                    startDistance;
 
 
-                let newScale =
-
-                    gestureStartScale *
-                    factor;
-
-
-                newScale =
+                const newScale =
                     THREE.MathUtils.clamp(
 
-                        newScale,
+                        startScale *
+                        factor,
 
                         0.05,
 
@@ -2568,65 +2453,60 @@ touchLayer.addEventListener(
 
 
             /*
-             * ------------------------------
-             * MOVE
-             * ------------------------------
+             * ПЕРЕМЕЩЕНИЕ
              */
 
             const center =
-                getTouchCenter();
+                touchCenter();
 
 
             const dx =
                 center.x -
-                gestureStartCenterX;
+                startCenterX;
 
 
             const dy =
                 center.y -
-                gestureStartCenterY;
+                startCenterY;
 
 
             /*
-             * Двигаем объект
-             * в мировой X/Y плоскости.
+             * X/Y перемещение.
              */
 
             model.position.x =
 
-                gestureStartPosition.x +
+                startPosition.x +
                 dx * 0.003;
 
 
             model.position.y =
 
-                gestureStartPosition.y -
+                startPosition.y -
                 dy * 0.003;
 
 
             /*
-             * Не меняем Z.
+             * Z оставляем.
              */
 
             model.position.z =
 
-                gestureStartPosition.z;
+                startPosition.z;
 
 
             /*
-             * Обновляем сохранённую
-             * мировую позицию.
+             * Обновляем сохранённое
+             * положение.
              */
 
-            objectWorldPosition.copy(
+            fixedPosition.copy(
                 model.position
             );
 
 
             setStatus(
-
-                "Перемещение сцены"
-
+                "Перемещение модели"
             );
 
         }
@@ -2634,7 +2514,7 @@ touchLayer.addEventListener(
 
         /*
          * ==============================================
-         * ONE FINGER
+         * ОДИН ПАЛЕЦ
          * ==============================================
          */
 
@@ -2644,21 +2524,21 @@ touchLayer.addEventListener(
 
             const dx =
                 touches[0].clientX -
-                singleTouchStartX;
+                startTouchX;
 
 
             /*
-             * Вращаем сам объект
-             * только ДО закрепления.
+             * Вращаем модель
+             * только до lock.
              */
 
             model.rotation.y =
 
-                singleTouchStartRotation +
+                startRotationY +
                 dx * 0.01;
 
 
-            objectWorldQuaternion.copy(
+            fixedQuaternion.copy(
                 model.quaternion
             );
 
@@ -2674,9 +2554,9 @@ touchLayer.addEventListener(
 
 
 
-/* =====================================================
+/* =========================================================
    TOUCH END
-===================================================== */
+========================================================= */
 
 touchLayer.addEventListener(
 
@@ -2687,7 +2567,7 @@ touchLayer.addEventListener(
     ) {
 
         if (
-            objectLocked
+            modelLocked
         ) {
 
             return;
@@ -2710,18 +2590,18 @@ touchLayer.addEventListener(
 
 
 
-/* =====================================================
-   LOCK
-===================================================== */
+/* =========================================================
+   LOCK MODEL
+========================================================= */
 
-function lockObject() {
+function lockModel() {
 
     if (
         !model
     ) {
 
         setStatus(
-            "3D-модель ещё не загружена."
+            "Модель ещё загружается."
         );
 
         return;
@@ -2730,13 +2610,11 @@ function lockObject() {
 
 
     if (
-        !model.visible
+        !modelPlaced
     ) {
 
         setStatus(
-
-            "Сначала нажмите «ПОКАЗАТЬ СЦЕНУ»."
-
+            "Модель ещё не размещена."
         );
 
         return;
@@ -2745,46 +2623,47 @@ function lockObject() {
 
 
     /*
-     * Сохраняем положение.
+     * Сохраняем мировую
+     * позицию и ориентацию.
      */
 
-    objectWorldPosition.copy(
+    fixedPosition.copy(
         model.position
     );
 
 
-    objectWorldQuaternion.copy(
+    fixedQuaternion.copy(
         model.quaternion
     );
 
 
-    objectLocked =
+    modelLocked =
         true;
 
 
     /*
-     * После LOCK:
-     *
-     * touchLayer больше не
-     * изменяет model.position.
+     * Скрываем индикатор.
      */
 
-    trackingBadge.textContent =
+    placementIndicator.style.display =
+        "none";
+
+
+    help.textContent =
+
+        "СЦЕНА ЗАКРЕПЛЕНА. " +
+        "Ходите с телефоном вокруг неё. " +
+        "Не перемещайте модель пальцами.";
+
+
+    tracking.textContent =
         "LOCKED";
-
-
-    gestureHelp.style.display =
-        "none";
-
-
-    modelIndicator.style.display =
-        "none";
 
 
     setStatus(
 
         "СЦЕНА ЗАКРЕПЛЕНА. " +
-        "ХОДИТЕ ВОКРУГ НЕЁ."
+        "МОЖНО ХОДИТЬ ВОКРУГ."
 
     );
 
@@ -2792,89 +2671,34 @@ function lockObject() {
 
 
 
-/* =====================================================
+/* =========================================================
    UNLOCK
-===================================================== */
+========================================================= */
 
-function unlockObject() {
+function unlockModel() {
 
-    objectLocked =
+    modelLocked =
         false;
 
 
-    trackingBadge.textContent =
-        "FREE";
-
-
-    gestureHelp.style.display =
+    placementIndicator.style.display =
         "block";
 
 
-    setStatus(
+    help.textContent =
 
-        "Сцену можно перемещать."
-
-    );
-
-}
+        "Два пальца — перемещение. " +
+        "Pinch — масштаб. " +
+        "Один палец — вращение.";
 
 
-
-/* =====================================================
-   SHOW MODEL
-===================================================== */
-
-function showModelAgain() {
-
-    if (
-        !model
-    ) {
-
-        setStatus(
-            "Модель ещё не загружена."
-        );
-
-        return;
-
-    }
-
-
-    if (
-        !webXRMode
-    ) {
-
-        setStatus(
-            "WebXR AR не активен."
-        );
-
-        return;
-
-    }
-
-
-    /*
-     * Разрешаем новое размещение.
-     */
-
-    initialModelPlaced =
-        false;
-
-
-    objectLocked =
-        false;
-
-
-    model.visible =
-        true;
-
-
-    trackingBadge.textContent =
+    tracking.textContent =
         "FREE";
 
 
     setStatus(
 
-        "Ищем направление камеры..."
+        "Модель снова можно разместить."
 
     );
 
@@ -2882,15 +2706,52 @@ function showModelAgain() {
 
 
 
-/* =====================================================
+/* =========================================================
+   CENTER MODEL
+========================================================= */
+
+function centerModel() {
+
+    if (
+        !xrCamera ||
+        !model
+    ) {
+
+        return;
+
+    }
+
+
+    modelLocked =
+        false;
+
+
+    modelPlaced =
+        false;
+
+
+    placeModelInFrontOfCamera();
+
+
+    setStatus(
+
+        "Модель возвращена перед камерой."
+
+    );
+
+}
+
+
+
+/* =========================================================
    SCALE UP
-===================================================== */
+========================================================= */
 
 function scaleUp() {
 
     if (
         !model ||
-        objectLocked
+        modelLocked
     ) {
 
         return;
@@ -2906,15 +2767,15 @@ function scaleUp() {
 
 
 
-/* =====================================================
+/* =========================================================
    SCALE DOWN
-===================================================== */
+========================================================= */
 
 function scaleDown() {
 
     if (
         !model ||
-        objectLocked
+        modelLocked
     ) {
 
         return;
@@ -2930,11 +2791,11 @@ function scaleDown() {
 
 
 
-/* =====================================================
+/* =========================================================
    TELEGRAM SENSORS
-===================================================== */
+========================================================= */
 
-function startTelegramSensors() {
+function startSensors() {
 
     if (
         !tg
@@ -2946,7 +2807,7 @@ function startTelegramSensors() {
 
 
     /*
-     * ORIENTATION
+     * DEVICE ORIENTATION
      */
 
     try {
@@ -2959,6 +2820,7 @@ function startTelegramSensors() {
 
                 {
                     refresh_rate: 50,
+
                     need_absolute: false
                 },
 
@@ -2967,7 +2829,7 @@ function startTelegramSensors() {
                 ) {
 
                     console.log(
-                        "Orientation:",
+                        "Orientation",
                         result
                     );
 
@@ -3036,7 +2898,7 @@ function startTelegramSensors() {
                 ) {
 
                     console.log(
-                        "Gyro:",
+                        "Gyroscope",
                         result
                     );
 
@@ -3105,7 +2967,7 @@ function startTelegramSensors() {
                 ) {
 
                     console.log(
-                        "Accel:",
+                        "Accelerometer",
                         result
                     );
 
@@ -3156,9 +3018,9 @@ function startTelegramSensors() {
 
 
 
-/* =====================================================
+/* =========================================================
    GPS
-===================================================== */
+========================================================= */
 
 function getGPS() {
 
@@ -3168,7 +3030,7 @@ function getGPS() {
     ) {
 
         setStatus(
-            "GPS Telegram недоступен."
+            "GPS недоступен."
         );
 
         return;
@@ -3194,7 +3056,7 @@ function getGPS() {
                             ) {
 
                                 setStatus(
-                                    "GPS разрешение не предоставлено."
+                                    "GPS не разрешён."
                                 );
 
                                 return;
@@ -3242,7 +3104,6 @@ function getGPS() {
     ) {
 
         console.error(
-            "GPS",
             error
         );
 
@@ -3252,25 +3113,25 @@ function getGPS() {
 
 
 
-/* =====================================================
+/* =========================================================
    FALLBACK CAMERA
-===================================================== */
+========================================================= */
 
-async function startFallback() {
+async function startCameraFallback() {
 
     if (
-        !navigator.mediaDevices
+        !navigator.mediaDevices ||
+        !navigator.mediaDevices.getUserMedia
     ) {
 
         throw new Error(
-            "Camera API unavailable"
+            "CAMERA_API_UNAVAILABLE"
         );
 
     }
 
 
     const stream =
-
         await navigator
             .mediaDevices
             .getUserMedia({
@@ -3278,24 +3139,15 @@ async function startFallback() {
                 video: {
 
                     facingMode: {
-
-                        ideal:
-                            "environment"
-
+                        ideal: "environment"
                     },
 
                     width: {
-
-                        ideal:
-                            1280
-
+                        ideal: 1280
                     },
 
                     height: {
-
-                        ideal:
-                            720
-
+                        ideal: 720
                     }
 
                 },
@@ -3305,72 +3157,65 @@ async function startFallback() {
             });
 
 
-    fallbackCamera.srcObject =
+    camera.srcObject =
         stream;
 
 
-    await fallbackCamera.play();
+    await camera.play();
 
 
-    fallbackCamera.style.display =
+    camera.style.display =
         "block";
 
 
-    webXRMode =
-        false;
+    /*
+     * Обычный camera fallback.
+     *
+     * Он нужен только если
+     * устройство не поддерживает
+     * WebXR AR.
+     */
 
-
-    showARUI(
+    showInterface(
         "CAMERA"
     );
 
 
-    trackingBadge.textContent =
-        "SENSORS";
+    tracking.textContent =
+        "NO 6DoF";
 
 
-    startTelegramSensors();
+    startSensors();
+
+
+    initThree();
+
+
+    loadFallbackModel();
 
 
     setStatus(
 
         "Камера работает. " +
-        "Настоящий 6DoF WebXR недоступен."
+        "WebXR 6DoF недоступен."
 
     );
-
-
-    /*
-     * В fallback модель
-     * просто показываем в
-     * Three.js перед камерой.
-     */
-
-    loadFallbackModel();
 
 }
 
 
 
-/* =====================================================
+/* =========================================================
    FALLBACK MODEL
-===================================================== */
+========================================================= */
 
 function loadFallbackModel() {
 
-    initThree();
-
-
     if (
-        model
+        !scene
     ) {
 
-        scene.remove(
-            model
-        );
-
-        model =
-            null;
+        return;
 
     }
 
@@ -3388,6 +3233,17 @@ function loadFallbackModel() {
         function (
             gltf
         ) {
+
+            if (
+                model
+            ) {
+
+                scene.remove(
+                    model
+                );
+
+            }
+
 
             model =
                 gltf.scene;
@@ -3419,7 +3275,7 @@ function loadFallbackModel() {
             );
 
 
-            const max =
+            const maxSize =
                 Math.max(
 
                     size.x,
@@ -3430,26 +3286,25 @@ function loadFallbackModel() {
 
 
             if (
-                max > 0
+                maxSize > 0
             ) {
 
                 model.scale.setScalar(
-                    1.5 / max
+
+                    1.5 /
+                    maxSize
+
                 );
 
             }
 
 
-            /*
-             * В обычном режиме
-             * ставим модель перед
-             * Three camera.
-             */
-
             model.position.set(
+
                 0,
                 -0.2,
                 -2
+
             );
 
 
@@ -3462,17 +3317,23 @@ function loadFallbackModel() {
             );
 
 
+            modelLoaded =
+                true;
+
+
+            modelPlaced =
+                true;
+
+
             /*
-             * Создаём обычную камеру.
+             * Обычная камера.
              */
 
             if (
-                !scene.getObjectByName(
-                    "FallbackCamera"
-                )
+                !camera3D
             ) {
 
-                const camera =
+                camera3D =
                     new THREE.PerspectiveCamera(
 
                         60,
@@ -3487,38 +3348,36 @@ function loadFallbackModel() {
                     );
 
 
-                camera.name =
-                    "FallbackCamera";
+                camera3D.position.set(
 
-
-                camera.position.set(
                     0,
                     0,
                     0
-                );
 
-
-                scene.add(
-                    camera
-                );
-
-
-                renderer.setAnimationLoop(
-                    function () {
-
-                        renderer.render(
-                            scene,
-                            camera
-                        );
-
-                    }
                 );
 
             }
 
 
+            renderer.setAnimationLoop(
+
+                function () {
+
+                    renderer.render(
+
+                        scene,
+
+                        camera3D
+
+                    );
+
+                }
+
+            );
+
+
             setStatus(
-                "3D загружен."
+                "3D-модель отображается."
             );
 
         },
@@ -3533,8 +3392,9 @@ function loadFallbackModel() {
                 error
             );
 
+
             setStatus(
-                "Ошибка загрузки GLB."
+                "Ошибка GLB."
             );
 
         }
@@ -3545,22 +3405,19 @@ function loadFallbackModel() {
 
 
 
-/* =====================================================
-   START APP
-===================================================== */
+/* =========================================================
+   START APPLICATION
+========================================================= */
 
 async function startApplication() {
 
     setStatus(
-        "Запуск AR..."
+        "Запуск..."
     );
 
 
-    startTelegramSensors();
-
-
     /*
-     * WebXR.
+     * Сначала проверяем WebXR.
      */
 
     if (
@@ -3583,7 +3440,9 @@ async function startApplication() {
 
                 initThree();
 
+
                 await startWebXR();
+
 
                 return;
 
@@ -3595,16 +3454,17 @@ async function startApplication() {
         ) {
 
             console.error(
-                "WebXR:",
+                "WEBXR ERROR",
                 error
             );
 
 
-            debugElement.innerHTML =
+            debug.innerHTML =
 
                 "WEBXR ERROR<br>" +
 
                 error.name +
+
                 "<br>" +
 
                 error.message;
@@ -3615,12 +3475,13 @@ async function startApplication() {
 
 
     /*
-     * Fallback.
+     * Если WebXR недоступен,
+     * запускаем обычную камеру.
      */
 
     try {
 
-        await startFallback();
+        await startCameraFallback();
 
     }
     catch (
@@ -3628,16 +3489,28 @@ async function startApplication() {
     ) {
 
         console.error(
+            "CAMERA ERROR",
             error
         );
 
 
         setStatus(
 
-            "Камера не запустилась: " +
+            "Не удалось открыть камеру: " +
             error.name
 
         );
+
+
+        debug.innerHTML =
+
+            "CAMERA ERROR<br>" +
+
+            error.name +
+
+            "<br>" +
+
+            error.message;
 
     }
 
@@ -3645,11 +3518,11 @@ async function startApplication() {
 
 
 
-/* =====================================================
+/* =========================================================
    CLOSE
-===================================================== */
+========================================================= */
 
-async function closeAR() {
+async function closeApplication() {
 
     if (
         xrSession
@@ -3666,7 +3539,7 @@ async function closeAR() {
 
 
     const stream =
-        fallbackCamera.srcObject;
+        camera.srcObject;
 
 
     if (
@@ -3690,27 +3563,27 @@ async function closeAR() {
     }
 
 
-    fallbackCamera.srcObject =
+    camera.srcObject =
         null;
 
 
-    fallbackCamera.style.display =
+    camera.style.display =
         "none";
 
 
-    webXRMode =
+    xrActive =
         false;
 
 
-    objectLocked =
+    modelLocked =
         false;
 
 
-    initialModelPlaced =
+    modelPlaced =
         false;
 
 
-    touchLayer.style.display =
+    placementIndicator.style.display =
         "none";
 
 
@@ -3730,7 +3603,7 @@ async function closeAR() {
         "none";
 
 
-    gestureHelp.style.display =
+    help.style.display =
         "none";
 
 
@@ -3738,7 +3611,7 @@ async function closeAR() {
         "none";
 
 
-    modelIndicator.style.display =
+    touchLayer.style.display =
         "none";
 
 
@@ -3750,11 +3623,27 @@ async function closeAR() {
 
 
 
-/* =====================================================
-   XR END
-===================================================== */
+/* =========================================================
+   XR FINISH
+========================================================= */
 
 function finishXR() {
+
+    xrActive =
+        false;
+
+
+    xrSession =
+        null;
+
+
+    xrReferenceSpace =
+        null;
+
+
+    xrCamera =
+        null;
+
 
     if (
         renderer
@@ -3767,30 +3656,6 @@ function finishXR() {
     }
 
 
-    xrSession =
-        null;
-
-
-    xrReferenceSpace =
-        null;
-
-
-    webXRMode =
-        false;
-
-
-    objectLocked =
-        false;
-
-
-    initialModelPlaced =
-        false;
-
-
-    modelIndicator.style.display =
-        "none";
-
-
     startScreen.style.display =
         "flex";
 
@@ -3807,7 +3672,7 @@ function finishXR() {
         "none";
 
 
-    gestureHelp.style.display =
+    help.style.display =
         "none";
 
 
@@ -3819,6 +3684,10 @@ function finishXR() {
         "none";
 
 
+    placementIndicator.style.display =
+        "none";
+
+
     setStatus(
         "AR завершён"
     );
@@ -3827,13 +3696,13 @@ function finishXR() {
 
 
 
-/* =====================================================
-   SCENE BUTTONS
-===================================================== */
+/* =========================================================
+   SCENE SELECT
+========================================================= */
 
 document
     .querySelectorAll(
-        ".sceneButton"
+        ".scene"
     )
     .forEach(
 
@@ -3847,13 +3716,19 @@ document
 
                 function () {
 
+                    /*
+                     * Если объект уже
+                     * закреплён, сначала
+                     * разблокируем.
+                     */
+
                     if (
-                        objectLocked
+                        modelLocked
                     ) {
 
                         setStatus(
 
-                            "Нажмите «ИЗМЕНИТЬ»."
+                            "Сначала нажмите «ИЗМЕНИТЬ»."
 
                         );
 
@@ -3864,7 +3739,7 @@ document
 
                     document
                         .querySelectorAll(
-                            ".sceneButton"
+                            ".scene"
                         )
                         .forEach(
 
@@ -3907,9 +3782,9 @@ document
 
 
 
-/* =====================================================
-   BUTTON EVENTS
-===================================================== */
+/* =========================================================
+   BUTTONS
+========================================================= */
 
 startButton.addEventListener(
 
@@ -3924,26 +3799,13 @@ startButton.addEventListener(
 );
 
 
-showModelButton.addEventListener(
+lockButton.addEventListener(
 
     "click",
 
     function () {
 
-        showModelAgain();
-
-    }
-
-);
-
-
-placeButton.addEventListener(
-
-    "click",
-
-    function () {
-
-        lockObject();
+        lockModel();
 
     }
 
@@ -3956,7 +3818,20 @@ unlockButton.addEventListener(
 
     function () {
 
-        unlockObject();
+        unlockModel();
+
+    }
+
+);
+
+
+showButton.addEventListener(
+
+    "click",
+
+    function () {
+
+        centerModel();
 
     }
 
@@ -4008,7 +3883,7 @@ closeButton.addEventListener(
 
     function () {
 
-        closeAR();
+        closeApplication();
 
     }
 
@@ -4016,9 +3891,9 @@ closeButton.addEventListener(
 
 
 
-/* =====================================================
+/* =========================================================
    RESIZE
-===================================================== */
+========================================================= */
 
 window.addEventListener(
 
@@ -4040,15 +3915,30 @@ window.addEventListener(
 
         }
 
+
+        if (
+            camera3D
+        ) {
+
+            camera3D.aspect =
+
+                window.innerWidth /
+                window.innerHeight;
+
+
+            camera3D.updateProjectionMatrix();
+
+        }
+
     }
 
 );
 
 
 
-/* =====================================================
+/* =========================================================
    INITIAL CHECK
-===================================================== */
+========================================================= */
 
 async function initialCheck() {
 
@@ -4057,11 +3947,11 @@ async function initialCheck() {
     ) {
 
         setStatus(
-            "Требуется HTTPS."
+            "Сайт должен работать через HTTPS."
         );
 
 
-        debugElement.innerHTML =
+        debug.innerHTML =
             "HTTPS: NO";
 
 
@@ -4077,12 +3967,12 @@ async function initialCheck() {
         setStatus(
 
             "WebXR не найден. " +
-            "Будет доступна камера."
+            "Нажмите «Запуск AR»."
 
         );
 
 
-        debugElement.innerHTML =
+        debug.innerHTML =
 
             "HTTPS: YES<br>" +
             "WebXR: NO";
@@ -4112,24 +4002,24 @@ async function initialCheck() {
             );
 
 
-            debugElement.innerHTML =
+            debug.innerHTML =
 
                 "HTTPS: YES<br>" +
                 "WebXR: YES<br>" +
                 "immersive-ar: YES<br><br>" +
-                "FREE PLACEMENT";
+                "6DoF READY";
 
         }
         else {
 
             setStatus(
 
-                "immersive-ar недоступен."
+                "AR WebXR недоступен."
 
             );
 
 
-            debugElement.innerHTML =
+            debug.innerHTML =
 
                 "HTTPS: YES<br>" +
                 "WebXR: YES<br>" +
@@ -4143,11 +4033,11 @@ async function initialCheck() {
     ) {
 
         setStatus(
-            "Ошибка проверки WebXR."
+            "Ошибка проверки AR."
         );
 
 
-        debugElement.innerHTML =
+        debug.innerHTML =
 
             error.name +
             "<br>" +
@@ -4159,6 +4049,7 @@ async function initialCheck() {
 
 
 initialCheck();
+
 
 </script>
 
