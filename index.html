@@ -43,9 +43,14 @@
 
             overflow: hidden;
 
-            background: #000;
+            background: #101820;
 
             font-family: Arial, sans-serif;
+        }
+
+
+        body {
+            color: white;
         }
 
 
@@ -58,9 +63,9 @@
         }
 
 
-        /* -------------------------
+        /* =========================
            START SCREEN
-        ------------------------- */
+        ========================= */
 
         #startScreen {
 
@@ -80,17 +85,15 @@
 
             padding: 25px;
 
-            background: #111;
-
-            color: white;
-
             text-align: center;
+
+            background: #101820;
         }
 
 
         #startScreen h1 {
 
-            font-size: 42px;
+            font-size: clamp(34px, 10vw, 52px);
 
             margin-bottom: 15px;
         }
@@ -100,51 +103,115 @@
 
             max-width: 350px;
 
-            margin-bottom: 30px;
+            line-height: 1.5;
 
             opacity: .7;
 
-            line-height: 1.5;
+            margin-bottom: 30px;
         }
 
 
-        #cameraButton {
+        /* =========================
+           MAIN BUTTON
+        ========================= */
+
+        .mainButton {
+
+            width: min(90%, 340px);
 
             border: none;
 
-            border-radius: 16px;
+            border-radius: 18px;
 
-            padding: 17px 30px;
+            padding: 18px 25px;
+
+            background: white;
+
+            color: #111;
 
             font-size: 18px;
 
             font-weight: bold;
 
-            background: white;
-
-            color: black;
-
             cursor: pointer;
         }
 
 
-        /* -------------------------
-           3D MODEL
-        ------------------------- */
+        .mainButton:active {
+
+            transform: scale(.97);
+        }
+
+
+        /* =========================
+           AR SCREEN
+        ========================= */
+
+        #arScreen {
+
+            position: absolute;
+
+            inset: 0;
+
+            z-index: 5;
+
+            display: none;
+
+            flex-direction: column;
+
+            justify-content: center;
+
+            align-items: center;
+
+            text-align: center;
+
+            padding: 25px;
+
+            background: #101820;
+        }
+
+
+        #arScreen h2 {
+
+            margin-bottom: 15px;
+        }
+
+
+        #arScreen p {
+
+            max-width: 350px;
+
+            opacity: .7;
+
+            line-height: 1.5;
+
+            margin-bottom: 25px;
+        }
+
+
+        /* =========================
+           MODEL VIEWER
+        ========================= */
 
         model-viewer {
+
+            position: absolute;
+
+            inset: 0;
 
             width: 100%;
 
             height: 100%;
 
+            display: none;
+
             background: transparent;
         }
 
 
-        /* -------------------------
-           TOP UI
-        ------------------------- */
+        /* =========================
+           TOP PANEL
+        ========================= */
 
         #topUI {
 
@@ -161,6 +228,8 @@
             display: none;
 
             justify-content: space-between;
+
+            pointer-events: none;
         }
 
 
@@ -168,79 +237,45 @@
 
             padding: 10px 14px;
 
-            border-radius: 12px;
+            border-radius: 14px;
 
-            background: rgba(0,0,0,.65);
-
-            color: white;
+            background: rgba(0, 0, 0, .6);
 
             backdrop-filter: blur(10px);
+
+            font-size: 14px;
         }
 
 
-        /* -------------------------
-           AR BUTTON
-        ------------------------- */
-
-        #arButton {
-
-            position: absolute;
-
-            bottom: 30px;
-
-            left: 50%;
-
-            transform: translateX(-50%);
-
-            z-index: 15;
-
-            border: none;
-
-            border-radius: 16px;
-
-            padding: 16px 28px;
-
-            background: white;
-
-            color: black;
-
-            font-size: 17px;
-
-            font-weight: bold;
-
-            display: none;
-        }
-
-
-        /* -------------------------
+        /* =========================
            STATUS
-        ------------------------- */
+        ========================= */
 
         #status {
 
             position: absolute;
 
-            bottom: 100px;
-
             left: 50%;
+
+            bottom: 100px;
 
             transform: translateX(-50%);
 
+            z-index: 30;
+
             width: calc(100% - 40px);
 
-            padding: 12px;
+            max-width: 400px;
 
-            border-radius: 12px;
+            padding: 13px 16px;
 
-            background: rgba(0,0,0,.75);
+            border-radius: 14px;
 
-            color: white;
+            background: rgba(0, 0, 0, .75);
 
             text-align: center;
 
             display: none;
-
-            z-index: 30;
         }
 
     </style>
@@ -254,31 +289,80 @@
 <div id="app">
 
 
-    <!-- START -->
+    <!-- =================================
+         TELEGRAM START SCREEN
+    ================================== -->
 
-    <div id="startScreen">
+    <section id="startScreen">
 
         <h1>AR GAME</h1>
 
         <p>
-            Разместите 3D-объект
-            в реальном пространстве.
+
+            Telegram не может напрямую
+            передать AR-сцену Android
+            из своего WebView.
+
+            <br><br>
+
+            Открой AR в Chrome,
+            чтобы использовать камеру
+            и разместить 3D-объект.
+
         </p>
 
-        <button id="cameraButton">
-            Включить AR
+
+        <button
+            id="openChromeButton"
+            class="mainButton">
+
+            Открыть AR в Chrome
+
         </button>
 
-    </div>
+    </section>
 
 
-    <!-- TOP -->
+    <!-- =================================
+         AR SCREEN
+    ================================== -->
+
+    <section id="arScreen">
+
+        <h2>
+            AR готов
+        </h2>
+
+
+        <p>
+
+            Нажми кнопку ниже.
+            Chrome откроет AR-камеру.
+
+        </p>
+
+
+        <button
+            id="startARButton"
+            class="mainButton">
+
+            Запустить AR
+
+        </button>
+
+    </section>
+
+
+    <!-- =================================
+         TOP UI
+    ================================== -->
 
     <div id="topUI">
 
         <div class="panel">
-            AR MODE
+            AR GAME
         </div>
+
 
         <div
             class="panel"
@@ -291,7 +375,9 @@
     </div>
 
 
-    <!-- MODEL -->
+    <!-- =================================
+         3D MODEL
+    ================================== -->
 
     <model-viewer
 
@@ -303,6 +389,8 @@
 
         ar-modes="scene-viewer webxr quick-look"
 
+        ar-placement="floor"
+
         camera-controls
 
         shadow-intensity="1"
@@ -312,11 +400,13 @@
         alt="AR Creature">
 
 
-        <!-- AR BUTTON -->
+        <!-- ВАЖНО:
+             кнопка находится внутри model-viewer -->
 
         <button
-            id="arButton"
-            slot="ar-button">
+            id="placeButton"
+            slot="ar-button"
+            class="mainButton">
 
             Разместить объект
 
@@ -326,7 +416,9 @@
     </model-viewer>
 
 
-    <!-- STATUS -->
+    <!-- =================================
+         STATUS
+    ================================== -->
 
     <div id="status"></div>
 
@@ -337,42 +429,34 @@
 <script>
 
 
-    /* ==========================
+    /* =================================
        TELEGRAM
-    ========================== */
+    ================================== */
 
     const tg =
-        window.Telegram.WebApp;
+        window.Telegram?.WebApp;
 
 
-    tg.ready();
+    if (tg) {
 
-    tg.expand();
+        tg.ready();
 
-
-    /* ==========================
-       USER
-    ========================== */
-
-    const user =
-        tg.initDataUnsafe?.user;
-
-
-    if (user) {
-
-        document.getElementById(
-            "userName"
-        ).textContent =
-            user.first_name ||
-            user.username ||
-            "Player";
+        tg.expand();
 
     }
 
 
-    /* ==========================
+    /* =================================
+       GITHUB PAGES URL
+    ================================= */
+
+    const AR_URL =
+        "https://https://roman22022000.github.io/ArGameCam/";
+
+
+    /* =================================
        ELEMENTS
-    ========================== */
+    ================================= */
 
     const startScreen =
         document.getElementById(
@@ -380,21 +464,21 @@
         );
 
 
-    const cameraButton =
+    const arScreen =
         document.getElementById(
-            "cameraButton"
+            "arScreen"
         );
 
 
-    const arButton =
+    const openChromeButton =
         document.getElementById(
-            "arButton"
+            "openChromeButton"
         );
 
 
-    const topUI =
+    const startARButton =
         document.getElementById(
-            "topUI"
+            "startARButton"
         );
 
 
@@ -404,55 +488,127 @@
         );
 
 
+    const topUI =
+        document.getElementById(
+            "topUI"
+        );
+
+
     const status =
         document.getElementById(
             "status"
         );
 
 
-    /* ==========================
-       STATUS MESSAGE
-    ========================== */
+    /* =================================
+       TELEGRAM USER
+    ================================== */
+
+    if (tg?.initDataUnsafe?.user) {
+
+        const user =
+            tg.initDataUnsafe.user;
+
+
+        document.getElementById(
+            "userName"
+        ).textContent =
+            user.first_name ||
+            user.username ||
+            "Player";
+    }
+
+
+    /* =================================
+       STATUS
+    ================================== */
 
     function showStatus(text) {
 
-        status.textContent = text;
+        status.textContent =
+            text;
 
-        status.style.display = "block";
+        status.style.display =
+            "block";
 
     }
 
 
-    /* ==========================
-       MODEL LOADED
-    ========================== */
+    /* =================================
+       OPEN CHROME
+    ================================== */
 
-    model.addEventListener(
-        "load",
+    openChromeButton.addEventListener(
+        "click",
         () => {
 
-            console.log(
-                "3D модель загружена"
-            );
+            /*
+             * Telegram официально
+             * открывает HTTPS-ссылку
+             * во внешнем браузере.
+             */
+
+            if (tg?.openLink) {
+
+                tg.openLink(
+                    AR_URL,
+                    {
+                        try_browser: "chrome"
+                    }
+                );
+
+            }
+            else {
+
+                /*
+                 * Если приложение открыто
+                 * не из Telegram
+                 */
+
+                window.location.href =
+                    AR_URL;
+
+            }
 
         }
     );
 
 
-    /* ==========================
-       START AR
-    ========================== */
+    /* =================================
+       DETECT AR MODE
+    ================================= */
 
-    cameraButton.addEventListener(
+    const params =
+        new URLSearchParams(
+            window.location.search
+        );
+
+
+    const isAR =
+        params.get("ar") === "1";
+
+
+    if (isAR) {
+
+        startScreen.style.display =
+            "none";
+
+
+        arScreen.style.display =
+            "flex";
+
+    }
+
+
+    /* =================================
+       START AR
+    ================================= */
+
+    startARButton.addEventListener(
         "click",
         async () => {
 
-            console.log(
-                "Кнопка AR нажата"
-            );
-
-
-            startScreen.style.display =
+            arScreen.style.display =
                 "none";
 
 
@@ -460,12 +616,7 @@
                 "flex";
 
 
-            /*
-             * Показываем кнопку
-             * размещения объекта
-             */
-
-            arButton.style.display =
+            model.style.display =
                 "block";
 
 
@@ -480,41 +631,34 @@
 
 
                 console.log(
-                    "canActivateAR:",
+                    "Model loaded"
+                );
+
+
+                console.log(
+                    "AR supported:",
                     model.canActivateAR
                 );
 
 
                 /*
-                 * Не блокируем запуск
-                 * только из-за проверки
+                 * Запрашиваем AR
                  */
 
-                if (model.canActivateAR) {
-
-                    showStatus(
-                        "Нажмите «Разместить объект»"
-                    );
-
-                }
-                else {
-
-                    showStatus(
-                        "AR может быть недоступен в этом WebView"
-                    );
-
-                }
+                await model.activateAR();
 
 
             }
             catch (error) {
 
                 console.error(
+                    "AR ERROR:",
                     error
                 );
 
+
                 showStatus(
-                    "Ошибка подготовки AR"
+                    "Не удалось запустить AR. Проверьте поддержку ARCore."
                 );
 
             }
@@ -523,9 +667,9 @@
     );
 
 
-    /* ==========================
+    /* =================================
        AR STATUS
-    ========================== */
+    ================================== */
 
     model.addEventListener(
         "ar-status",
@@ -537,35 +681,26 @@
             );
 
 
-            switch (
-                event.detail.status
+            if (
+                event.detail.status ===
+                "session-started"
             ) {
 
-                case "session-started":
+                showStatus(
+                    "Наведите камеру на пол"
+                );
 
-                    showStatus(
-                        "Наведите камеру на пол"
-                    );
-
-                    break;
+            }
 
 
-                case "object-placed":
+            if (
+                event.detail.status ===
+                "not-presenting"
+            ) {
 
-                    showStatus(
-                        "Объект размещён"
-                    );
-
-                    break;
-
-
-                case "not-presenting":
-
-                    showStatus(
-                        "AR завершён"
-                    );
-
-                    break;
+                showStatus(
+                    "AR завершён"
+                );
 
             }
 
@@ -573,9 +708,25 @@
     );
 
 
-    /* ==========================
-       ERROR
-    ========================== */
+    /* =================================
+       MODEL LOADED
+    ================================== */
+
+    model.addEventListener(
+        "load",
+        () => {
+
+            console.log(
+                "3D модель загружена"
+            );
+
+        }
+    );
+
+
+    /* =================================
+       MODEL ERROR
+    ================================= */
 
     model.addEventListener(
         "error",
@@ -586,8 +737,9 @@
                 event
             );
 
+
             showStatus(
-                "Ошибка AR или 3D модели"
+                "Ошибка загрузки 3D-модели"
             );
 
         }
