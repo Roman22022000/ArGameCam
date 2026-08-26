@@ -2,394 +2,199 @@
 <html lang="ru">
 
 <head>
-    <meta charset="UTF-8">
 
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-    >
+<meta charset="UTF-8">
 
-    <meta
-        http-equiv="Permissions-Policy"
-        content="camera=(self), microphone=(), xr-spatial-tracking=(self)"
-    >
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+>
 
-    <title>AR Game</title>
+<title>AR Camera Test</title>
 
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-    <style>
+<style>
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
 
-        html,
-        body {
+html,
+body {
 
-            width: 100%;
-            height: 100%;
+    width: 100%;
+    height: 100%;
 
-            overflow: hidden;
+    overflow: hidden;
 
-            background: #000;
+    background: #000;
 
-            font-family: Arial, sans-serif;
+    font-family: Arial, sans-serif;
+}
 
-            touch-action: none;
-        }
+#app {
 
-        #app {
+    width: 100%;
+    height: 100%;
 
-            position: relative;
+    position: relative;
 
-            width: 100%;
-            height: 100dvh;
+    background: #111;
+}
 
-            overflow: hidden;
 
-            background: #000;
-        }
+/* CAMERA */
 
-        /* =====================================
-           CAMERA
-        ===================================== */
+#camera {
 
-        #camera {
+    position: absolute;
 
-            position: absolute;
+    inset: 0;
 
-            inset: 0;
+    width: 100%;
+    height: 100%;
 
-            width: 100%;
-            height: 100%;
+    object-fit: cover;
 
-            object-fit: cover;
+    background: #000;
 
-            background: #000;
+    display: none;
+}
 
-            z-index: 1;
-        }
 
-        /* =====================================
-           3D CANVAS
-        ===================================== */
+/* START */
 
-        #canvas {
+#start {
 
-            position: absolute;
+    position: absolute;
 
-            inset: 0;
+    inset: 0;
 
-            width: 100%;
-            height: 100%;
+    z-index: 10;
 
-            z-index: 2;
+    display: flex;
 
-            pointer-events: auto;
-        }
+    flex-direction: column;
 
-        /* =====================================
-           START
-        ===================================== */
+    justify-content: center;
 
-        #start {
+    align-items: center;
 
-            position: absolute;
+    padding: 25px;
 
-            inset: 0;
+    background: #111820;
 
-            z-index: 50;
+    color: white;
 
-            display: flex;
+    text-align: center;
+}
 
-            flex-direction: column;
+#start h1 {
 
-            justify-content: center;
+    font-size: 40px;
 
-            align-items: center;
+    margin-bottom: 15px;
+}
 
-            padding: 25px;
+#start p {
 
-            background:
-                radial-gradient(
-                    circle,
-                    #202a32,
-                    #080b0d
-                );
+    max-width: 350px;
 
-            color: white;
+    line-height: 1.5;
 
-            text-align: center;
-        }
+    opacity: .7;
 
-        #start h1 {
+    margin-bottom: 30px;
+}
 
-            font-size: 44px;
 
-            margin-bottom: 15px;
-        }
+#cameraButton {
 
-        #start p {
+    width: 240px;
 
-            max-width: 370px;
+    height: 55px;
 
-            opacity: .7;
+    border: 0;
 
-            line-height: 1.5;
+    border-radius: 16px;
 
-            margin-bottom: 30px;
-        }
+    background: white;
 
-        #cameraButton {
+    color: black;
 
-            min-width: 240px;
+    font-size: 18px;
 
-            min-height: 54px;
+    font-weight: bold;
+}
 
-            border: 0;
 
-            border-radius: 17px;
+/* STATUS */
 
-            background: white;
+#status {
 
-            color: #111;
+    position: absolute;
 
-            font-size: 18px;
+    left: 50%;
 
-            font-weight: 700;
-        }
+    bottom: 30px;
 
-        /* =====================================
-           UI
-        ===================================== */
+    transform: translateX(-50%);
 
-        #ui {
+    width: calc(100% - 40px);
 
-            position: absolute;
+    padding: 14px;
 
-            inset: 0;
+    border-radius: 14px;
 
-            z-index: 10;
+    background: rgba(0,0,0,.75);
 
-            display: none;
+    color: white;
 
-            pointer-events: none;
-        }
+    text-align: center;
 
-        #top {
+    z-index: 20;
 
-            position: absolute;
+}
 
-            top:
-                calc(
-                    12px +
-                    env(safe-area-inset-top)
-                );
 
-            left: 12px;
+/* CLOSE */
 
-            right: 12px;
+#close {
 
-            display: flex;
+    position: absolute;
 
-            justify-content: space-between;
-        }
+    top: 20px;
 
-        .badge {
+    right: 20px;
 
-            padding: 10px 14px;
+    z-index: 30;
 
-            border-radius: 13px;
+    display: none;
 
-            background:
-                rgba(0,0,0,.60);
+    padding: 12px 16px;
 
-            color: white;
+    border: 0;
 
-            backdrop-filter: blur(10px);
+    border-radius: 12px;
 
-            font-size: 14px;
-        }
+    background: rgba(0,0,0,.7);
 
-        /* =====================================
-           STATUS
-        ===================================== */
+    color: white;
+}
 
-        #status {
+</style>
 
-            position: absolute;
-
-            left: 50%;
-
-            bottom:
-                calc(
-                    80px +
-                    env(safe-area-inset-bottom)
-                );
-
-            transform:
-                translateX(-50%);
-
-            width:
-                calc(100% - 40px);
-
-            max-width: 430px;
-
-            padding: 12px 15px;
-
-            border-radius: 14px;
-
-            background:
-                rgba(0,0,0,.68);
-
-            color: white;
-
-            text-align: center;
-
-            line-height: 1.4;
-
-            backdrop-filter: blur(10px);
-        }
-
-        /* =====================================
-           RETICLE
-        ===================================== */
-
-        #reticle {
-
-            position: absolute;
-
-            left: 50%;
-
-            top: 50%;
-
-            transform:
-                translate(-50%, -50%);
-
-            width: 48px;
-
-            height: 48px;
-
-            border:
-                2px solid white;
-
-            border-radius: 50%;
-
-            display: none;
-        }
-
-        #reticle::before {
-
-            content: "";
-
-            position: absolute;
-
-            left: 50%;
-
-            top: 50%;
-
-            width: 14px;
-
-            height: 2px;
-
-            transform:
-                translate(-50%, -50%);
-
-            background: white;
-        }
-
-        #reticle::after {
-
-            content: "";
-
-            position: absolute;
-
-            left: 50%;
-
-            top: 50%;
-
-            width: 2px;
-
-            height: 14px;
-
-            transform:
-                translate(-50%, -50%);
-
-            background: white;
-        }
-
-        /* =====================================
-           CONTROLS
-        ===================================== */
-
-        #controls {
-
-            position: absolute;
-
-            left: 50%;
-
-            bottom:
-                calc(
-                    20px +
-                    env(safe-area-inset-bottom)
-                );
-
-            transform:
-                translateX(-50%);
-
-            display: flex;
-
-            gap: 8px;
-
-            pointer-events: auto;
-        }
-
-        #controls button {
-
-            min-width: 52px;
-
-            min-height: 48px;
-
-            border: 0;
-
-            border-radius: 14px;
-
-            background:
-                rgba(0,0,0,.70);
-
-            color: white;
-
-            font-size: 18px;
-        }
-
-        #place {
-
-            min-width: 180px !important;
-
-            background: white !important;
-
-            color: black !important;
-
-            font-size: 16px !important;
-
-            font-weight: 700;
-        }
-
-    </style>
 </head>
 
 
 <body>
 
+
 <div id="app">
 
-
-    <!-- =====================================
-         CAMERA
-    ===================================== -->
 
     <video
         id="camera"
@@ -399,29 +204,21 @@
     </video>
 
 
-    <!-- =====================================
-         THREE.JS
-    ===================================== -->
-
-    <canvas id="canvas"></canvas>
-
-
-    <!-- =====================================
-         START
-    ===================================== -->
-
     <section id="start">
 
-        <h1>AR GAME</h1>
+        <h1>AR CAMERA</h1>
 
         <p>
 
-            Камера и 3D-объект запускаются
-            непосредственно внутри Telegram.
+            Камера должна открыться
+            непосредственно внутри
+            Telegram Mini App.
 
         </p>
 
-        <button id="cameraButton">
+
+        <button
+            id="cameraButton">
 
             Включить камеру
 
@@ -430,79 +227,33 @@
     </section>
 
 
-    <!-- =====================================
-         UI
-    ===================================== -->
+    <button id="close">
 
-    <div id="ui">
+        Закрыть камеру
 
-        <div id="top">
-
-            <div class="badge">
-                AR GAME
-            </div>
-
-            <div
-                class="badge"
-                id="userName">
-
-                Player
-
-            </div>
-
-        </div>
+    </button>
 
 
-        <div id="reticle"></div>
+    <div id="status">
 
-
-        <div id="status">
-
-            Камера запускается...
-
-        </div>
-
-
-        <div id="controls">
-
-            <button id="minus">
-                −
-            </button>
-
-            <button id="place">
-                Поставить объект
-            </button>
-
-            <button id="plus">
-                +
-            </button>
-
-        </div>
+        Нажмите «Включить камеру»
 
     </div>
+
 
 </div>
 
 
-<script type="module">
-
-/* =====================================================
-   THREE.JS
-===================================================== */
-
-import * as THREE from
-"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
-
-import { GLTFLoader } from
-"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/GLTFLoader.js";
+<script>
 
 
-/* =====================================================
+/* =====================================
    TELEGRAM
-===================================================== */
+===================================== */
 
 const tg =
     window.Telegram?.WebApp;
+
 
 if (tg) {
 
@@ -513,314 +264,118 @@ if (tg) {
 }
 
 
-/* =====================================================
+/* =====================================
    ELEMENTS
-===================================================== */
+===================================== */
+
+const button =
+    document.getElementById(
+        "cameraButton"
+    );
+
 
 const video =
-    document.getElementById("camera");
+    document.getElementById(
+        "camera"
+    );
 
-const canvas =
-    document.getElementById("canvas");
 
 const start =
-    document.getElementById("start");
+    document.getElementById(
+        "start"
+    );
 
-const cameraButton =
-    document.getElementById("cameraButton");
-
-const ui =
-    document.getElementById("ui");
 
 const status =
-    document.getElementById("status");
-
-const reticle =
-    document.getElementById("reticle");
-
-const placeButton =
-    document.getElementById("place");
-
-const minusButton =
-    document.getElementById("minus");
-
-const plusButton =
-    document.getElementById("plus");
-
-
-/* =====================================================
-   USER
-===================================================== */
-
-if (
-    tg?.initDataUnsafe?.user
-) {
-
-    const user =
-        tg.initDataUnsafe.user;
-
     document.getElementById(
-        "userName"
-    ).textContent =
-        user.first_name ||
-        user.username ||
-        "Player";
-
-}
-
-
-/* =====================================================
-   THREE
-===================================================== */
-
-let scene;
-
-let camera3D;
-
-let renderer;
-
-let model;
-
-let modelReady = false;
-
-let scale = 1;
-
-
-/* =====================================================
-   SIMPLE AR POSITION
-===================================================== */
-
-let objectX = 0;
-
-let objectY = 0;
-
-let objectZ = -2;
-
-
-/* =====================================================
-   INIT THREE
-===================================================== */
-
-function initThree() {
-
-    scene =
-        new THREE.Scene();
-
-
-    camera3D =
-        new THREE.PerspectiveCamera(
-            60,
-            window.innerWidth /
-            window.innerHeight,
-            0.01,
-            100
-        );
-
-
-    renderer =
-        new THREE.WebGLRenderer({
-
-            canvas,
-
-            alpha: true,
-
-            antialias: true
-
-        });
-
-
-    renderer.setPixelRatio(
-        Math.min(
-            window.devicePixelRatio,
-            2
-        )
+        "status"
     );
 
 
-    renderer.setSize(
-        window.innerWidth,
-        window.innerHeight
+const closeButton =
+    document.getElementById(
+        "close"
     );
 
 
-    renderer.outputColorSpace =
-        THREE.SRGBColorSpace;
+/* =====================================
+   STATUS
+===================================== */
 
-
-    /* =================================
-       LIGHT
-    ================================= */
-
-    const ambient =
-        new THREE.HemisphereLight(
-            0xffffff,
-            0x666666,
-            2
-        );
-
-    scene.add(
-        ambient
-    );
-
-
-    const directional =
-        new THREE.DirectionalLight(
-            0xffffff,
-            2
-        );
-
-    directional.position.set(
-        2,
-        4,
-        2
-    );
-
-    scene.add(
-        directional
-    );
-
-
-    /* =================================
-       LOAD MODEL
-    ================================= */
-
-    const loader =
-        new GLTFLoader();
-
-
-    loader.load(
-
-        "./models/creature.glb",
-
-        gltf => {
-
-            model =
-                gltf.scene;
-
-
-            model.scale.set(
-                scale,
-                scale,
-                scale
-            );
-
-
-            model.position.set(
-                objectX,
-                objectY,
-                objectZ
-            );
-
-
-            scene.add(
-                model
-            );
-
-
-            modelReady =
-                true;
-
-
-            status.textContent =
-                "Камера включена. 3D-объект готов.";
-
-        },
-
-
-        undefined,
-
-        error => {
-
-            console.error(
-                "GLB ERROR",
-                error
-            );
-
-
-            status.textContent =
-                "Ошибка загрузки creature.glb";
-
-        }
-
-    );
-
-
-    animate();
-
-}
-
-
-/* =====================================================
-   ANIMATION
-===================================================== */
-
-function animate() {
-
-    requestAnimationFrame(
-        animate
-    );
-
-
-    if (model) {
-
-        model.position.x =
-            objectX;
-
-        model.position.y =
-            objectY;
-
-        model.position.z =
-            objectZ;
-
-        model.scale.set(
-            scale,
-            scale,
-            scale
-        );
-
-    }
-
-
-    renderer.render(
-        scene,
-        camera3D
-    );
-
-}
-
-
-/* =====================================================
-   CAMERA
-===================================================== */
-
-async function startCamera() {
-
-    cameraButton.disabled =
-        true;
-
+function setStatus(text) {
 
     status.textContent =
-        "Запрашиваем доступ к камере...";
+        text;
+
+}
+
+
+/* =====================================
+   CAMERA
+===================================== */
+
+async function openCamera() {
+
+    setStatus(
+        "Запрашиваем доступ к камере..."
+    );
+
+
+    console.log(
+        "Telegram:",
+        !!tg
+    );
+
+
+    console.log(
+        "Platform:",
+        tg?.platform
+    );
+
+
+    console.log(
+        "MediaDevices:",
+        !!navigator.mediaDevices
+    );
+
+
+    console.log(
+        "getUserMedia:",
+        !!navigator.mediaDevices
+            ?.getUserMedia
+    );
 
 
     try {
 
-        /*
-         * Сначала стандартная
-         * камера WebView.
-         */
-
         if (
-            !navigator.mediaDevices ||
-            !navigator.mediaDevices.getUserMedia
+            !navigator.mediaDevices
         ) {
 
             throw new Error(
-                "getUserMedia недоступен"
+                "navigator.mediaDevices отсутствует"
             );
 
         }
 
+
+        if (
+            !navigator.mediaDevices
+                .getUserMedia
+        ) {
+
+            throw new Error(
+                "getUserMedia отсутствует"
+            );
+
+        }
+
+
+        /*
+         * Запрашиваем только камеру.
+         *
+         * Никакого microphone.
+         */
 
         const stream =
             await navigator.mediaDevices
@@ -834,11 +389,11 @@ async function startCamera() {
                         },
 
                         width: {
-                            ideal: 1920
+                            ideal: 1280
                         },
 
                         height: {
-                            ideal: 1080
+                            ideal: 720
                         }
 
                     },
@@ -846,6 +401,12 @@ async function startCamera() {
                     audio: false
 
                 });
+
+
+        console.log(
+            "STREAM:",
+            stream
+        );
 
 
         video.srcObject =
@@ -856,34 +417,24 @@ async function startCamera() {
 
 
         /*
-         * Интерфейс
+         * Показываем камеру
          */
+
+        video.style.display =
+            "block";
+
 
         start.style.display =
             "none";
 
 
-        ui.style.display =
+        closeButton.style.display =
             "block";
 
 
-        reticle.style.display =
-            "block";
-
-
-        /*
-         * Запускаем датчики
-         */
-
-        enableMotion();
-
-
-        /*
-         * Проверяем WebXR
-         * уже ПОСЛЕ включения камеры.
-         */
-
-        checkWebXR();
+        setStatus(
+            "КАМЕРА РАБОТАЕТ"
+        );
 
 
     }
@@ -895,379 +446,78 @@ async function startCamera() {
         );
 
 
-        cameraButton.disabled =
-            false;
-
-
-        status.textContent =
-            "Камера не запустилась: " +
-            error.name;
-
-    }
-
-}
-
-
-/* =====================================================
-   DEVICE MOTION
-===================================================== */
-
-async function enableMotion() {
-
-    /*
-     * iOS permission
-     */
-
-    if (
-        typeof DeviceOrientationEvent !==
-        "undefined" &&
-
-        typeof DeviceOrientationEvent
-            .requestPermission ===
-        "function"
-    ) {
-
-        try {
-
-            const permission =
-                await DeviceOrientationEvent
-                    .requestPermission();
-
-
-            if (
-                permission !==
-                "granted"
-            ) {
-
-                return;
-
-            }
-
-        }
-        catch (error) {
-
-            console.error(
-                error
-            );
-
-        }
-
-    }
-
-
-    window.addEventListener(
-
-        "deviceorientation",
-
-        event => {
-
-            /*
-             * Здесь получаем
-             * ориентацию телефона.
-             *
-             * Это дополнительный
-             * слой tracking.
-             */
-
-            const alpha =
-                THREE.MathUtils.degToRad(
-                    event.alpha || 0
-                );
-
-            const beta =
-                THREE.MathUtils.degToRad(
-                    event.beta || 0
-                );
-
-            const gamma =
-                THREE.MathUtils.degToRad(
-                    event.gamma || 0
-                );
-
-
-            const euler =
-                new THREE.Euler(
-                    beta,
-                    alpha,
-                    -gamma,
-                    "YXZ"
-                );
-
-
-            /*
-             * Плавно меняем
-             * виртуальную камеру.
-             */
-
-            camera3D.quaternion.slerp(
-                new THREE.Quaternion()
-                    .setFromEuler(euler),
-                0.15
-            );
-
-        },
-
-        true
-
-    );
-
-}
-
-
-/* =====================================================
-   WEBXR CHECK
-===================================================== */
-
-async function checkWebXR() {
-
-    if (
-        !navigator.xr
-    ) {
-
-        status.textContent =
-            "Камера работает. WebXR AR недоступен — используется режим камеры + 3D.";
-
-        return;
-
-    }
-
-
-    try {
-
-        const supported =
-            await navigator.xr
-                .isSessionSupported(
-                    "immersive-ar"
-                );
-
-
-        if (supported) {
-
-            status.textContent =
-                "Камера включена. AR tracking доступен.";
-
-            /*
-             * Если immersive-ar есть,
-             * здесь можно перейти
-             * на настоящий XR-сеанс.
-             */
-
-        }
-        else {
-
-            status.textContent =
-                "Камера работает. AR tracking недоступен в этом Telegram WebView.";
-
-        }
-
-    }
-    catch (error) {
-
-        console.error(
-            "WebXR CHECK",
-            error
+        setStatus(
+            "Ошибка: " +
+            error.name +
+            " — " +
+            error.message
         );
 
-
-        status.textContent =
-            "Камера работает. Используется режим 3D.";
-
     }
 
 }
 
 
-/* =====================================================
-   PLACE
-===================================================== */
+/* =====================================
+   BUTTON
+===================================== */
 
-placeButton.addEventListener(
+button.addEventListener(
+    "click",
+    openCamera
+);
+
+
+/* =====================================
+   CLOSE
+===================================== */
+
+closeButton.addEventListener(
     "click",
     () => {
 
-        /*
-         * Базовое положение
-         * объекта перед камерой.
-         */
-
-        objectX = 0;
-
-        objectY = 0;
-
-        objectZ = -2;
+        const stream =
+            video.srcObject;
 
 
-        if (model) {
+        if (stream) {
 
-            model.visible =
-                true;
+            stream
+                .getTracks()
+                .forEach(
+                    track =>
+                        track.stop()
+                );
 
         }
 
 
-        status.textContent =
-            "Объект размещён. Перемещайтесь вокруг него.";
-
-    }
-);
-
-
-/* =====================================================
-   SCALE DOWN
-===================================================== */
-
-minusButton.addEventListener(
-    "click",
-    () => {
-
-        scale =
-            Math.max(
-                0.1,
-                scale - 0.1
-            );
-
-    }
-);
-
-
-/* =====================================================
-   SCALE UP
-===================================================== */
-
-plusButton.addEventListener(
-    "click",
-    () => {
-
-        scale =
-            Math.min(
-                5,
-                scale + 0.1
-            );
-
-    }
-);
-
-
-/* =====================================================
-   TOUCH MOVE
-===================================================== */
-
-let lastX = null;
-
-let lastY = null;
-
-
-canvas.addEventListener(
-    "pointerdown",
-    event => {
-
-        lastX =
-            event.clientX;
-
-        lastY =
-            event.clientY;
-
-    }
-);
-
-
-canvas.addEventListener(
-    "pointermove",
-    event => {
-
-        if (
-            lastX === null ||
-            lastY === null
-        ) {
-
-            return;
-
-        }
-
-
-        const dx =
-            event.clientX -
-            lastX;
-
-        const dy =
-            event.clientY -
-            lastY;
-
-
-        objectX +=
-            dx * 0.004;
-
-        objectY -=
-            dy * 0.004;
-
-
-        lastX =
-            event.clientX;
-
-        lastY =
-            event.clientY;
-
-    }
-);
-
-
-canvas.addEventListener(
-    "pointerup",
-    () => {
-
-        lastX =
+        video.srcObject =
             null;
 
-        lastY =
-            null;
 
-    }
-);
+        video.style.display =
+            "none";
 
 
-/* =====================================================
-   RESIZE
-===================================================== */
-
-window.addEventListener(
-    "resize",
-    () => {
-
-        if (!renderer) {
-            return;
-        }
+        closeButton.style.display =
+            "none";
 
 
-        renderer.setSize(
-            window.innerWidth,
-            window.innerHeight
+        start.style.display =
+            "flex";
+
+
+        setStatus(
+            "Нажмите «Включить камеру»"
         );
 
-
-        camera3D.aspect =
-            window.innerWidth /
-            window.innerHeight;
-
-
-        camera3D.updateProjectionMatrix();
-
     }
-);
-
-
-/* =====================================================
-   START
-===================================================== */
-
-initThree();
-
-
-cameraButton.addEventListener(
-    "click",
-    startCamera
 );
 
 </script>
 
+
 </body>
+
 </html>
