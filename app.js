@@ -5,130 +5,142 @@ import { GLTFLoader } from
 "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/GLTFLoader.js";
 
 
-// --------------------------------------------------
-// GLOBAL VARIABLES
-// --------------------------------------------------
+// ==================================================
+// VARIABLES
+// ==================================================
 
-let camera;
-let scene;
 let renderer;
+let scene;
+let camera;
 
 let xrSession = null;
 
 let controller;
 
 let hitTestSource = null;
-let hitTestSourceRequested = false;
+let viewerSpace = null;
+
+let hitTestInitialized = false;
 
 let reticle;
 
-let loadedObject = null;
+let model = null;
 
-let objectPlaced = false;
+let modelPlaced = false;
 
 
-// --------------------------------------------------
+// ==================================================
 // UI
-// --------------------------------------------------
+// ==================================================
 
 const startScreen =
-    document.getElementById("startScreen");
+    document.getElementById(
+        "startScreen"
+    );
 
 const startButton =
-    document.getElementById("startAR");
+    document.getElementById(
+        "startButton"
+    );
 
 const status =
-    document.getElementById("status");
+    document.getElementById(
+        "status"
+    );
 
-const arInterface =
-    document.getElementById("arInterface");
+const arUI =
+    document.getElementById(
+        "arUI"
+    );
 
-const exitButton =
-    document.getElementById("exitAR");
+const message =
+    document.getElementById(
+        "message"
+    );
 
 const placeButton =
-    document.getElementById("placeObject");
+    document.getElementById(
+        "placeButton"
+    );
 
-const instruction =
-    document.getElementById("instruction");
+const exitButton =
+    document.getElementById(
+        "exitButton"
+    );
+
+const errorScreen =
+    document.getElementById(
+        "errorScreen"
+    );
+
+const errorText =
+    document.getElementById(
+        "errorText"
+    );
+
+const backButton =
+    document.getElementById(
+        "backButton"
+    );
 
 
-// --------------------------------------------------
-// CHECK WEBXR
-// --------------------------------------------------
+// ==================================================
+// TELEGRAM
+// ==================================================
 
-async function checkARSupport() {
+function initTelegram() {
 
-    if (!navigator.xr) {
+    if (
+        window.Telegram &&
+        window.Telegram.WebApp
+    ) {
 
-        status.textContent =
-            "WebXR AR не поддерживается этим браузером.";
+        const tg =
+            window.Telegram.WebApp;
 
-        startButton.disabled = true;
+        tg.ready();
 
-        return false;
-    }
+        tg.expand();
 
-    try {
-
-        const supported =
-            await navigator.xr.isSessionSupported(
-                "immersive-ar"
-            );
-
-        if (!supported) {
-
-            status.textContent =
-                "AR режим недоступен на этом устройстве.";
-
-            startButton.disabled = true;
-
-            return false;
-        }
-
-        status.textContent =
-            "AR готов.";
-
-        return true;
-
-    } catch (error) {
-
-        console.error(error);
-
-        status.textContent =
-            "Не удалось проверить AR.";
-
-        return false;
+        console.log(
+            "Telegram WebApp detected"
+        );
     }
 }
 
 
-// --------------------------------------------------
-// INITIALIZE THREE.JS
-// --------------------------------------------------
+// ==================================================
+// THREE
+// ==================================================
 
 function initThree() {
 
-    scene = new THREE.Scene();
+    scene =
+        new THREE.Scene();
 
 
-    // Камера будет управляться XR
-    camera = new THREE.PerspectiveCamera();
+    camera =
+        new THREE.PerspectiveCamera();
 
 
-    renderer = new THREE.WebGLRenderer({
+    renderer =
+        new THREE.WebGLRenderer({
 
-        antialias: true,
+            antialias: true,
 
-        alpha: true,
+            alpha: true,
 
-        preserveDrawingBuffer: false
+            powerPreference:
+                "high-performance"
 
-    });
+        });
 
 
     renderer.setPixelRatio(
-        Math.min(window.devicePixelRatio, 2)
+        Math.min(
+            window.devicePixelRatio,
+            2
+        )
     );
 
 
@@ -146,48 +158,57 @@ function initThree() {
     );
 
 
-    // ------------------------------------------------
+    // ==============================================
     // LIGHT
-    // ------------------------------------------------
+    // ==============================================
 
-    const ambientLight =
+    const hemisphere =
         new THREE.HemisphereLight(
             0xffffff,
-            0xbbbbff,
+            0x444444,
             2
         );
 
-    scene.add(ambientLight);
+    scene.add(
+        hemisphere
+    );
 
 
-    const directionalLight =
+    const directional =
         new THREE.DirectionalLight(
             0xffffff,
             2
         );
 
-    directionalLight.position.set(
-        1,
-        3,
+    directional.position.set(
+        2,
+        4,
         2
     );
 
-    scene.add(directionalLight);
+    scene.add(
+        directional
+    );
 
 
-    // ------------------------------------------------
+    // ==============================================
     // RETICLE
-    // ------------------------------------------------
+    // ==============================================
 
-    const ringGeometry =
+    const geometry =
         new THREE.RingGeometry(
-            0.08,
+            0.07,
             0.1,
             32
-        ).rotateX(-Math.PI / 2);
+        );
 
 
-    const ringMaterial =
+    geometry.rotateX(
+        -Math.PI / 2
+    );
+
+
+    const material =
         new THREE.MeshBasicMaterial({
             color: 0xffffff
         });
@@ -195,44 +216,54 @@ function initThree() {
 
     reticle =
         new THREE.Mesh(
-            ringGeometry,
-            ringMaterial
+            geometry,
+            material
         );
 
 
-    reticle.matrixAutoUpdate = false;
-
-    reticle.visible = false;
-
-    scene.add(reticle);
+    reticle.matrixAutoUpdate =
+        false;
 
 
-    // ------------------------------------------------
+    reticle.visible =
+        false;
+
+
+    scene.add(
+        reticle
+    );
+
+
+    // ==============================================
     // CONTROLLER
-    // ------------------------------------------------
+    // ==============================================
 
     controller =
         renderer.xr.getController(0);
 
+
     controller.addEventListener(
         "select",
-        onSelect
+        onControllerSelect
     );
 
-    scene.add(controller);
+
+    scene.add(
+        controller
+    );
 
 
-    // ------------------------------------------------
+    // ==============================================
     // LOAD MODEL
-    // ------------------------------------------------
+    // ==============================================
 
     loadModel();
 }
 
 
-// --------------------------------------------------
-// LOAD GLB
-// --------------------------------------------------
+// ==================================================
+// MODEL
+// ==================================================
 
 function loadModel() {
 
@@ -244,69 +275,119 @@ function loadModel() {
 
         "./models/scene.glb",
 
-        function(gltf) {
+        (gltf) => {
 
-            loadedObject =
+            model =
                 gltf.scene;
 
 
-            // Начальный размер
-            loadedObject.scale.set(
+            model.visible =
+                false;
+
+
+            // Начальный масштаб.
+            // При необходимости изменить.
+
+            model.scale.set(
                 1,
                 1,
                 1
             );
 
 
-            // Пока объект скрыт
-            loadedObject.visible = false;
-
-
             scene.add(
-                loadedObject
+                model
             );
 
 
             console.log(
-                "3D модель загружена"
+                "GLB loaded"
             );
-
         },
 
-        function(progress) {
+        (progress) => {
 
-            console.log(
-                "Загрузка:",
-                progress.loaded
-            );
+            if (
+                progress.total > 0
+            ) {
 
+                const percent =
+                    Math.round(
+                        progress.loaded /
+                        progress.total *
+                        100
+                    );
+
+                console.log(
+                    "Model:",
+                    percent + "%"
+                );
+            }
         },
 
-        function(error) {
+        (error) => {
 
             console.error(
-                "Ошибка загрузки модели:",
+                "GLB error:",
                 error
             );
 
-            instruction.textContent =
-                "Ошибка загрузки 3D модели";
+            message.textContent =
+                "Ошибка загрузки scene.glb";
         }
     );
 }
 
 
-// --------------------------------------------------
-// START AR
-// --------------------------------------------------
+// ==================================================
+// CHECK AR ONLY WHEN BUTTON PRESSED
+// ==================================================
 
 async function startAR() {
 
-    if (!navigator.xr) {
+    startButton.disabled =
+        true;
 
-        alert(
-            "Ваш браузер не поддерживает WebXR."
+    status.textContent =
+        "Запуск AR...";
+
+
+    // ----------------------------------------------
+    // HTTPS
+    // ----------------------------------------------
+
+    if (
+        location.protocol !==
+        "https:" &&
+        location.hostname !==
+        "localhost"
+    ) {
+
+        showError(
+            "AR требует HTTPS. Откройте сайт через GitHub Pages или другой HTTPS-хостинг."
         );
+
+        startButton.disabled =
+            false;
+
+        return;
+    }
+
+
+    // ----------------------------------------------
+    // WEBXR
+    // ----------------------------------------------
+
+    if (
+        !navigator.xr
+    ) {
+
+        showError(
+            "Этот браузер не предоставляет WebXR. Попробуйте открыть Mini App в поддерживаемом AR-браузере."
+        );
+
+        startButton.disabled =
+            false;
 
         return;
     }
@@ -314,11 +395,35 @@ async function startAR() {
 
     try {
 
-        const session =
-            await navigator.xr.requestSession(
-                "immersive-ar",
-                {
+        const supported =
+            await navigator.xr.isSessionSupported(
+                "immersive-ar"
+            );
 
+
+        if (!supported) {
+
+            showError(
+                "Устройство или браузер не поддерживает режим immersive AR."
+            );
+
+            startButton.disabled =
+                false;
+
+            return;
+        }
+
+
+        // ------------------------------------------
+        // REQUEST AR
+        // ------------------------------------------
+
+        xrSession =
+            await navigator.xr.requestSession(
+
+                "immersive-ar",
+
+                {
                     requiredFeatures: [
                         "local-floor",
                         "hit-test"
@@ -335,8 +440,9 @@ async function startAR() {
             );
 
 
-        xrSession = session;
-
+        // ------------------------------------------
+        // XR REFERENCE SPACE
+        // ------------------------------------------
 
         renderer.xr.setReferenceSpaceType(
             "local-floor"
@@ -344,15 +450,24 @@ async function startAR() {
 
 
         await renderer.xr.setSession(
-            session
+            xrSession
         );
 
+
+        // ------------------------------------------
+        // UI
+        // ------------------------------------------
 
         startScreen.style.display =
             "none";
 
 
-        arInterface.style.display =
+        errorScreen.classList.add(
+            "hidden"
+        );
+
+
+        arUI.style.display =
             "block";
 
 
@@ -360,15 +475,40 @@ async function startAR() {
             "block";
 
 
-        instruction.textContent =
-            "Наведите камеру на поверхность";
+        message.textContent =
+            "Наведите камеру на пол или поверхность";
 
 
-        session.addEventListener(
+        // ------------------------------------------
+        // SESSION END
+        // ------------------------------------------
+
+        xrSession.addEventListener(
             "end",
-            onSessionEnd
+            endAR
         );
 
+
+        // ------------------------------------------
+        // RESET HIT TEST
+        // ------------------------------------------
+
+        hitTestSource =
+            null;
+
+        viewerSpace =
+            null;
+
+        hitTestInitialized =
+            false;
+
+        modelPlaced =
+            false;
+
+
+        // ------------------------------------------
+        // RENDER LOOP
+        // ------------------------------------------
 
         renderer.setAnimationLoop(
             render
@@ -378,161 +518,42 @@ async function startAR() {
     } catch (error) {
 
         console.error(
-            "Ошибка запуска AR:",
+            "AR START ERROR:",
             error
         );
 
-        status.textContent =
-            "Не удалось запустить AR.";
-    }
-}
+
+        showError(
+            getReadableError(
+                error
+            )
+        );
 
 
-// --------------------------------------------------
-// END AR
-// --------------------------------------------------
-
-function onSessionEnd() {
-
-    xrSession = null;
-
-    hitTestSource = null;
-
-    hitTestSourceRequested = false;
-
-
-    renderer.setAnimationLoop(
-        null
-    );
-
-
-    arInterface.style.display =
-        "none";
-
-
-    startScreen.style.display =
-        "flex";
-
-
-    objectPlaced = false;
-
-
-    if (loadedObject) {
-
-        loadedObject.visible =
+        startButton.disabled =
             false;
     }
 }
 
 
-// --------------------------------------------------
-// PLACE OBJECT
-// --------------------------------------------------
+// ==================================================
+// HIT TEST INITIALIZATION
+// ==================================================
 
-function placeObject() {
-
-    if (!loadedObject) {
-
-        instruction.textContent =
-            "3D модель ещё загружается";
-
-        return;
-    }
-
-
-    if (!reticle.visible) {
-
-        instruction.textContent =
-            "Сначала наведите камеру на поверхность";
-
-        return;
-    }
-
-
-    // Получаем мировую позицию
-    // найденной поверхности
-
-    loadedObject.position.setFromMatrixPosition(
-        reticle.matrix
-    );
-
-
-    // Поворот относительно поверхности
-
-    const quaternion =
-        new THREE.Quaternion();
-
-    quaternion.setFromRotationMatrix(
-        reticle.matrix
-    );
-
-
-    loadedObject.quaternion.copy(
-        quaternion
-    );
-
-
-    loadedObject.visible =
-        true;
-
-
-    objectPlaced =
-        true;
-
-
-    reticle.visible =
-        false;
-
-
-    instruction.textContent =
-        "Объект закреплён в пространстве";
-
-
-    placeButton.style.display =
-        "none";
-}
-
-
-// --------------------------------------------------
-// SELECT EVENT
-// --------------------------------------------------
-
-function onSelect() {
-
-    if (!objectPlaced) {
-
-        placeObject();
-    }
-}
-
-
-// --------------------------------------------------
-// HIT TEST
-// --------------------------------------------------
-
-async function updateHitTest(
-    frame
+async function initializeHitTest(
+    session
 ) {
 
-    const session =
-        renderer.xr.getSession();
-
-
-    if (!session) {
+    if (
+        hitTestInitialized
+    ) {
         return;
     }
 
 
-    const referenceSpace =
-        renderer.xr.getReferenceSpace();
+    try {
 
-
-    // Создаём источник hit-test
-    // только один раз
-
-    if (!hitTestSourceRequested) {
-
-        const viewerSpace =
+        viewerSpace =
             await session.requestReferenceSpace(
                 "viewer"
             );
@@ -544,83 +565,112 @@ async function updateHitTest(
             });
 
 
-        hitTestSourceRequested =
+        hitTestInitialized =
             true;
-    }
 
 
-    if (!hitTestSource) {
-        return;
-    }
-
-
-    const hitTestResults =
-        frame.getHitTestResults(
-            hitTestSource
+        console.log(
+            "Hit Test initialized"
         );
 
 
-    if (
-        hitTestResults.length > 0 &&
-        !objectPlaced
-    ) {
+    } catch (error) {
 
-        const hit =
-            hitTestResults[0];
-
-
-        const pose =
-            hit.getPose(
-                referenceSpace
-            );
-
-
-        if (pose) {
-
-            reticle.visible =
-                true;
-
-
-            reticle.matrix.fromArray(
-                pose.transform.matrix
-            );
-
-
-            instruction.textContent =
-                "Поверхность найдена — нажмите «Разместить»";
-        }
-
-    } else {
-
-        if (!objectPlaced) {
-
-            reticle.visible =
-                false;
-
-            instruction.textContent =
-                "Наведите камеру на поверхность";
-        }
+        console.error(
+            "Hit Test error:",
+            error
+        );
     }
 }
 
 
-// --------------------------------------------------
+// ==================================================
 // RENDER
-// --------------------------------------------------
+// ==================================================
 
 function render(
     timestamp,
     frame
 ) {
 
-    if (!frame) {
+    if (
+        !frame ||
+        !xrSession
+    ) {
+
         return;
     }
 
 
-    updateHitTest(
-        frame
-    );
+    if (
+        !hitTestInitialized
+    ) {
+
+        initializeHitTest(
+            xrSession
+        );
+    }
+
+
+    if (
+        hitTestSource
+    ) {
+
+        const referenceSpace =
+            renderer.xr.getReferenceSpace();
+
+
+        const results =
+            frame.getHitTestResults(
+                hitTestSource
+            );
+
+
+        if (
+            results.length > 0 &&
+            !modelPlaced
+        ) {
+
+            const hit =
+                results[0];
+
+
+            const pose =
+                hit.getPose(
+                    referenceSpace
+                );
+
+
+            if (pose) {
+
+                reticle.visible =
+                    true;
+
+
+                reticle.matrix.fromArray(
+                    pose.transform.matrix
+                );
+
+
+                message.textContent =
+                    "Поверхность найдена";
+            }
+
+        } else {
+
+            if (
+                !modelPlaced
+            ) {
+
+                reticle.visible =
+                    false;
+
+
+                message.textContent =
+                    "Наведите камеру на поверхность";
+            }
+        }
+    }
 
 
     renderer.render(
@@ -630,9 +680,245 @@ function render(
 }
 
 
-// --------------------------------------------------
+// ==================================================
+// PLACE MODEL
+// ==================================================
+
+function placeModel() {
+
+    if (!model) {
+
+        message.textContent =
+            "3D модель ещё загружается";
+
+        return;
+    }
+
+
+    if (!reticle.visible) {
+
+        message.textContent =
+            "Наведите камеру на поверхность";
+
+        return;
+    }
+
+
+    // ==============================================
+    // POSITION
+    // ==============================================
+
+    const position =
+        new THREE.Vector3();
+
+
+    position.setFromMatrixPosition(
+        reticle.matrix
+    );
+
+
+    model.position.copy(
+        position
+    );
+
+
+    // ==============================================
+    // ROTATION
+    // ==============================================
+
+    const quaternion =
+        new THREE.Quaternion();
+
+
+    quaternion.setFromRotationMatrix(
+        reticle.matrix
+    );
+
+
+    model.quaternion.copy(
+        quaternion
+    );
+
+
+    // ==============================================
+    // SHOW
+    // ==============================================
+
+    model.visible =
+        true;
+
+
+    modelPlaced =
+        true;
+
+
+    reticle.visible =
+        false;
+
+
+    placeButton.style.display =
+        "none";
+
+
+    message.textContent =
+        "Объект закреплён в пространстве";
+}
+
+
+// ==================================================
+// CONTROLLER SELECT
+// ==================================================
+
+function onControllerSelect() {
+
+    if (
+        !modelPlaced
+    ) {
+
+        placeModel();
+    }
+}
+
+
+// ==================================================
+// EXIT
+// ==================================================
+
+async function exitAR() {
+
+    if (
+        xrSession
+    ) {
+
+        try {
+
+            await xrSession.end();
+
+        } catch (error) {
+
+            console.error(error);
+        }
+    }
+}
+
+
+// ==================================================
+// SESSION END
+// ==================================================
+
+function endAR() {
+
+    xrSession =
+        null;
+
+
+    hitTestSource =
+        null;
+
+
+    viewerSpace =
+        null;
+
+
+    hitTestInitialized =
+        false;
+
+
+    renderer.setAnimationLoop(
+        null
+    );
+
+
+    arUI.style.display =
+        "none";
+
+
+    startScreen.style.display =
+        "flex";
+
+
+    startButton.disabled =
+        false;
+
+
+    status.textContent =
+        "Готово к запуску";
+
+
+    if (model) {
+
+        model.visible =
+            false;
+    }
+
+
+    modelPlaced =
+        false;
+}
+
+
+// ==================================================
+// ERROR
+// ==================================================
+
+function showError(
+    text
+) {
+
+    errorText.textContent =
+        text;
+
+
+    errorScreen.classList.remove(
+        "hidden"
+    );
+
+
+    startScreen.style.display =
+        "none";
+}
+
+
+function getReadableError(
+    error
+) {
+
+    if (
+        error &&
+        error.name ===
+        "NotAllowedError"
+    ) {
+
+        return "Доступ к AR был запрещён. Разрешите доступ к камере и попробуйте снова.";
+    }
+
+
+    if (
+        error &&
+        error.name ===
+        "SecurityError"
+    ) {
+
+        return "Браузер заблокировал AR из-за настроек безопасности. Проверьте HTTPS.";
+    }
+
+
+    if (
+        error &&
+        error.message
+    ) {
+
+        return error.message;
+    }
+
+
+    return "Не удалось запустить AR на этом устройстве.";
+}
+
+
+// ==================================================
 // EVENTS
-// --------------------------------------------------
+// ==================================================
 
 startButton.addEventListener(
     "click",
@@ -642,25 +928,42 @@ startButton.addEventListener(
 
 placeButton.addEventListener(
     "click",
-    placeObject
+    placeModel
 );
 
 
 exitButton.addEventListener(
     "click",
-    async () => {
+    exitAR
+);
 
-        if (xrSession) {
 
-            await xrSession.end();
-        }
+backButton.addEventListener(
+    "click",
+    () => {
+
+        errorScreen.classList.add(
+            "hidden"
+        );
+
+
+        startScreen.style.display =
+            "flex";
+
+
+        startButton.disabled =
+            false;
+
+
+        status.textContent =
+            "Готово к запуску";
     }
 );
 
 
-// --------------------------------------------------
+// ==================================================
 // RESIZE
-// --------------------------------------------------
+// ==================================================
 
 window.addEventListener(
     "resize",
@@ -670,6 +973,7 @@ window.addEventListener(
             return;
         }
 
+
         renderer.setSize(
             window.innerWidth,
             window.innerHeight
@@ -678,10 +982,10 @@ window.addEventListener(
 );
 
 
-// --------------------------------------------------
+// ==================================================
 // START
-// --------------------------------------------------
+// ==================================================
+
+initTelegram();
 
 initThree();
-
-checkARSupport();
