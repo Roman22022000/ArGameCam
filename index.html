@@ -1206,6 +1206,10 @@ function initThree() {
     controls.enablePan =
         false;
 
+    // 1 палец — вращение. Многопальцевые жесты обрабатываем ниже.
+    controls.touches.ONE = THREE.TOUCH.ROTATE;
+    controls.touches.TWO = THREE.TOUCH.NONE;
+
 
     controls.minDistance =
         1.2;
@@ -1221,6 +1225,8 @@ function initThree() {
 
 
     controls.update();
+
+    initMultiTouchControls();
 
 
     /* -------------------------------------------------
@@ -1238,6 +1244,201 @@ function initThree() {
 
     animate();
 
+}
+
+
+/* =====================================================
+   MULTI-TOUCH CONTROLS
+===================================================== */
+
+let multiTouchMode = null;
+let pinchStartDistance = 0;
+let pinchStartCameraDistance = 0;
+let threeFingerLastX = 0;
+let threeFingerLastY = 0;
+
+function getTouchDistance(touches) {
+
+    const a = touches[0];
+    const b = touches[1];
+
+    return Math.hypot(
+        b.clientX - a.clientX,
+        b.clientY - a.clientY
+    );
+}
+
+function getTouchCenter(touches) {
+
+    let x = 0;
+    let y = 0;
+
+    for (let i = 0; i < touches.length; i++) {
+        x += touches[i].clientX;
+        y += touches[i].clientY;
+    }
+
+    return {
+        x: x / touches.length,
+        y: y / touches.length
+    };
+}
+
+function initMultiTouchControls() {
+
+    const element = renderer.domElement;
+
+    element.addEventListener(
+        "touchstart",
+        onMultiTouchStart,
+        { passive: false }
+    );
+
+    element.addEventListener(
+        "touchmove",
+        onMultiTouchMove,
+        { passive: false }
+    );
+
+    element.addEventListener(
+        "touchend",
+        onMultiTouchEnd,
+        { passive: false }
+    );
+
+    element.addEventListener(
+        "touchcancel",
+        onMultiTouchEnd,
+        { passive: false }
+    );
+}
+
+function onMultiTouchStart(event) {
+
+    if (event.touches.length === 2) {
+
+        multiTouchMode = "pinch";
+        pinchStartDistance = getTouchDistance(event.touches);
+        pinchStartCameraDistance = camera.position.distanceTo(controls.target);
+
+        controls.enabled = false;
+
+        event.preventDefault();
+        return;
+    }
+
+    if (event.touches.length >= 3) {
+
+        const center = getTouchCenter(event.touches);
+
+        multiTouchMode = "pan";
+        threeFingerLastX = center.x;
+        threeFingerLastY = center.y;
+
+        controls.enabled = false;
+
+        event.preventDefault();
+    }
+}
+
+function onMultiTouchMove(event) {
+
+    if (!camera || !controls) return;
+
+    /* 2 пальца — pinch zoom */
+    if (event.touches.length === 2 && multiTouchMode === "pinch") {
+
+        const distance = getTouchDistance(event.touches);
+
+        if (distance > 0 && pinchStartDistance > 0) {
+
+            const scale = pinchStartDistance / distance;
+
+            const newDistance = THREE.MathUtils.clamp(
+                pinchStartCameraDistance * scale,
+                controls.minDistance,
+                controls.maxDistance
+            );
+
+            const direction = new THREE.Vector3()
+                .subVectors(camera.position, controls.target)
+                .normalize();
+
+            camera.position.copy(
+                controls.target.clone().add(
+                    direction.multiplyScalar(newDistance)
+                )
+            );
+        }
+
+        event.preventDefault();
+        return;
+    }
+
+    /* 3 пальца — pan */
+    if (event.touches.length >= 3 && multiTouchMode === "pan") {
+
+        const center = getTouchCenter(event.touches);
+
+        const dx = center.x - threeFingerLastX;
+        const dy = center.y - threeFingerLastY;
+
+        threeFingerLastX = center.x;
+        threeFingerLastY = center.y;
+
+        const distance = camera.position.distanceTo(controls.target);
+        const panSpeed = distance * 0.0025;
+
+        const right = new THREE.Vector3()
+            .setFromMatrixColumn(camera.matrixWorld, 0)
+            .normalize();
+
+        const up = new THREE.Vector3()
+            .setFromMatrixColumn(camera.matrixWorld, 1)
+            .normalize();
+
+        const movement = new THREE.Vector3()
+            .addScaledVector(right, -dx * panSpeed)
+            .addScaledVector(up, dy * panSpeed);
+
+        camera.position.add(movement);
+        controls.target.add(movement);
+
+        event.preventDefault();
+    }
+}
+
+function onMultiTouchEnd(event) {
+
+    /* Переход 3 → 2 пальца: продолжаем как pinch */
+    if (event.touches.length === 2) {
+
+        multiTouchMode = "pinch";
+        pinchStartDistance = getTouchDistance(event.touches);
+        pinchStartCameraDistance = camera.position.distanceTo(controls.target);
+
+        event.preventDefault();
+        return;
+    }
+
+    /* Переход к 3 пальцам */
+    if (event.touches.length >= 3) {
+
+        const center = getTouchCenter(event.touches);
+
+        multiTouchMode = "pan";
+        threeFingerLastX = center.x;
+        threeFingerLastY = center.y;
+
+        event.preventDefault();
+        return;
+    }
+
+    multiTouchMode = null;
+
+    if (!orientationActive) {
+        controls.enabled = true;
+    }
 }
 
 
