@@ -1,62 +1,33 @@
 <!DOCTYPE html>
 <html lang="ru">
-
 <head>
-
 <meta charset="UTF-8">
 
-<meta
-    name="viewport"
-    content="
-        width=device-width,
-        initial-scale=1,
-        maximum-scale=1,
-        user-scalable=no,
-        viewport-fit=cover
-    "
->
+<meta name="viewport"
+content="width=device-width,
+initial-scale=1,
+maximum-scale=1,
+user-scalable=no,
+viewport-fit=cover">
 
-<meta
-    name="theme-color"
-    content="#000000"
->
+<meta name="theme-color" content="#000000">
 
-<title>AR Space</title>
+<title>AR Creature</title>
 
+<!-- Telegram Mini App -->
+<script src="https://telegram.org/js/telegram-web-app.js?63"></script>
 
-<!-- =====================================================
-     TELEGRAM MINI APP
-====================================================== -->
-
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
-
-
-<!-- =====================================================
-     THREE.JS IMPORT MAP
-====================================================== -->
-
+<!-- THREE IMPORT MAP -->
 <script type="importmap">
-
 {
     "imports": {
-
-        "three":
-            "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
-
-        "three/addons/":
-            "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
-
+        "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
     }
 }
-
 </script>
 
-
 <style>
-
-/* =====================================================
-   RESET
-====================================================== */
 
 * {
     box-sizing: border-box;
@@ -64,177 +35,86 @@
 
 html,
 body {
-
+    margin: 0;
     width: 100%;
     height: 100%;
-
-    margin: 0;
-    padding: 0;
-
     overflow: hidden;
-
     background: #000;
-
-    color: #fff;
-
-    font-family:
-        Arial,
-        Helvetica,
-        sans-serif;
-
+    font-family: Arial, sans-serif;
     touch-action: none;
-
-    -webkit-user-select: none;
-    user-select: none;
 }
-
-
-/* =====================================================
-   APP
-====================================================== */
 
 #app {
-
     position: fixed;
-
     inset: 0;
-
-    width: 100%;
-    height: 100%;
-
     overflow: hidden;
-
     background: #000;
 }
 
 
-/* =====================================================
-   START SCREEN
-====================================================== */
+/* START */
 
 #startScreen {
-
     position: fixed;
-
     inset: 0;
-
     z-index: 100;
 
     display: flex;
-
     align-items: center;
-
     justify-content: center;
 
-    padding: 24px;
-
     background: #000;
+    padding: 24px;
 }
 
 .startBox {
-
     width: 100%;
-
     max-width: 360px;
-
     text-align: center;
 }
 
-.startTitle {
-
+.startBox h1 {
     margin: 0 0 12px;
-
+    color: #fff;
     font-size: 44px;
-
-    line-height: 1;
-
     letter-spacing: 8px;
 }
 
-.startSubtitle {
-
+.startBox p {
     margin: 0 0 32px;
-
     color: #777;
-
-    font-size: 14px;
 }
 
 #startButton {
-
     width: 100%;
-
     height: 58px;
 
     border: 0;
-
     border-radius: 14px;
 
     background: #fff;
-
     color: #000;
 
     font-size: 15px;
-
     font-weight: 700;
-
-    cursor: pointer;
-
-    -webkit-tap-highlight-color:
-        transparent;
-}
-
-#startButton:active {
-
-    transform: scale(.98);
 }
 
 #startButton:disabled {
-
     opacity: .5;
 }
 
 #startMessage {
-
-    min-height: 18px;
-
     margin-top: 14px;
-
+    min-height: 20px;
     color: #777;
-
     font-size: 12px;
 }
 
 
-/* =====================================================
-   WEBXR CANVAS
-====================================================== */
-
-#xrCanvas {
-
-    position: fixed;
-
-    inset: 0;
-
-    width: 100%;
-    height: 100%;
-
-    display: none;
-
-    z-index: 1;
-
-    pointer-events: none;
-}
-
-
-/* =====================================================
-   NORMAL CAMERA FALLBACK
-====================================================== */
+/* NORMAL CAMERA */
 
 #camera {
-
     position: fixed;
-
     inset: 0;
 
     width: 100%;
@@ -245,22 +125,33 @@ body {
     display: none;
 
     z-index: 1;
-
-    background: #000;
 }
 
 
-/* =====================================================
-   AR UI
-====================================================== */
+/* WEBXR CANVAS */
 
-#arUI {
-
+#xrCanvas {
     position: fixed;
-
     inset: 0;
 
-    z-index: 10;
+    width: 100%;
+    height: 100%;
+
+    display: none;
+
+    z-index: 2;
+
+    pointer-events: none;
+}
+
+
+/* UI */
+
+#arUI {
+    position: fixed;
+    inset: 0;
+
+    z-index: 20;
 
     display: none;
 
@@ -268,141 +159,125 @@ body {
 }
 
 
-/* =====================================================
-   TOP BAR
-====================================================== */
-
-#topBar {
-
-    position: absolute;
-
-    top:
-        calc(
-            12px +
-            env(safe-area-inset-top)
-        );
-
-    left: 12px;
-
-    right: 12px;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: space-between;
-}
+/* STATUS */
 
 #status {
+    position: absolute;
 
-    max-width:
-        calc(100% - 60px);
+    top: calc(
+        15px +
+        env(safe-area-inset-top)
+    );
 
-    padding:
-        9px 14px;
+    left: 50%;
+
+    transform: translateX(-50%);
+
+    padding: 9px 14px;
 
     border-radius: 20px;
 
-    background:
-        rgba(0,0,0,.65);
+    background: rgba(0,0,0,.65);
 
     color: #fff;
 
     font-size: 12px;
 
     white-space: nowrap;
-
-    overflow: hidden;
-
-    text-overflow: ellipsis;
-
-    backdrop-filter:
-        blur(8px);
 }
 
+
+/* CLOSE */
+
 #closeButton {
+    position: absolute;
+
+    top: calc(
+        12px +
+        env(safe-area-inset-top)
+    );
+
+    right: 12px;
 
     width: 44px;
-
     height: 44px;
 
     border: 0;
-
     border-radius: 50%;
 
-    background:
-        rgba(0,0,0,.7);
+    background: rgba(0,0,0,.7);
 
     color: #fff;
 
-    font-size: 27px;
+    font-size: 26px;
 
     pointer-events: auto;
-
-    cursor: pointer;
 }
 
 
-/* =====================================================
-   RETICLE
-====================================================== */
+/* RETICLE */
 
 #reticle {
+    position: absolute;
+
+    left: 50%;
+    top: 50%;
+
+    width: 48px;
+    height: 48px;
+
+    transform:
+        translate(-50%, -50%);
+
+    border:
+        2px solid
+        rgba(255,255,255,.5);
+
+    border-radius: 50%;
+
+    display: none;
+}
+
+#reticle::after {
+    content: "";
 
     position: absolute;
 
     left: 50%;
-
     top: 50%;
 
-    width: 44px;
-
-    height: 44px;
+    width: 6px;
+    height: 6px;
 
     transform:
-        translate(
-            -50%,
-            -50%
-        );
-
-    border:
-        1px solid
-        rgba(255,255,255,.8);
+        translate(-50%, -50%);
 
     border-radius: 50%;
 
-    transition:
-        .2s ease;
+    background: #fff;
 }
 
-#reticle.ready {
-
-    border:
-        2px solid #fff;
+#reticle.found {
+    border-color: #fff;
 
     box-shadow:
-        0 0 12px
-        rgba(255,255,255,.4);
+        0 0 15px
+        rgba(255,255,255,.6);
 }
 
 
-/* =====================================================
-   BOTTOM
-====================================================== */
+/* BUTTON */
 
-#bottomBar {
-
+#bottom {
     position: absolute;
 
     left: 20px;
-
     right: 20px;
 
-    bottom:
-        calc(
-            20px +
-            env(safe-area-inset-bottom)
-        );
+    bottom: calc(
+        20px +
+        env(safe-area-inset-bottom)
+    );
 
     display: flex;
 
@@ -410,209 +285,114 @@ body {
 }
 
 #placeButton {
-
     width: 100%;
+    max-width: 380px;
 
-    max-width: 360px;
+    height: 58px;
 
-    height: 56px;
-
-    border:
-        1px solid
-        rgba(255,255,255,.85);
-
+    border: 1px solid #fff;
     border-radius: 14px;
 
-    background:
-        rgba(0,0,0,.78);
+    background: rgba(0,0,0,.8);
 
     color: #fff;
 
     font-size: 14px;
-
     font-weight: 700;
-
-    pointer-events: auto;
-
-    cursor: pointer;
 
     display: none;
 
-    backdrop-filter:
-        blur(8px);
-}
-
-#placeButton:active {
-
-    transform: scale(.98);
+    pointer-events: auto;
 }
 
 #placeButton:disabled {
-
-    opacity: .45;
-}
-
-
-/* =====================================================
-   ERROR
-====================================================== */
-
-#errorScreen {
-
-    position: fixed;
-
-    inset: 0;
-
-    z-index: 500;
-
-    display: none;
-
-    align-items: center;
-
-    justify-content: center;
-
-    padding: 25px;
-
-    background: #000;
-
-    text-align: center;
-}
-
-#errorText {
-
-    max-width: 380px;
-
-    color: #fff;
-
-    font-size: 14px;
-
-    line-height: 1.5;
+    opacity: .4;
 }
 
 </style>
-
 </head>
 
 
 <body>
 
-
 <div id="app">
 
 
-<!-- =====================================================
-     START
-====================================================== -->
+    <!-- START -->
 
-<div id="startScreen">
+    <div id="startScreen">
 
-    <div class="startBox">
+        <div class="startBox">
 
-        <h1 class="startTitle">
-            AR
-        </h1>
+            <h1>AR</h1>
 
-        <p class="startSubtitle">
-            Дополненная реальность
-        </p>
+            <p>
+                Creature AR
+            </p>
 
-        <button
-            id="startButton"
-            type="button"
-        >
-            ЗАПУСК
-        </button>
+            <button id="startButton">
+                ЗАПУСК
+            </button>
 
-        <div id="startMessage">
-            Готово
+            <div id="startMessage">
+                Готово
+            </div>
+
         </div>
 
     </div>
 
-</div>
+
+    <!-- FALLBACK CAMERA -->
+
+    <video
+        id="camera"
+        autoplay
+        muted
+        playsinline>
+    </video>
 
 
-<!-- =====================================================
-     WEBXR CANVAS
-====================================================== -->
+    <!-- WEBXR -->
 
-<canvas
-    id="xrCanvas"
-></canvas>
+    <canvas id="xrCanvas"></canvas>
 
 
-<!-- =====================================================
-     CAMERA FALLBACK
-====================================================== -->
+    <!-- AR UI -->
 
-<video
-    id="camera"
-    autoplay
-    muted
-    playsinline
-></video>
-
-
-<!-- =====================================================
-     AR INTERFACE
-====================================================== -->
-
-<div id="arUI">
-
-
-    <div id="topBar">
+    <div id="arUI">
 
         <div id="status">
             AR
         </div>
 
-        <button
-            id="closeButton"
-            type="button"
-        >
+        <button id="closeButton">
             ×
         </button>
 
-    </div>
+
+        <div id="reticle"></div>
 
 
-    <div id="reticle"></div>
+        <div id="bottom">
 
+            <button id="placeButton">
+                ДОБАВИТЬ 3D СЦЕНУ
+            </button>
 
-    <div id="bottomBar">
-
-        <button
-            id="placeButton"
-            type="button"
-        >
-            ДОБАВИТЬ 3D МОДЕЛЬ
-        </button>
+        </div>
 
     </div>
 
 
 </div>
 
-
-<!-- =====================================================
-     ERROR
-====================================================== -->
-
-<div id="errorScreen">
-
-    <div id="errorText"></div>
-
-</div>
-
-
-</div>
-
-
-<!-- =====================================================
-     APPLICATION
-====================================================== -->
 
 <script type="module">
+
+/* ======================================================
+   IMPORT
+====================================================== */
 
 import * as THREE from "three";
 
@@ -621,18 +401,15 @@ import {
 } from "three/addons/loaders/GLTFLoader.js";
 
 
-/* =====================================================
+/* ======================================================
    TELEGRAM
 ====================================================== */
 
 const tg =
-    window.Telegram &&
-    window.Telegram.WebApp
-        ? window.Telegram.WebApp
-        : null;
+    window.Telegram?.WebApp || null;
 
 
-/* =====================================================
+/* ======================================================
    DOM
 ====================================================== */
 
@@ -651,14 +428,14 @@ const startMessage =
         "startMessage"
     );
 
+const cameraVideo =
+    document.getElementById(
+        "camera"
+    );
+
 const xrCanvas =
     document.getElementById(
         "xrCanvas"
-    );
-
-const camera =
-    document.getElementById(
-        "camera"
     );
 
 const arUI =
@@ -686,18 +463,8 @@ const closeButton =
         "closeButton"
     );
 
-const errorScreen =
-    document.getElementById(
-        "errorScreen"
-    );
 
-const errorText =
-    document.getElementById(
-        "errorText"
-    );
-
-
-/* =====================================================
+/* ======================================================
    THREE
 ====================================================== */
 
@@ -705,10 +472,10 @@ let renderer = null;
 
 let scene = null;
 
-let xrCamera = null;
+let camera3D = null;
 
 
-/* =====================================================
+/* ======================================================
    XR
 ====================================================== */
 
@@ -722,29 +489,29 @@ let hitTestSource = null;
 
 let currentHit = null;
 
-let anchor = null;
+let modelAnchor = null;
 
 
-/* =====================================================
+/* ======================================================
    MODEL
 ====================================================== */
 
 let creature = null;
 
-let creatureReady = false;
+let modelLoaded = false;
 
-let creaturePlaced = false;
+let modelPlaced = false;
 
 
-/* =====================================================
-   FALLBACK CAMERA
+/* ======================================================
+   NORMAL CAMERA
 ====================================================== */
 
 let cameraStream = null;
 
 
-/* =====================================================
-   INIT TELEGRAM
+/* ======================================================
+   TELEGRAM INIT
 ====================================================== */
 
 function initTelegram() {
@@ -753,11 +520,21 @@ function initTelegram() {
         return;
     }
 
-
     tg.ready();
 
     tg.expand();
 
+    try {
+
+        tg.requestFullscreen();
+
+    } catch (_) {}
+
+    try {
+
+        tg.disableVerticalSwipes();
+
+    } catch (_) {}
 
     try {
 
@@ -769,14 +546,6 @@ function initTelegram() {
             "#000000"
         );
 
-        /*
-         * AR uses swipe/gesture input,
-         * so Telegram's vertical swipe
-         * close gesture is disabled.
-         */
-
-        tg.disableVerticalSwipes();
-
     } catch (_) {}
 
 }
@@ -784,143 +553,11 @@ function initTelegram() {
 initTelegram();
 
 
-/* =====================================================
-   START BUTTON
+/* ======================================================
+   THREE
 ====================================================== */
 
-startButton.addEventListener(
-    "click",
-    start
-);
-
-
-/* =====================================================
-   START
-====================================================== */
-
-async function start() {
-
-    startButton.disabled =
-        true;
-
-    startMessage.textContent =
-        "Запуск AR...";
-
-
-    try {
-
-        /*
-         * Initialize Three.
-         */
-
-        initializeThree();
-
-
-        /*
-         * Load model immediately.
-         */
-
-        loadCreature();
-
-
-        /*
-         * Request immersive AR.
-         */
-
-        await startXR();
-
-
-        /*
-         * Start Telegram motion
-         * as additional sensor data.
-         */
-
-        startTelegramMotion();
-
-
-        /*
-         * Interface.
-         */
-
-        startScreen.style.display =
-            "none";
-
-        arUI.style.display =
-            "block";
-
-        xrCanvas.style.display =
-            "block";
-
-
-    } catch (error) {
-
-        console.error(
-            "AR start failed:",
-            error
-        );
-
-
-        /*
-         * If WebXR isn't available,
-         * use normal camera only.
-         *
-         * This does NOT pretend
-         * to be real AR tracking.
-         */
-
-        try {
-
-            await startCamera();
-
-
-            startTelegramMotion();
-
-
-            startScreen.style.display =
-                "none";
-
-            arUI.style.display =
-                "block";
-
-            status.textContent =
-                "КАМЕРА";
-
-
-            startMessage.textContent =
-                "Готово";
-
-
-        } catch (cameraError) {
-
-            console.error(
-                cameraError
-            );
-
-
-            startButton.disabled =
-                false;
-
-            startMessage.textContent =
-                "Готово";
-
-
-            showError(
-                cameraError.message ||
-                "Не удалось открыть камеру."
-            );
-
-        }
-
-    }
-
-}
-
-
-/* =====================================================
-   THREE INITIALIZATION
-====================================================== */
-
-function initializeThree() {
+function initThree() {
 
     if (renderer) {
         return;
@@ -931,7 +568,7 @@ function initializeThree() {
         new THREE.Scene();
 
 
-    xrCamera =
+    camera3D =
         new THREE.PerspectiveCamera(
 
             70,
@@ -949,14 +586,11 @@ function initializeThree() {
     renderer =
         new THREE.WebGLRenderer({
 
-            canvas:
-                xrCanvas,
+            canvas: xrCanvas,
 
-            alpha:
-                true,
+            alpha: true,
 
-            antialias:
-                true,
+            antialias: true,
 
             powerPreference:
                 "high-performance"
@@ -988,70 +622,74 @@ function initializeThree() {
 
 
     /*
-     * Basic light.
+     * Lighting
      */
 
-    const hemisphere =
+    const hemi =
         new THREE.HemisphereLight(
 
             0xffffff,
 
             0x444444,
 
+            2.5
+
+        );
+
+
+    scene.add(
+        hemi
+    );
+
+
+    const light =
+        new THREE.DirectionalLight(
+
+            0xffffff,
+
             2
 
         );
 
 
-    scene.add(
-        hemisphere
-    );
-
-
-    const directional =
-        new THREE.DirectionalLight(
-
-            0xffffff,
-
-            1.5
-
-        );
-
-
-    directional.position.set(
-
+    light.position.set(
         2,
         4,
         2
-
     );
 
 
     scene.add(
-        directional
+        light
     );
 
 }
 
 
-/* =====================================================
-   LOAD GLB
+/* ======================================================
+   LOAD CREATURE
 ====================================================== */
 
 function loadCreature() {
+
+    if (
+        modelLoaded ||
+        creature
+    ) {
+        return;
+    }
+
 
     const loader =
         new GLTFLoader();
 
 
-    /*
-     * EXACT MODEL PATH
-     */
-
     loader.load(
 
         "./models/creature.glb",
 
+
+        /* LOADED */
 
         function(gltf) {
 
@@ -1060,23 +698,93 @@ function loadCreature() {
 
 
             /*
-             * Initial size.
-             *
-             * Change only this value
-             * if the model is too large.
+             * Сначала скрываем.
              */
-
-            creature.scale.set(
-
-                0.5,
-                0.5,
-                0.5
-
-            );
-
 
             creature.visible =
                 false;
+
+
+            /*
+             * ВАЖНО:
+             * автоматически центрируем модель.
+             */
+
+            const box =
+                new THREE.Box3()
+                    .setFromObject(
+                        creature
+                    );
+
+
+            const size =
+                new THREE.Vector3();
+
+
+            box.getSize(
+                size
+            );
+
+
+            /*
+             * Приводим модель примерно
+             * к высоте 1 метр.
+             */
+
+            if (
+                size.y > 0
+            ) {
+
+                const scale =
+                    1 / size.y;
+
+
+                creature.scale.setScalar(
+                    scale
+                );
+
+            }
+
+
+            /*
+             * После масштабирования
+             * снова вычисляем bounding box.
+             */
+
+            const scaledBox =
+                new THREE.Box3()
+                    .setFromObject(
+                        creature
+                    );
+
+
+            const center =
+                new THREE.Vector3();
+
+
+            scaledBox.getCenter(
+                center
+            );
+
+
+            /*
+             * Центрируем X/Z.
+             */
+
+            creature.position.x -=
+                center.x;
+
+            creature.position.z -=
+                center.z;
+
+
+            /*
+             * Нижняя точка модели
+             * становится Y = 0.
+             */
+
+            creature.position.y -=
+                scaledBox.min.y;
 
 
             scene.add(
@@ -1084,7 +792,7 @@ function loadCreature() {
             );
 
 
-            creatureReady =
+            modelLoaded =
                 true;
 
 
@@ -1093,55 +801,53 @@ function loadCreature() {
             );
 
 
-            /*
-             * If placement was pressed
-             * after the file loaded,
-             * show it.
-             */
-
             if (
-                creaturePlaced
+                xrSession &&
+                !modelPlaced
             ) {
 
-                creature.visible =
-                    true;
+                status.textContent =
+                    "НАВЕДИТЕ НА ПОЛ";
 
             }
 
         },
 
 
-        function(progress) {
+        /* PROGRESS */
+
+        function(xhr) {
 
             if (
-                progress.total
+                xhr.lengthComputable
             ) {
 
                 const percent =
                     Math.round(
 
-                        (
-                            progress.loaded /
-                            progress.total
-                        ) * 100
+                        xhr.loaded /
+                        xhr.total *
+                        100
 
                     );
 
 
-                status.textContent =
-                    "МОДЕЛЬ " +
-                    percent +
-                    "%";
+                console.log(
+                    "MODEL:",
+                    percent + "%"
+                );
 
             }
 
         },
 
 
+        /* ERROR */
+
         function(error) {
 
             console.error(
-                "GLB loading error:",
+                "MODEL ERROR:",
                 error
             );
 
@@ -1156,36 +862,155 @@ function loadCreature() {
 }
 
 
-/* =====================================================
-   START WEBXR
+/* ======================================================
+   START
 ====================================================== */
 
-async function startXR() {
+startButton.addEventListener(
+
+    "click",
+
+    startApplication
+
+);
+
+
+async function startApplication() {
+
+    startButton.disabled =
+        true;
+
+
+    startMessage.textContent =
+        "Запуск...";
+
+
+    initThree();
+
 
     /*
-     * No device check.
-     *
-     * We directly request AR.
+     * Загружаем модель сразу.
      */
 
-    if (
-        !navigator.xr
-    ) {
+    loadCreature();
 
-        throw new Error(
-            "WebXR недоступен"
+
+    /*
+     * Запускаем Telegram sensors.
+     */
+
+    startTelegramSensors();
+
+
+    /*
+     * Сначала пытаемся
+     * запустить настоящий AR.
+     */
+
+    try {
+
+        await startXR();
+
+
+        startScreen.style.display =
+            "none";
+
+
+        arUI.style.display =
+            "block";
+
+
+        xrCanvas.style.display =
+            "block";
+
+
+        return;
+
+    }
+
+    catch (error) {
+
+        console.warn(
+            "WebXR AR unavailable:",
+            error
         );
 
     }
 
 
     /*
-     * immersive-ar
-     *
-     * local-floor
-     * hit-test
-     *
-     * anchors optional.
+     * Если настоящий AR
+     * недоступен —
+     * запускаем обычную камеру.
+     */
+
+    try {
+
+        await startNormalCamera();
+
+
+        startScreen.style.display =
+            "none";
+
+
+        arUI.style.display =
+            "block";
+
+
+        status.textContent =
+            "КАМЕРА — AR НЕДОСТУПЕН";
+
+
+        /*
+         * Не показываем кнопку,
+         * потому что без world tracking
+         * закрепить модель невозможно.
+         */
+
+        placeButton.style.display =
+            "none";
+
+
+    }
+
+    catch (error) {
+
+        console.error(
+            error
+        );
+
+
+        startButton.disabled =
+            false;
+
+
+        startMessage.textContent =
+            "Ошибка камеры";
+
+    }
+
+}
+
+
+/* ======================================================
+   WEBXR
+====================================================== */
+
+async function startXR() {
+
+    if (
+        !navigator.xr
+    ) {
+
+        throw new Error(
+            "WebXR отсутствует"
+        );
+
+    }
+
+
+    /*
+     * Настоящий AR session.
      */
 
     xrSession =
@@ -1198,13 +1023,13 @@ async function startXR() {
 
                     requiredFeatures: [
 
-                        "local-floor",
-
                         "hit-test"
 
                     ],
 
                     optionalFeatures: [
+
+                        "local-floor",
 
                         "anchors"
 
@@ -1216,7 +1041,7 @@ async function startXR() {
 
 
     /*
-     * Give session to Three.
+     * Three.js XR session.
      */
 
     await renderer.xr
@@ -1226,20 +1051,41 @@ async function startXR() {
 
 
     /*
-     * Local room coordinate system.
+     * Пытаемся получить
+     * local-floor.
      */
 
-    referenceSpace =
-        await xrSession
-            .requestReferenceSpace(
+    try {
 
-                "local-floor"
+        referenceSpace =
+            await xrSession
+                .requestReferenceSpace(
 
-            );
+                    "local-floor"
+
+                );
+
+    }
+
+    catch (_) {
+
+        /*
+         * Fallback на local.
+         */
+
+        referenceSpace =
+            await xrSession
+                .requestReferenceSpace(
+
+                    "local"
+
+                );
+
+    }
 
 
     /*
-     * Viewer space.
+     * Viewer.
      */
 
     viewerSpace =
@@ -1252,7 +1098,7 @@ async function startXR() {
 
 
     /*
-     * Hit-test source.
+     * Hit Test.
      */
 
     hitTestSource =
@@ -1266,18 +1112,27 @@ async function startXR() {
 
 
     /*
-     * UI.
+     * UI
      */
+
+    status.textContent =
+        "ИЩЕМ ПОЛ";
+
+
+    reticle.style.display =
+        "block";
+
 
     placeButton.style.display =
         "block";
 
-    status.textContent =
-        "НАВЕДИТЕ КАМЕРУ НА ПОЛ";
+
+    placeButton.disabled =
+        true;
 
 
     /*
-     * XR frame loop.
+     * XR loop.
      */
 
     renderer.setAnimationLoop(
@@ -1286,7 +1141,7 @@ async function startXR() {
 
 
     /*
-     * Session ended.
+     * End event.
      */
 
     xrSession.addEventListener(
@@ -1304,8 +1159,8 @@ async function startXR() {
 }
 
 
-/* =====================================================
-   XR FRAME
+/* ======================================================
+   XR RENDER LOOP
 ====================================================== */
 
 function renderXR(
@@ -1324,14 +1179,14 @@ function renderXR(
 
 
     /*
-     * -----------------------------------------------
-     * HIT TEST
-     * -----------------------------------------------
+     * ==================================================
+     * SEARCH FLOOR / SURFACE
+     * ==================================================
      */
 
     if (
         hitTestSource &&
-        !creaturePlaced
+        !modelPlaced
     ) {
 
         const results =
@@ -1351,23 +1206,45 @@ function renderXR(
 
 
             reticle.classList.add(
-                "ready"
+                "found"
             );
 
 
-            status.textContent =
-                "ПОВЕРХНОСТЬ НАЙДЕНА";
+            placeButton.disabled =
+                false;
 
 
-        } else {
+            if (
+                modelLoaded
+            ) {
+
+                status.textContent =
+                    "ПОВЕРХНОСТЬ НАЙДЕНА";
+
+            }
+
+            else {
+
+                status.textContent =
+                    "ЗАГРУЗКА 3D МОДЕЛИ";
+
+            }
+
+        }
+
+        else {
 
             currentHit =
                 null;
 
 
             reticle.classList.remove(
-                "ready"
+                "found"
             );
+
+
+            placeButton.disabled =
+                true;
 
 
             status.textContent =
@@ -1379,46 +1256,33 @@ function renderXR(
 
 
     /*
-     * -----------------------------------------------
-     * ANCHOR UPDATE
-     * -----------------------------------------------
+     * ==================================================
+     * ANCHOR TRACKING
+     * ==================================================
      */
 
     if (
-        anchor &&
+        modelAnchor &&
         creature
     ) {
 
-        const pose =
+        const anchorPose =
             frame.getPose(
 
-                anchor.anchorSpace,
+                modelAnchor.anchorSpace,
 
                 referenceSpace
 
             );
 
 
-        if (pose) {
+        if (
+            anchorPose
+        ) {
 
-            creature.matrix
-                .fromArray(
-
-                    pose.transform.matrix
-
-                );
-
-
-            creature.matrix
-                .decompose(
-
-                    creature.position,
-
-                    creature.quaternion,
-
-                    creature.scale
-
-                );
+            applyPoseToModel(
+                anchorPose
+            );
 
         }
 
@@ -1426,52 +1290,46 @@ function renderXR(
 
 
     /*
-     * -----------------------------------------------
-     * RENDER
-     * -----------------------------------------------
+     * Render.
      */
 
     renderer.render(
 
         scene,
 
-        xrCamera
+        camera3D
 
     );
 
 }
 
 
-/* =====================================================
-   PLACE BUTTON
+/* ======================================================
+   PLACE MODEL
 ====================================================== */
 
 placeButton.addEventListener(
 
     "click",
 
-    placeCreature
+    placeModel
 
 );
 
 
-/* =====================================================
-   PLACE CREATURE
-====================================================== */
-
-async function placeCreature() {
+async function placeModel() {
 
     /*
-     * Model must be loaded.
+     * GLB должен быть загружен.
      */
 
     if (
-        !creatureReady ||
+        !modelLoaded ||
         !creature
     ) {
 
         status.textContent =
-            "МОДЕЛЬ ЕЩЁ ЗАГРУЖАЕТСЯ";
+            "МОДЕЛЬ ЗАГРУЖАЕТСЯ";
 
         return;
 
@@ -1479,11 +1337,13 @@ async function placeCreature() {
 
 
     /*
-     * Surface must be found.
+     * Должна быть найдена
+     * поверхность.
      */
 
     if (
-        !currentHit
+        !currentHit ||
+        !referenceSpace
     ) {
 
         status.textContent =
@@ -1494,11 +1354,15 @@ async function placeCreature() {
     }
 
 
+    placeButton.disabled =
+        true;
+
+
     /*
-     * Get pose in local-floor space.
+     * Получаем pose поверхности.
      */
 
-    const pose =
+    const hitPose =
         currentHit.getPose(
 
             referenceSpace
@@ -1506,10 +1370,17 @@ async function placeCreature() {
         );
 
 
-    if (!pose) {
+    if (
+        !hitPose
+    ) {
 
         status.textContent =
-            "ТОЧКА НЕ НАЙДЕНА";
+            "ТОЧКА ПОТЕРЯНА";
+
+
+        placeButton.disabled =
+            false;
+
 
         return;
 
@@ -1517,35 +1388,24 @@ async function placeCreature() {
 
 
     /*
-     * -----------------------------------------------
-     * INITIAL POSITION
-     * -----------------------------------------------
+     * Сначала устанавливаем
+     * модель непосредственно
+     * по hit-test.
      */
 
-    creature.matrix
-        .fromArray(
-
-            pose.transform.matrix
-
-        );
+    applyPoseToModel(
+        hitPose
+    );
 
 
-    creature.matrix
-        .decompose(
-
-            creature.position,
-
-            creature.quaternion,
-
-            creature.scale
-
-        );
+    creature.visible =
+        true;
 
 
     /*
-     * -----------------------------------------------
-     * CREATE ANCHOR
-     * -----------------------------------------------
+     * ==================================================
+     * CREATE REAL XR ANCHOR
+     * ==================================================
      */
 
     if (
@@ -1555,30 +1415,26 @@ async function placeCreature() {
 
         try {
 
-            anchor =
+            modelAnchor =
                 await currentHit
                     .createAnchor();
 
 
             console.log(
-                "Anchor created"
+                "XRAnchor created"
             );
 
+        }
 
-        } catch (error) {
-
-            /*
-             * Anchor isn't required
-             * to display the initial
-             * object.
-             */
+        catch (error) {
 
             console.warn(
                 "Anchor unavailable:",
                 error
             );
 
-            anchor =
+
+            modelAnchor =
                 null;
 
         }
@@ -1587,21 +1443,16 @@ async function placeCreature() {
 
 
     /*
-     * -----------------------------------------------
-     * SHOW MODEL
-     * -----------------------------------------------
+     * Теперь модель считается
+     * установленной.
      */
 
-    creature.visible =
-        true;
-
-
-    creaturePlaced =
+    modelPlaced =
         true;
 
 
     /*
-     * Stop hit-test after placement.
+     * Hit-test больше не нужен.
      */
 
     if (
@@ -1612,7 +1463,10 @@ async function placeCreature() {
 
             hitTestSource.cancel();
 
-        } catch (_) {}
+        }
+
+        catch (_) {}
+
 
         hitTestSource =
             null;
@@ -1624,6 +1478,10 @@ async function placeCreature() {
         null;
 
 
+    /*
+     * UI
+     */
+
     reticle.style.display =
         "none";
 
@@ -1634,18 +1492,88 @@ async function placeCreature() {
 
     status.textContent =
 
-        anchor
-            ? "ОБЪЕКТ ЗАКРЕПЛЁН"
-            : "ОБЪЕКТ РАЗМЕЩЁН";
+        modelAnchor
+            ? "3D СЦЕНА ЗАКРЕПЛЕНА"
+            : "3D СЦЕНА РАЗМЕЩЕНА";
 
 }
 
 
-/* =====================================================
-   TELEGRAM MOTION
+/* ======================================================
+   APPLY XR POSE
 ====================================================== */
 
-function startTelegramMotion() {
+function applyPoseToModel(
+    pose
+) {
+
+    /*
+     * Матрица hit-test / anchor.
+     */
+
+    const matrix =
+        new THREE.Matrix4()
+            .fromArray(
+
+                pose.transform.matrix
+
+            );
+
+
+    /*
+     * Получаем позицию,
+     * вращение и масштаб.
+     */
+
+    const position =
+        new THREE.Vector3();
+
+
+    const quaternion =
+        new THREE.Quaternion();
+
+
+    const scale =
+        new THREE.Vector3();
+
+
+    matrix.decompose(
+
+        position,
+
+        quaternion,
+
+        scale
+
+    );
+
+
+    /*
+     * Устанавливаем позицию.
+     */
+
+    creature.position.copy(
+        position
+    );
+
+
+    /*
+     * Оставляем ориентацию
+     * поверхности.
+     */
+
+    creature.quaternion.copy(
+        quaternion
+    );
+
+}
+
+
+/* ======================================================
+   TELEGRAM SENSORS
+====================================================== */
+
+function startTelegramSensors() {
 
     if (!tg) {
         return;
@@ -1653,141 +1581,81 @@ function startTelegramMotion() {
 
 
     /*
-     * Device Orientation
+     * Orientation
      */
 
-    if (
-        tg.DeviceOrientation
-    ) {
+    try {
 
-        try {
+        tg.DeviceOrientation?.start(
 
-            tg.DeviceOrientation.start(
+            {
 
-                {
+                refresh_rate:
+                    50,
 
-                    refresh_rate:
-                        50,
+                need_absolute:
+                    false
 
-                    need_absolute:
-                        false
+            }
 
-                },
-
-                function(ok) {
-
-                    console.log(
-                        "DeviceOrientation:",
-                        ok
-                    );
-
-                }
-
-            );
-
-        } catch (error) {
-
-            console.warn(
-                "DeviceOrientation:",
-                error
-            );
-
-        }
+        );
 
     }
+
+    catch (_) {}
 
 
     /*
      * Gyroscope
      */
 
-    if (
-        tg.Gyroscope
-    ) {
+    try {
 
-        try {
+        tg.Gyroscope?.start(
 
-            tg.Gyroscope.start(
+            {
 
-                {
+                refresh_rate:
+                    50
 
-                    refresh_rate:
-                        50
+            }
 
-                },
-
-                function(ok) {
-
-                    console.log(
-                        "Gyroscope:",
-                        ok
-                    );
-
-                }
-
-            );
-
-        } catch (error) {
-
-            console.warn(
-                "Gyroscope:",
-                error
-            );
-
-        }
+        );
 
     }
+
+    catch (_) {}
 
 
     /*
      * Accelerometer
      */
 
-    if (
-        tg.Accelerometer
-    ) {
+    try {
 
-        try {
+        tg.Accelerometer?.start(
 
-            tg.Accelerometer.start(
+            {
 
-                {
+                refresh_rate:
+                    50
 
-                    refresh_rate:
-                        50
+            }
 
-                },
-
-                function(ok) {
-
-                    console.log(
-                        "Accelerometer:",
-                        ok
-                    );
-
-                }
-
-            );
-
-        } catch (error) {
-
-            console.warn(
-                "Accelerometer:",
-                error
-            );
-
-        }
+        );
 
     }
+
+    catch (_) {}
 
 }
 
 
-/* =====================================================
-   NORMAL CAMERA
+/* ======================================================
+   NORMAL CAMERA FALLBACK
 ====================================================== */
 
-async function startCamera() {
+async function startNormalCamera() {
 
     if (
         !navigator.mediaDevices ||
@@ -1795,36 +1663,24 @@ async function startCamera() {
     ) {
 
         throw new Error(
-            "Camera API недоступен"
+            "Camera API unavailable"
         );
 
     }
 
 
     cameraStream =
-        await navigator
-            .mediaDevices
+        await navigator.mediaDevices
             .getUserMedia({
 
                 video: {
 
-                    facingMode:
-                        {
-                            ideal:
-                                "environment"
-                        },
+                    facingMode: {
 
-                    width:
-                        {
-                            ideal:
-                                1920
-                        },
+                        ideal:
+                            "environment"
 
-                    height:
-                        {
-                            ideal:
-                                1080
-                        }
+                    }
 
                 },
 
@@ -1834,37 +1690,20 @@ async function startCamera() {
             });
 
 
-    camera.srcObject =
+    cameraVideo.srcObject =
         cameraStream;
 
 
-    await camera.play();
+    await cameraVideo.play();
 
 
-    camera.style.display =
+    cameraVideo.style.display =
         "block";
-
-
-    /*
-     * This is only a camera
-     * fallback.
-     *
-     * No fake AR positioning.
-     */
-
-    placeButton.style.display =
-        "none";
-
-    reticle.style.display =
-        "none";
-
-    status.textContent =
-        "КАМЕРА";
 
 }
 
 
-/* =====================================================
+/* ======================================================
    CLOSE
 ====================================================== */
 
@@ -1877,34 +1716,33 @@ closeButton.addEventListener(
 );
 
 
-/* =====================================================
-   STOP
-====================================================== */
-
 async function stopApplication() {
 
     /*
-     * Delete anchor.
+     * Anchor
      */
 
     if (
-        anchor
+        modelAnchor
     ) {
 
         try {
 
-            anchor.delete();
+            modelAnchor.delete();
 
-        } catch (_) {}
+        }
 
-        anchor =
+        catch (_) {}
+
+
+        modelAnchor =
             null;
 
     }
 
 
     /*
-     * End XR.
+     * XR
      */
 
     if (
@@ -1915,13 +1753,15 @@ async function stopApplication() {
 
             await xrSession.end();
 
-        } catch (_) {}
+        }
+
+        catch (_) {}
 
     }
 
 
     /*
-     * Stop normal camera.
+     * Camera
      */
 
     if (
@@ -1932,13 +1772,11 @@ async function stopApplication() {
             .getTracks()
             .forEach(
 
-                function(track) {
-
-                    track.stop();
-
-                }
+                track =>
+                    track.stop()
 
             );
+
 
         cameraStream =
             null;
@@ -1946,12 +1784,12 @@ async function stopApplication() {
     }
 
 
-    camera.srcObject =
+    cameraVideo.srcObject =
         null;
 
 
     /*
-     * Stop Telegram motion.
+     * Telegram sensors
      */
 
     if (tg) {
@@ -1960,40 +1798,67 @@ async function stopApplication() {
 
             tg.DeviceOrientation?.stop();
 
-        } catch (_) {}
+        }
+
+        catch (_) {}
 
 
         try {
 
             tg.Gyroscope?.stop();
 
-        } catch (_) {}
+        }
+
+        catch (_) {}
 
 
         try {
 
             tg.Accelerometer?.stop();
 
-        } catch (_) {}
+        }
+
+        catch (_) {}
 
     }
+
+
+    /*
+     * Reset model.
+     */
+
+    if (
+        creature
+    ) {
+
+        creature.visible =
+            false;
+
+    }
+
+
+    modelPlaced =
+        false;
 
 
     cleanupXR();
 
 
     /*
-     * Reset UI.
+     * UI
      */
 
-    arUI.style.display =
+    cameraVideo.style.display =
         "none";
+
 
     xrCanvas.style.display =
         "none";
 
-    camera.style.display =
+
+    arUI.style.display =
         "none";
+
 
     startScreen.style.display =
         "flex";
@@ -2007,36 +1872,23 @@ async function stopApplication() {
         "Готово";
 
 
-    creaturePlaced =
-        false;
-
-
-    currentHit =
-        null;
-
-
-    if (
-        creature
-    ) {
-
-        creature.visible =
-            false;
-
-    }
-
-
     reticle.style.display =
-        "block";
+        "none";
+
 
     reticle.classList.remove(
-        "ready"
+        "found"
     );
+
+
+    placeButton.style.display =
+        "none";
 
 }
 
 
-/* =====================================================
-   XR CLEANUP
+/* ======================================================
+   CLEAN XR
 ====================================================== */
 
 function cleanupXR() {
@@ -2049,7 +1901,9 @@ function cleanupXR() {
 
             hitTestSource.cancel();
 
-        } catch (_) {}
+        }
+
+        catch (_) {}
 
     }
 
@@ -2083,24 +1937,7 @@ function cleanupXR() {
 }
 
 
-/* =====================================================
-   ERROR
-====================================================== */
-
-function showError(
-    message
-) {
-
-    errorText.textContent =
-        message;
-
-    errorScreen.style.display =
-        "flex";
-
-}
-
-
-/* =====================================================
+/* ======================================================
    RESIZE
 ====================================================== */
 
@@ -2111,33 +1948,32 @@ window.addEventListener(
     function() {
 
         if (
-            renderer
+            !renderer ||
+            !camera3D
         ) {
 
-            renderer.setSize(
-
-                window.innerWidth,
-
-                window.innerHeight
-
-            );
+            return;
 
         }
 
 
-        if (
-            xrCamera
-        ) {
+        renderer.setSize(
 
-            xrCamera.aspect =
+            window.innerWidth,
 
-                window.innerWidth /
-                window.innerHeight;
+            window.innerHeight
+
+        );
 
 
-            xrCamera.updateProjectionMatrix();
+        camera3D.aspect =
 
-        }
+            window.innerWidth /
+            window.innerHeight;
+
+
+        camera3D
+            .updateProjectionMatrix();
 
     }
 
@@ -2146,5 +1982,4 @@ window.addEventListener(
 </script>
 
 </body>
-
 </html>
