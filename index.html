@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
@@ -6,57 +6,103 @@
     <meta
         name="viewport"
         content="width=device-width,
-                 initial-scale=1.0,
-                 maximum-scale=1.0,
-                 user-scalable=no"
+                 initial-scale=1,
+                 maximum-scale=1,
+                 user-scalable=no,
+                 viewport-fit=cover"
     >
 
-    <title>AR Camera</title>
+    <meta name="theme-color" content="#000000">
 
-    <link rel="stylesheet" href="style.css">
+    <title>AR Space</title>
+
+    <link rel="stylesheet" href="./style.css">
 </head>
 
 <body>
 
-<div id="startScreen">
+    <!-- START SCREEN -->
 
-    <div class="start-content">
+    <main id="startScreen">
 
-        <h1>AR SPACE</h1>
+        <section class="startBox">
 
-        <p>
-            Дополненная реальность
-        </p>
+            <div class="logo">
+                AR
+            </div>
 
-        <button id="startAR">
-            ЗАПУСК КАМЕРЫ
+            <h1>AR SPACE</h1>
+
+            <p>
+                Дополненная реальность
+            </p>
+
+            <button id="startButton">
+                ЗАПУСК КАМЕРЫ
+            </button>
+
+            <div id="status">
+                Готово к запуску
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <!-- AR UI -->
+
+    <div id="arUI">
+
+        <button
+            id="exitButton"
+            class="exitButton"
+        >
+            ×
         </button>
 
-        <div id="status">
-            Проверка устройства...
+
+        <div
+            id="message"
+            class="message"
+        >
+            Наведите камеру на поверхность
+        </div>
+
+
+        <button
+            id="placeButton"
+            class="placeButton"
+        >
+            РАЗМЕСТИТЬ ОБЪЕКТ
+        </button>
+
+    </div>
+
+
+    <!-- ERROR -->
+
+    <div
+        id="errorScreen"
+        class="hidden"
+    >
+
+        <div class="errorBox">
+
+            <h2>AR недоступен</h2>
+
+            <p id="errorText"></p>
+
+            <button id="backButton">
+                НАЗАД
+            </button>
+
         </div>
 
     </div>
 
-</div>
 
-<div id="arInterface">
-
-    <button id="exitAR">
-        ×
-    </button>
-
-    <div id="instruction">
-        Наведите камеру на поверхность
-    </div>
-
-    <button id="placeObject">
-        РАЗМЕСТИТЬ ОБЪЕКТ
-    </button>
-
-</div>
-
-<script type="module" src="app.js"></script>
+    <script type="module" src="./app.js"></script>
 
 </body>
 </html>
