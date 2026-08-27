@@ -371,6 +371,81 @@ canvas {
 
 
 /* =====================================================
+   DESCRIPTION PANEL
+===================================================== */
+
+.descriptionPanel {
+    position: absolute;
+
+    z-index: 25;
+
+    top: calc(max(12px, env(safe-area-inset-top)) + 58px);
+    left: 50%;
+
+    transform: translateX(-50%);
+
+    width: min(92vw, 520px);
+
+    border-radius: 16px;
+
+    background: rgba(18,18,18,.82);
+    border: 1px solid rgba(255,255,255,.08);
+
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+
+    overflow: hidden;
+}
+
+.descriptionHeader {
+    width: 100%;
+    min-height: 44px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 0 14px;
+
+    background: transparent;
+    color: #fff;
+
+    font-size: 14px;
+    font-weight: 600;
+    text-align: left;
+}
+
+.descriptionChevron {
+    font-size: 18px;
+    opacity: .65;
+    transition: transform .2s ease;
+}
+
+.descriptionPanel.expanded .descriptionChevron {
+    transform: rotate(180deg);
+}
+
+.descriptionBody {
+    max-height: 0;
+    overflow: hidden;
+
+    padding: 0 14px;
+
+    color: rgba(255,255,255,.72);
+    font-size: 13px;
+    line-height: 1.55;
+
+    transition: max-height .25s ease, padding .25s ease;
+}
+
+.descriptionPanel.expanded .descriptionBody {
+    max-height: 42vh;
+    overflow-y: auto;
+    padding: 0 14px 14px;
+}
+
+
+/* =====================================================
    LOADER
 ===================================================== */
 
@@ -560,6 +635,30 @@ canvas {
 
         </div>
 
+        <div
+            id="descriptionPanel"
+            class="descriptionPanel"
+        >
+
+            <button
+                id="descriptionHeader"
+                class="descriptionHeader"
+                type="button"
+            >
+                <span>Описание</span>
+                <span
+                    id="descriptionChevron"
+                    class="descriptionChevron"
+                >⌄</span>
+            </button>
+
+            <div
+                id="descriptionBody"
+                class="descriptionBody"
+            ></div>
+
+        </div>
+
     </div>
 
 
@@ -708,6 +807,10 @@ document
 
             stopSensors();
 
+            descriptionPanel.classList.remove(
+                "expanded"
+            );
+
             showScreen(
                 galleryScreen
             );
@@ -736,9 +839,21 @@ let model = null;
     Здесь можно менять filename для каждой модели.
 */
 const galleryItems = [
-    { number: 1, filename: "creature.glb" },
-    { number: 2, filename: "creature.glb" },
-    { number: 3, filename: "creature.glb" }
+    {
+        number: 1,
+        filename: "creature.glb",
+        description: "Описание первой сцены. Здесь можно разместить подробную информацию о цифровом существе, его происхождении, особенностях модели и концепции экспозиции."
+    },
+    {
+        number: 2,
+        filename: "creature.glb",
+        description: "Описание второй сцены. Здесь можно разместить текст о второй экспозиции, истории объекта, художественной идее и деталях 3D-модели."
+    },
+    {
+        number: 3,
+        filename: "creature.glb",
+        description: "Описание третьей сцены. Здесь можно разместить полный текст о третьем объекте, его характеристиках и месте в галерее."
+    }
 ];
 
 let currentGalleryIndex = 0;
@@ -1409,11 +1524,36 @@ const nextGallery =
         "nextGallery"
     );
 
+const descriptionPanel =
+    document.getElementById(
+        "descriptionPanel"
+    );
+
+const descriptionHeader =
+    document.getElementById(
+        "descriptionHeader"
+    );
+
+const descriptionBody =
+    document.getElementById(
+        "descriptionBody"
+    );
+
 
 function updateGalleryNavigation() {
 
+    const item =
+        galleryItems[currentGalleryIndex];
+
     currentGallery.textContent =
-        galleryItems[currentGalleryIndex].number;
+        item.number;
+
+    descriptionBody.textContent =
+        item.description;
+
+    descriptionPanel.classList.remove(
+        "expanded"
+    );
 
     prevGallery.style.opacity =
         currentGalleryIndex === 0 ? "0.35" : "1";
@@ -1516,6 +1656,18 @@ nextGallery.addEventListener(
 
 
 updateGalleryNavigation();
+
+
+descriptionHeader.addEventListener(
+    "click",
+    () => {
+
+        descriptionPanel.classList.toggle(
+            "expanded"
+        );
+
+    }
+);
 
 
 /* =====================================================
@@ -1658,8 +1810,9 @@ async function startSensors() {
                     "granted"
                 ) {
 
-                    status.textContent =
-                        "Доступ к сенсорам запрещён";
+                    setSensorStatus(
+                        "Доступ к сенсорам запрещён"
+                    );
 
                     return;
 
@@ -1705,8 +1858,9 @@ async function startSensors() {
     }
     else {
 
-        status.textContent =
-            "Сенсор устройства не найден";
+        setSensorStatus(
+            "Сенсор устройства не найден"
+        );
 
     }
 
@@ -1785,6 +1939,12 @@ function onTelegramOrientation() {
         return;
     }
 
+
+    /*
+        Telegram Mini Apps отдаёт alpha/beta/gamma
+        уже в радианах. Не переводим их повторно
+        из градусов.
+    */
 
     const alpha =
         Number(
@@ -2066,10 +2226,8 @@ function updateTargetFromQuaternion(
 ) {
 
     /*
-        Вектор вперёд камеры.
-
-        Three.js camera смотрит
-        вдоль -Z.
+        Берём направление, куда смотрит телефон.
+        -Z — направление взгляда Three.js.
     */
 
     const forward =
@@ -2079,20 +2237,18 @@ function updateTargetFromQuaternion(
             -1
         );
 
-
     forward.applyQuaternion(
         quaternion
     );
 
 
     /*
-        Получаем горизонтальный угол.
-
-        atan2 обеспечивает полный
-        диапазон 360 градусов.
+        Горизонтальный поворот:
+        телефон влево  -> yaw влево
+        телефон вправо -> yaw вправо
     */
 
-    let yaw =
+    const yaw =
         Math.atan2(
             forward.x,
             -forward.z
@@ -2100,10 +2256,12 @@ function updateTargetFromQuaternion(
 
 
     /*
-        Вертикальный угол.
+        Вертикальный наклон:
+        телефон вверх -> обзор поднимается
+        телефон вниз  -> обзор опускается
     */
 
-    let pitch =
+    const pitch =
         Math.asin(
             THREE.MathUtils.clamp(
                 forward.y,
@@ -2113,29 +2271,17 @@ function updateTargetFromQuaternion(
         );
 
 
-    /*
-        Ограничиваем наклон.
+    targetYaw = yaw;
 
-        Камера не переворачивается.
-    */
-
-    pitch =
+    targetPitch =
         THREE.MathUtils.clamp(
             pitch,
             -1.30,
             1.30
         );
 
-
-    /*
-        Фильтр угла.
-    */
-
-    targetYaw = yaw;
-
-    targetPitch = pitch;
-
 }
+
 
 
 /* =====================================================
@@ -2306,84 +2452,61 @@ function updateSensorCamera() {
 
 
     /*
-        Плавность.
+        Плавно следуем за ориентацией телефона.
     */
 
     sensorYaw +=
         shortestAngleDifference(
             sensorYaw,
             targetYaw
-        )
-        * SENSOR_SMOOTH;
+        ) * SENSOR_SMOOTH;
 
 
     sensorPitch +=
         (
             targetPitch -
             sensorPitch
-        )
-        * SENSOR_SMOOTH;
+        ) * SENSOR_SMOOTH;
 
-
-    /*
-        Камера находится на сфере
-        вокруг центра модели.
-    */
 
     const horizontalRadius =
         Math.cos(
             sensorPitch
-        ) *
-        CAMERA_RADIUS;
+        ) * CAMERA_RADIUS;
 
 
     const x =
         Math.sin(
             sensorYaw
-        ) *
-        horizontalRadius;
+        ) * horizontalRadius;
 
 
     const y =
         CAMERA_Y +
         Math.sin(
             sensorPitch
-        ) *
-        CAMERA_RADIUS;
+        ) * CAMERA_RADIUS;
 
 
     const z =
         Math.cos(
             sensorYaw
-        ) *
-        horizontalRadius;
+        ) * horizontalRadius;
 
 
-    /*
-        Камера движется.
-
-        Модель НЕ движется.
-    */
-
-    camera.position.lerp(
-        new THREE.Vector3(
-            x,
-            y,
-            z
-        ),
-        0.18
+    camera.position.set(
+        x,
+        y,
+        z
     );
 
-
-    /*
-        Смотрим строго на модель.
-    */
 
     camera.lookAt(
         MODEL_CENTER
     );
 
 }
+
 
 
 /* =====================================================
