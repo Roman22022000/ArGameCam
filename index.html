@@ -1,23 +1,34 @@
+```html
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
+
     <meta charset="UTF-8">
 
     <meta
         name="viewport"
         content="width=device-width,
-                 initial-scale=1,
-                 maximum-scale=1,
-                 user-scalable=no,
-                 viewport-fit=cover"
+        initial-scale=1,
+        maximum-scale=1,
+        user-scalable=no,
+        viewport-fit=cover"
     >
 
     <title>AR Gallery</title>
 
-    <!-- Telegram Mini App -->
+
+    <!-- =====================================================
+         TELEGRAM MINI APP
+    ====================================================== -->
+
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-    <!-- Three.js -->
+
+    <!-- =====================================================
+         THREE.JS
+    ====================================================== -->
+
     <script type="importmap">
     {
         "imports": {
@@ -27,67 +38,94 @@
     }
     </script>
 
+
+    <!-- =====================================================
+         CSS
+    ====================================================== -->
+
     <style>
+
         * {
             box-sizing: border-box;
+
             -webkit-tap-highlight-color: transparent;
         }
 
+
         html,
         body {
+
             width: 100%;
             height: 100%;
+
             margin: 0;
             padding: 0;
 
             overflow: hidden;
+
+            background: #000;
+
+            color: #fff;
 
             font-family:
                 -apple-system,
                 BlinkMacSystemFont,
                 "Segoe UI",
                 sans-serif;
-
-            background: #000;
-            color: white;
         }
 
+
         body {
+
             touch-action: none;
         }
 
+
         button {
+
             border: none;
             outline: none;
-            font: inherit;
+
+            font-family: inherit;
+
+            cursor: pointer;
+
+            -webkit-user-select: none;
+            user-select: none;
         }
 
-        /* --------------------------------
-           ОБЩИЙ ЭКРАН
-        -------------------------------- */
+
+        /* =====================================================
+           SCREENS
+        ====================================================== */
 
         .screen {
+
             position: fixed;
 
             inset: 0;
 
-            display: none;
-
             width: 100%;
             height: 100%;
+
+            display: none;
 
             background: #000;
         }
 
+
         .screen.active {
+
             display: flex;
         }
 
-        /* --------------------------------
-           ГЛАВНЫЙ ЭКРАН
-        -------------------------------- */
+
+        /* =====================================================
+           HOME
+        ====================================================== */
 
         #homeScreen {
+
             align-items: center;
             justify-content: center;
 
@@ -98,112 +136,133 @@
                 20px;
         }
 
+
         .homeContent {
+
             width: min(500px, 100%);
 
             display: flex;
+
             flex-direction: column;
 
             align-items: center;
 
-            gap: 30px;
+            gap: 25px;
         }
 
+
         .logo {
+
             width: 110px;
             height: 110px;
 
-            border: 1px solid #333;
-
-            border-radius: 50%;
-
             display: flex;
+
             align-items: center;
             justify-content: center;
 
-            font-size: 42px;
+            border-radius: 50%;
+
+            border: 1px solid #333;
 
             background:
                 radial-gradient(
                     circle,
-                    #252525,
+                    #292929,
                     #050505
                 );
+
+            font-size: 42px;
         }
+
 
         .title {
-            font-size: clamp(28px, 8vw, 48px);
+
+            font-size:
+                clamp(30px, 8vw, 48px);
+
             font-weight: 600;
 
-            letter-spacing: -1px;
-
             text-align: center;
+
+            letter-spacing: -1px;
         }
 
-        .subtitle {
-            color: #888;
 
-            text-align: center;
+        .subtitle {
+
+            max-width: 320px;
+
+            color: #888;
 
             font-size: 15px;
 
-            max-width: 300px;
-
             line-height: 1.5;
+
+            text-align: center;
         }
 
+
         .mainButton {
-            width: 100%;
-            max-width: 320px;
+
+            width: min(320px, 100%);
 
             min-height: 58px;
 
             border-radius: 18px;
 
-            background: white;
+            background: #fff;
 
-            color: black;
-
-            font-weight: 600;
+            color: #000;
 
             font-size: 17px;
 
-            cursor: pointer;
+            font-weight: 600;
 
             transition:
                 transform .15s,
                 opacity .15s;
         }
 
+
         .mainButton:active {
+
             transform: scale(.97);
+
             opacity: .8;
         }
 
-        /* --------------------------------
-           ГАЛЕРЕЯ
-        -------------------------------- */
+
+        /* =====================================================
+           GALLERY
+        ====================================================== */
 
         #galleryScreen {
+
             flex-direction: column;
 
             padding:
-                max(20px, env(safe-area-inset-top))
+                max(12px, env(safe-area-inset-top))
                 20px
                 max(20px, env(safe-area-inset-bottom))
                 20px;
         }
 
+
         .galleryHeader {
-            display: flex;
-            align-items: center;
 
             width: 100%;
 
             height: 60px;
+
+            display: flex;
+
+            align-items: center;
         }
 
+
         .backButton {
+
             width: 44px;
             height: 44px;
 
@@ -211,14 +270,14 @@
 
             background: #181818;
 
-            color: white;
+            color: #fff;
 
-            font-size: 23px;
-
-            cursor: pointer;
+            font-size: 28px;
         }
 
+
         .galleryTitle {
+
             flex: 1;
 
             text-align: center;
@@ -228,8 +287,13 @@
             font-weight: 600;
         }
 
+
         .galleryGrid {
-            flex: 1;
+
+            width: 100%;
+            max-width: 600px;
+
+            margin: auto;
 
             display: grid;
 
@@ -241,51 +305,53 @@
 
             gap: 14px;
 
-            width: 100%;
-
-            max-width: 600px;
-
-            margin: auto;
-
             align-content: center;
         }
 
+
         .numberButton {
+
             aspect-ratio: 1;
 
             border-radius: 24px;
 
             background: #151515;
 
-            border: 1px solid #2a2a2a;
+            border: 1px solid #2c2c2c;
 
-            color: white;
+            color: #fff;
 
-            font-size: clamp(28px, 9vw, 52px);
+            font-size:
+                clamp(30px, 9vw, 52px);
 
             font-weight: 500;
-
-            cursor: pointer;
 
             transition:
                 transform .15s,
                 background .15s;
         }
 
+
         .numberButton:active {
+
             transform: scale(.94);
+
             background: #292929;
         }
 
-        /* --------------------------------
-           3D ЭКРАН
-        -------------------------------- */
+
+        /* =====================================================
+           VIEWER
+        ====================================================== */
 
         #viewerScreen {
+
             background: #000;
         }
 
+
         #canvasContainer {
+
             position: absolute;
 
             inset: 0;
@@ -294,21 +360,25 @@
             height: 100%;
         }
 
+
         canvas {
+
             display: block;
 
             width: 100%;
             height: 100%;
         }
 
-        /* --------------------------------
-           UI 3D
-        -------------------------------- */
+
+        /* =====================================================
+           VIEWER TOP
+        ====================================================== */
 
         .viewerTop {
+
             position: absolute;
 
-            z-index: 10;
+            z-index: 20;
 
             top:
                 max(12px, env(safe-area-inset-top));
@@ -319,76 +389,55 @@
             display: flex;
 
             align-items: center;
-
-            pointer-events: none;
         }
 
+
         .viewerBack {
-            pointer-events: auto;
 
             width: 44px;
             height: 44px;
 
             border-radius: 14px;
 
-            background: rgba(20,20,20,.75);
+            background:
+                rgba(20,20,20,.75);
 
-            color: white;
+            color: #fff;
 
-            backdrop-filter: blur(10px);
+            font-size: 28px;
 
-            font-size: 22px;
+            backdrop-filter: blur(12px);
         }
 
+
         .viewerName {
+
             margin-left: 12px;
 
             padding: 10px 15px;
 
             border-radius: 14px;
 
-            background: rgba(20,20,20,.7);
+            background:
+                rgba(20,20,20,.70);
 
-            backdrop-filter: blur(10px);
+            color: #fff;
 
             font-size: 14px;
-        }
-
-        .sensorButton {
-            position: absolute;
-
-            z-index: 10;
-
-            left: 50%;
-
-            transform: translateX(-50%);
-
-            bottom:
-                max(25px, env(safe-area-inset-bottom));
-
-            width: calc(100% - 40px);
-
-            max-width: 350px;
-
-            min-height: 54px;
-
-            border-radius: 18px;
-
-            background: rgba(255,255,255,.94);
-
-            color: black;
-
-            font-weight: 600;
-
-            font-size: 16px;
 
             backdrop-filter: blur(12px);
         }
 
+
+        /* =====================================================
+           SENSOR STATUS
+        ====================================================== */
+
         .sensorStatus {
+
             position: absolute;
 
-            z-index: 10;
+            z-index: 20;
 
             top: 70px;
 
@@ -400,7 +449,8 @@
 
             border-radius: 12px;
 
-            background: rgba(0,0,0,.65);
+            background:
+                rgba(0,0,0,.65);
 
             color: #aaa;
 
@@ -409,20 +459,70 @@
             white-space: nowrap;
 
             pointer-events: none;
+
+            backdrop-filter: blur(10px);
         }
 
-        .hint {
+
+        /* =====================================================
+           SENSOR BUTTON
+        ====================================================== */
+
+        .sensorButton {
+
             position: absolute;
 
-            z-index: 5;
+            z-index: 20;
 
             left: 50%;
 
-            bottom: 95px;
+            bottom:
+                max(25px, env(safe-area-inset-bottom));
 
             transform: translateX(-50%);
 
-            color: rgba(255,255,255,.55);
+            width:
+                calc(100% - 40px);
+
+            max-width: 360px;
+
+            min-height: 55px;
+
+            border-radius: 18px;
+
+            background:
+                rgba(255,255,255,.95);
+
+            color: #000;
+
+            font-size: 16px;
+
+            font-weight: 600;
+
+            backdrop-filter: blur(12px);
+        }
+
+
+        /* =====================================================
+           HINT
+        ====================================================== */
+
+        .hint {
+
+            position: absolute;
+
+            z-index: 10;
+
+            left: 50%;
+
+            bottom: 92px;
+
+            transform: translateX(-50%);
+
+            width: 90%;
+
+            color:
+                rgba(255,255,255,.5);
 
             font-size: 12px;
 
@@ -431,56 +531,69 @@
             pointer-events: none;
         }
 
+
+        /* =====================================================
+           LOADER
+        ====================================================== */
+
         .loader {
+
             position: absolute;
 
-            z-index: 20;
+            z-index: 50;
 
             inset: 0;
 
             display: flex;
 
             align-items: center;
-
             justify-content: center;
 
             background: #000;
         }
 
+
         .loader.hidden {
+
             display: none;
         }
 
+
         .loaderText {
+
             color: #aaa;
+
             font-size: 14px;
         }
 
-        /* --------------------------------
-           АДАПТАЦИЯ
-        -------------------------------- */
+
+        /* =====================================================
+           LANDSCAPE
+        ====================================================== */
 
         @media (orientation: landscape) {
 
             .galleryGrid {
+
                 grid-template-columns:
-                    repeat(3, minmax(100px, 160px));
+                    repeat(3, 130px);
 
                 justify-content: center;
             }
 
-            .homeContent {
-                max-width: 420px;
-            }
         }
+
     </style>
+
 </head>
+
 
 <body>
 
-<!-- =====================================
-     ГЛАВНЫЙ ЭКРАН
-====================================== -->
+
+<!-- =========================================================
+     HOME
+========================================================== -->
 
 <section
     id="homeScreen"
@@ -493,14 +606,19 @@
             ◇
         </div>
 
+
         <div class="title">
             AR Gallery
         </div>
 
+
         <div class="subtitle">
+
             Галерея цифровых существ
             в интерактивном 3D-пространстве
+
         </div>
+
 
         <button
             id="openGallery"
@@ -514,9 +632,10 @@
 </section>
 
 
-<!-- =====================================
-     ГАЛЕРЕЯ
-====================================== -->
+
+<!-- =========================================================
+     GALLERY
+========================================================== -->
 
 <section
     id="galleryScreen"
@@ -532,6 +651,7 @@
             ‹
         </button>
 
+
         <div class="galleryTitle">
             Галерея
         </div>
@@ -541,12 +661,14 @@
 
     <div class="galleryGrid">
 
+
         <button
             class="numberButton"
             data-model="creature.glb"
         >
             1
         </button>
+
 
         <button
             class="numberButton"
@@ -555,6 +677,7 @@
             2
         </button>
 
+
         <button
             class="numberButton"
             data-model="creature.glb"
@@ -562,21 +685,27 @@
             3
         </button>
 
+
     </div>
 
 </section>
 
 
-<!-- =====================================
-     3D ПРОСМОТР
-====================================== -->
+
+<!-- =========================================================
+     3D VIEWER
+========================================================== -->
 
 <section
     id="viewerScreen"
     class="screen"
 >
 
-    <div id="canvasContainer"></div>
+
+    <div
+        id="canvasContainer"
+    ></div>
+
 
     <div class="viewerTop">
 
@@ -586,6 +715,7 @@
         >
             ‹
         </button>
+
 
         <div
             id="viewerName"
@@ -606,8 +736,10 @@
 
 
     <div class="hint">
-        Поворачивайте телефон,
-        чтобы осмотреть объект
+
+        Поворачивайте и наклоняйте телефон,
+        чтобы осмотреть модель
+
     </div>
 
 
@@ -615,7 +747,9 @@
         id="sensorButton"
         class="sensorButton"
     >
+
         Включить движение телефона
+
     </button>
 
 
@@ -623,30 +757,53 @@
         id="loader"
         class="loader hidden"
     >
-        <div class="loaderText">
+
+        <div
+            id="loaderText"
+            class="loaderText"
+        >
             Загрузка 3D модели...
         </div>
+
     </div>
 
 </section>
 
 
+
+<!-- =========================================================
+     JAVASCRIPT
+========================================================== -->
+
 <script type="module">
 
-import * as THREE from "three";
 
-import { GLTFLoader }
-    from "three/addons/loaders/GLTFLoader.js";
+/* =========================================================
+   IMPORTS
+========================================================== */
 
-import { OrbitControls }
-    from "three/addons/controls/OrbitControls.js";
+import * as THREE
+    from "three";
+
+import {
+    GLTFLoader
+}
+from "three/addons/loaders/GLTFLoader.js";
+
+import {
+    OrbitControls
+}
+from "three/addons/controls/OrbitControls.js";
+
 
 
 /* =========================================================
    TELEGRAM
-========================================================= */
+========================================================== */
 
-const tg = window.Telegram?.WebApp;
+const tg =
+    window.Telegram?.WebApp || null;
+
 
 if (tg) {
 
@@ -654,139 +811,273 @@ if (tg) {
 
     tg.expand();
 
-    /*
-       Просим Telegram использовать
-       максимальную площадь Mini App.
-    */
 
     if (tg.setHeaderColor) {
-        tg.setHeaderColor("#000000");
+
+        tg.setHeaderColor(
+            "#000000"
+        );
+
     }
 
+
     if (tg.setBackgroundColor) {
-        tg.setBackgroundColor("#000000");
+
+        tg.setBackgroundColor(
+            "#000000"
+        );
+
     }
+
 }
 
 
+
 /* =========================================================
-   ЭКРАНЫ
-========================================================= */
+   SCREENS
+========================================================== */
 
 const homeScreen =
-    document.getElementById("homeScreen");
+    document.getElementById(
+        "homeScreen"
+    );
+
 
 const galleryScreen =
-    document.getElementById("galleryScreen");
+    document.getElementById(
+        "galleryScreen"
+    );
+
 
 const viewerScreen =
-    document.getElementById("viewerScreen");
+    document.getElementById(
+        "viewerScreen"
+    );
+
 
 
 function showScreen(screen) {
 
     document
         .querySelectorAll(".screen")
-        .forEach(el => {
-            el.classList.remove("active");
-        });
+        .forEach(
+            element => {
 
-    screen.classList.add("active");
+                element.classList.remove(
+                    "active"
+                );
+
+            }
+        );
+
+
+    screen.classList.add(
+        "active"
+    );
+
 }
 
 
-/* =========================================================
-   ГЛАВНЫЙ ЭКРАН
-========================================================= */
-
-document
-    .getElementById("openGallery")
-    .addEventListener("click", () => {
-
-        showScreen(galleryScreen);
-
-    });
-
 
 /* =========================================================
-   НАЗАД
-========================================================= */
+   NAVIGATION
+========================================================== */
 
 document
-    .getElementById("galleryBack")
-    .addEventListener("click", () => {
+    .getElementById(
+        "openGallery"
+    )
+    .addEventListener(
+        "click",
+        () => {
 
-        showScreen(homeScreen);
+            showScreen(
+                galleryScreen
+            );
 
-    });
+        }
+    );
 
 
 document
-    .getElementById("viewerBack")
-    .addEventListener("click", () => {
+    .getElementById(
+        "galleryBack"
+    )
+    .addEventListener(
+        "click",
+        () => {
 
-        stopSensor();
+            showScreen(
+                homeScreen
+            );
 
-        showScreen(galleryScreen);
+        }
+    );
 
-    });
+
+document
+    .getElementById(
+        "viewerBack"
+    )
+    .addEventListener(
+        "click",
+        () => {
+
+            stopSensor();
+
+            showScreen(
+                galleryScreen
+            );
+
+        }
+    );
+
 
 
 /* =========================================================
-   THREE.JS
-========================================================= */
+   THREE VARIABLES
+========================================================== */
 
-const container =
-    document.getElementById("canvasContainer");
+let scene = null;
 
-let scene;
-let camera;
-let renderer;
+let camera = null;
+
+let renderer = null;
+
+let controls = null;
 
 let model = null;
 
-let controls;
+let animationId = null;
 
-let animationId;
+
+
+/* =========================================================
+   MODEL
+========================================================== */
+
+const MODEL_BASE_URL =
+    "https://raw.githubusercontent.com/" +
+    "Roman22022000/ArGameCam/main/models/";
+
+
+const gltfLoader =
+    new GLTFLoader();
+
+
+
+/* =========================================================
+   MODEL CENTER
+========================================================== */
+
+const MODEL_CENTER =
+    new THREE.Vector3(
+        0,
+        0,
+        0
+    );
+
+
+
+/* =========================================================
+   CAMERA
+========================================================== */
+
+const CAMERA_DISTANCE = 3;
+
+const CAMERA_HEIGHT = 0.45;
+
+
+
+/* =========================================================
+   SENSOR VARIABLES
+========================================================== */
+
+let sensorEnabled = false;
 
 
 /*
-   Отдельный pivot.
-
-   Модель находится внутри него.
-
-   ВАЖНО:
-
-   модель сама НЕ вращается.
-
-   Вращается камера вокруг центра.
-
-   Поэтому модель физически остается
-   закрепленной в центре координат.
+    Абсолютная ориентация телефона.
 */
 
-const cameraRig =
-    new THREE.Object3D();
+let sensorAlpha = 0;
 
-let targetCameraQuaternion =
-    new THREE.Quaternion();
+let sensorBeta = 0;
 
-let currentCameraQuaternion =
-    new THREE.Quaternion();
+let sensorGamma = 0;
 
+
+/*
+    Начальная ориентация.
+
+    Именно с неё начинается обзор.
+*/
+
+let startAlpha = null;
+
+let startBeta = null;
+
+let startGamma = null;
+
+
+/*
+    Целевые углы.
+*/
+
+let targetYaw = 0;
+
+let targetPitch = 0;
+
+
+/*
+    Текущие углы.
+
+    Они используются для плавности.
+*/
+
+let currentYaw = 0;
+
+let currentPitch = 0;
+
+
+/*
+    Плавность.
+*/
+
+const SENSOR_SMOOTHING =
+    0.14;
+
+
+
+/* =========================================================
+   THREE INIT
+========================================================== */
 
 function initThree() {
+
+    const container =
+        document.getElementById(
+            "canvasContainer"
+        );
+
+
+    /* -----------------------------------------------------
+       SCENE
+    ------------------------------------------------------ */
 
     scene =
         new THREE.Scene();
 
+
     scene.background =
-        new THREE.Color(0x000000);
+        new THREE.Color(
+            0x000000
+        );
 
 
-    /* -----------------------------
-       КАМЕРА
-    ----------------------------- */
+    /* -----------------------------------------------------
+       CAMERA
+    ------------------------------------------------------ */
 
     camera =
         new THREE.PerspectiveCamera(
@@ -800,32 +1091,31 @@ function initThree() {
 
     camera.position.set(
         0,
-        0.5,
-        3
+        CAMERA_HEIGHT,
+        CAMERA_DISTANCE
     );
 
 
-    /* -----------------------------
-       RIG
-    ----------------------------- */
-
-    cameraRig.add(camera);
-
-    scene.add(cameraRig);
+    camera.lookAt(
+        MODEL_CENTER
+    );
 
 
-    /* -----------------------------
-       СВЕТ
-    ----------------------------- */
+    /* -----------------------------------------------------
+       LIGHT
+    ------------------------------------------------------ */
 
-    const ambient =
+    const hemisphereLight =
         new THREE.HemisphereLight(
             0xffffff,
             0x222222,
             2.2
         );
 
-    scene.add(ambient);
+
+    scene.add(
+        hemisphereLight
+    );
 
 
     const keyLight =
@@ -834,20 +1124,25 @@ function initThree() {
             3
         );
 
+
     keyLight.position.set(
         3,
         5,
         4
     );
 
-    scene.add(keyLight);
+
+    scene.add(
+        keyLight
+    );
 
 
     const fillLight =
         new THREE.DirectionalLight(
-            0x888888,
-            1.2
+            0xffffff,
+            1
         );
+
 
     fillLight.position.set(
         -4,
@@ -855,41 +1150,53 @@ function initThree() {
         -4
     );
 
-    scene.add(fillLight);
+
+    scene.add(
+        fillLight
+    );
 
 
-    /* -----------------------------
+    /* -----------------------------------------------------
        RENDERER
-    ----------------------------- */
+    ------------------------------------------------------ */
 
     renderer =
         new THREE.WebGLRenderer({
+
             antialias: true,
-            alpha: false,
-            powerPreference: "high-performance"
+
+            powerPreference:
+                "high-performance"
+
         });
 
+
     renderer.setPixelRatio(
-        Math.min(window.devicePixelRatio, 2)
+        Math.min(
+            window.devicePixelRatio,
+            2
+        )
     );
+
 
     renderer.setSize(
         window.innerWidth,
         window.innerHeight
     );
 
+
     renderer.outputColorSpace =
         THREE.SRGBColorSpace;
+
 
     container.appendChild(
         renderer.domElement
     );
 
 
-    /* -----------------------------
-       TOUCH / MOUSE
-       резервное управление
-    ----------------------------- */
+    /* -----------------------------------------------------
+       TOUCH FALLBACK
+    ------------------------------------------------------ */
 
     controls =
         new OrbitControls(
@@ -897,130 +1204,177 @@ function initThree() {
             renderer.domElement
         );
 
-    controls.enableDamping = true;
 
-    controls.dampingFactor = 0.08;
+    controls.enableDamping =
+        true;
 
-    controls.enablePan = false;
 
-    controls.minDistance = 1;
+    controls.dampingFactor =
+        0.08;
 
-    controls.maxDistance = 8;
 
-    controls.target.set(
-        0,
-        0,
-        0
+    controls.enablePan =
+        false;
+
+
+    controls.minDistance =
+        1.3;
+
+
+    controls.maxDistance =
+        7;
+
+
+    controls.target.copy(
+        MODEL_CENTER
     );
 
 
-    /*
-       По умолчанию разрешаем ручное
-       вращение пальцем.
+    controls.update();
 
-       После включения сенсора
-       его можно использовать как
-       основной способ управления.
-    */
 
-    controls.enabled = true;
-
+    /* -----------------------------------------------------
+       RESIZE
+    ------------------------------------------------------ */
 
     window.addEventListener(
         "resize",
-        resize
+        onResize
     );
 
 
+    /* -----------------------------------------------------
+       START LOOP
+    ------------------------------------------------------ */
+
     animate();
+
 }
 
 
+
 /* =========================================================
-   ЗАГРУЗКА МОДЕЛИ
-========================================================= */
-
-const loader =
-    new GLTFLoader();
-
-
-/*
-   GitHub raw URL.
-
-   Файл:
-   models/creature.glb
-
-   Репозиторий:
-   Roman22022000/ArGameCam
-*/
-
-const MODEL_BASE =
-    "https://raw.githubusercontent.com/" +
-    "Roman22022000/ArGameCam/main/models/";
-
+   LOAD MODEL
+========================================================== */
 
 function loadModel(filename) {
 
-    const loading =
-        document.getElementById("loader");
+    const loaderElement =
+        document.getElementById(
+            "loader"
+        );
 
-    loading.classList.remove("hidden");
 
+    const loaderText =
+        document.getElementById(
+            "loaderText"
+        );
+
+
+    loaderElement.classList.remove(
+        "hidden"
+    );
+
+
+    loaderText.textContent =
+        "Загрузка 3D модели...";
+
+
+    /* -----------------------------------------------------
+       DELETE OLD MODEL
+    ------------------------------------------------------ */
 
     if (model) {
 
-        scene.remove(model);
+        scene.remove(
+            model
+        );
 
-        model.traverse(object => {
 
-            if (object.isMesh) {
+        model.traverse(
+            object => {
 
-                object.geometry?.dispose();
+                if (
+                    object.isMesh
+                ) {
 
-                if (Array.isArray(object.material)) {
+                    if (
+                        object.geometry
+                    ) {
 
-                    object.material.forEach(
-                        material => material.dispose()
-                    );
+                        object.geometry.dispose();
 
-                } else {
+                    }
 
-                    object.material?.dispose();
+
+                    if (
+                        Array.isArray(
+                            object.material
+                        )
+                    ) {
+
+                        object.material
+                            .forEach(
+                                material => {
+
+                                    material.dispose();
+
+                                }
+                            );
+
+                    }
+                    else if (
+                        object.material
+                    ) {
+
+                        object.material.dispose();
+
+                    }
 
                 }
 
             }
+        );
 
-        });
 
         model = null;
+
     }
 
 
+    /* -----------------------------------------------------
+       URL
+    ------------------------------------------------------ */
+
     const url =
-        MODEL_BASE + filename;
+        MODEL_BASE_URL +
+        filename;
 
 
-    loader.load(
+    /* -----------------------------------------------------
+       LOAD
+    ------------------------------------------------------ */
+
+    gltfLoader.load(
 
         url,
 
-        gltf => {
 
-            model = gltf.scene;
+        function(gltf) {
+
+            model =
+                gltf.scene;
 
 
-            /*
-               ------------------------------------------------
-               ЦЕНТР КООРДИНАТ
-               ------------------------------------------------
-
-               Сначала вычисляем BoundingBox.
-            */
+            /* -------------------------------------------------
+               CALCULATE BOUNDING BOX
+            -------------------------------------------------- */
 
             const box =
                 new THREE.Box3()
-                    .setFromObject(model);
+                    .setFromObject(
+                        model
+                    );
 
 
             const center =
@@ -1029,30 +1383,24 @@ function loadModel(filename) {
                 );
 
 
-            /*
-               Перемещаем модель так,
-               чтобы ее геометрический центр
-               совпал с:
-
-                    X = 0
-                    Y = 0
-                    Z = 0
-            */
-
-            model.position.sub(center);
-
-
-            /*
-               ------------------------------------------------
-               НОРМАЛИЗАЦИЯ РАЗМЕРА
-               ------------------------------------------------
-            */
-
             const size =
                 box.getSize(
                     new THREE.Vector3()
                 );
 
+
+            /* -------------------------------------------------
+               MOVE MODEL CENTER TO 0,0,0
+            -------------------------------------------------- */
+
+            model.position.sub(
+                center
+            );
+
+
+            /* -------------------------------------------------
+               NORMALIZE SIZE
+            -------------------------------------------------- */
 
             const maxSize =
                 Math.max(
@@ -1062,178 +1410,192 @@ function loadModel(filename) {
                 );
 
 
-            if (maxSize > 0) {
+            if (
+                maxSize > 0
+            ) {
 
-                const desiredSize = 2;
+                const desiredSize =
+                    2;
+
 
                 const scale =
-                    desiredSize / maxSize;
+                    desiredSize /
+                    maxSize;
 
-                model.scale.setScalar(scale);
+
+                model.scale.setScalar(
+                    scale
+                );
 
             }
 
 
-            /*
-               Модель добавляется непосредственно
-               в мировые координаты.
+            /* -------------------------------------------------
+               ADD MODEL
+            -------------------------------------------------- */
 
-               Она не зависит от телефона.
-            */
-
-            scene.add(model);
-
-
-            /*
-               Камера снова смотрит в центр.
-            */
-
-            controls.target.set(
-                0,
-                0,
-                0
+            scene.add(
+                model
             );
 
-            controls.update();
+
+            /* -------------------------------------------------
+               RESET CAMERA
+            -------------------------------------------------- */
+
+            resetCamera();
 
 
-            loading.classList.add(
+            loaderElement.classList.add(
                 "hidden"
             );
 
         },
 
-        xhr => {
 
-            if (xhr.total) {
+        function(xhr) {
+
+            if (
+                xhr.total > 0
+            ) {
 
                 const progress =
                     Math.round(
-                        xhr.loaded /
-                        xhr.total *
-                        100
+                        (
+                            xhr.loaded /
+                            xhr.total
+                        ) * 100
                     );
 
-                document
-                    .querySelector(".loaderText")
-                    .textContent =
+
+                loaderText.textContent =
                     `Загрузка ${progress}%`;
 
             }
 
         },
 
-        error => {
+
+        function(error) {
 
             console.error(
-                "Ошибка загрузки модели:",
+                "GLB LOAD ERROR:",
                 error
             );
 
-            document
-                .querySelector(".loaderText")
-                .textContent =
+
+            loaderText.textContent =
                 "Ошибка загрузки модели";
 
         }
+
     );
+
 }
 
 
+
 /* =========================================================
-   ВЫБОР МОДЕЛИ
-========================================================= */
+   RESET CAMERA
+========================================================== */
 
-document
-    .querySelectorAll(".numberButton")
-    .forEach(button => {
+function resetCamera() {
 
-        button.addEventListener(
-            "click",
-            () => {
-
-                const filename =
-                    button.dataset.model;
+    if (!camera) {
+        return;
+    }
 
 
-                document
-                    .getElementById("viewerName")
-                    .textContent =
-                    "Creature " +
-                    button.textContent;
+    camera.position.set(
+        0,
+        CAMERA_HEIGHT,
+        CAMERA_DISTANCE
+    );
 
 
-                showScreen(viewerScreen);
+    camera.lookAt(
+        MODEL_CENTER
+    );
 
 
-                /*
-                   Инициализируем Three.js только
-                   при первом открытии.
-                */
+    if (controls) {
 
-                if (!renderer) {
-
-                    initThree();
-
-                }
-
-
-                loadModel(filename);
-
-            }
+        controls.target.copy(
+            MODEL_CENTER
         );
 
-    });
+        controls.update();
+
+    }
 
 
-/* =========================================================
-   TELEGRAM DEVICE ORIENTATION
-========================================================= */
+    currentYaw = 0;
 
-let sensorEnabled = false;
+    currentPitch = 0;
 
+    targetYaw = 0;
 
-/*
-   Начальная ориентация телефона.
+    targetPitch = 0;
 
-   Она используется как нулевая точка.
+}
 
-   Это важно:
-
-   пользователь открывает модель,
-   нажимает "Включить движение",
-   текущая ориентация телефона становится
-   стартовой.
-
-   После этого дальнейшее вращение
-   телефона используется для обзора.
-*/
-
-let startAlpha = null;
-let startBeta = null;
-let startGamma = null;
-
-
-/*
-   Плавность движения камеры.
-*/
-
-const sensorSmooth =
-    0.12;
-
-
-/*
-   Углы, которые используются
-   для управления камерой.
-*/
-
-let sensorYaw = 0;
-let sensorPitch = 0;
 
 
 /* =========================================================
-   ЗАПУСК СЕНСОРА
-========================================================= */
+   GALLERY BUTTONS
+========================================================== */
+
+document
+    .querySelectorAll(
+        ".numberButton"
+    )
+    .forEach(
+        button => {
+
+            button.addEventListener(
+                "click",
+                () => {
+
+                    const filename =
+                        button.dataset.model;
+
+
+                    document
+                        .getElementById(
+                            "viewerName"
+                        )
+                        .textContent =
+                        "Creature " +
+                        button.textContent;
+
+
+                    showScreen(
+                        viewerScreen
+                    );
+
+
+                    if (!renderer) {
+
+                        initThree();
+
+                    }
+
+
+                    loadModel(
+                        filename
+                    );
+
+                }
+            );
+
+        }
+    );
+
+
+
+/* =========================================================
+   START SENSOR
+========================================================== */
 
 async function startSensor() {
 
@@ -1242,6 +1604,7 @@ async function startSensor() {
             "sensorStatus"
         );
 
+
     const button =
         document.getElementById(
             "sensorButton"
@@ -1249,72 +1612,98 @@ async function startSensor() {
 
 
     /*
-       -----------------------------------------------------
-       НОВЫЙ TELEGRAM API
-       -----------------------------------------------------
-
-       Telegram Mini Apps имеют
-       DeviceOrientation API.
-
-       Используем его первым.
+        Сбрасываем калибровку.
     */
+
+    startAlpha = null;
+
+    startBeta = null;
+
+    startGamma = null;
+
+
+    currentYaw = 0;
+
+    currentPitch = 0;
+
+    targetYaw = 0;
+
+    targetPitch = 0;
+
+
+    /* =====================================================
+       TELEGRAM DEVICE ORIENTATION
+    ====================================================== */
 
     if (
         tg &&
         tg.DeviceOrientation &&
-        typeof tg.DeviceOrientation.start === "function"
+        typeof tg.DeviceOrientation.start ===
+        "function"
     ) {
 
         try {
 
-            tg.DeviceOrientation.start({
-                refresh_rate: 20,
-                need_absolute: true
-            });
+            /*
+                Подписываемся ДО запуска.
+            */
+
+            tg.onEvent(
+                "deviceOrientationChanged",
+                onTelegramOrientation
+            );
+
+
+            tg.onEvent(
+                "deviceOrientationFailed",
+                onTelegramOrientationFailed
+            );
 
 
             /*
-               Telegram присылает событие:
+                Запуск.
 
-               device_orientation_changed
+                20 ms = до 50 обновлений/сек.
+
+                need_absolute=true
+                позволяет использовать абсолютную
+                ориентацию, если устройство её поддерживает.
             */
 
-            if (
-                typeof tg.onEvent === "function"
-            ) {
+            tg.DeviceOrientation.start({
 
-                tg.onEvent(
-                    "deviceOrientationChanged",
-                    handleTelegramOrientation
-                );
+                refresh_rate: 20,
 
-            }
+                need_absolute: true
+
+            });
 
 
             sensorEnabled = true;
 
+
+            if (controls) {
+
+                controls.enabled = false;
+
+            }
+
+
             button.textContent =
-                "Движение телефона включено";
+                "Движение включено";
+
 
             status.textContent =
                 "Сенсоры Telegram активны";
 
 
-            /*
-               Отключаем OrbitControls,
-               чтобы два управления
-               не конфликтовали.
-            */
-
-            controls.enabled = false;
-
-
             return;
 
-        } catch (error) {
+        }
+        catch (error) {
 
-            console.warn(
-                "Telegram DeviceOrientation:",
+            console.error(
+                "Telegram sensor error:",
                 error
             );
 
@@ -1323,168 +1712,254 @@ async function startSensor() {
     }
 
 
-    /*
-       -----------------------------------------------------
-       FALLBACK
-       -----------------------------------------------------
-
-       Используется если Mini App открыт
-       не в клиенте Telegram,
-       например напрямую в Safari/Chrome.
-    */
+    /* =====================================================
+       BROWSER FALLBACK
+    ====================================================== */
 
     if (
         typeof DeviceOrientationEvent !==
-        "undefined" &&
-        typeof DeviceOrientationEvent.requestPermission ===
-        "function"
+        "undefined"
     ) {
 
         try {
 
-            const permission =
-                await DeviceOrientationEvent
-                    .requestPermission(true);
+            /*
+                iOS Safari.
+            */
+
+            if (
+                typeof DeviceOrientationEvent
+                    .requestPermission ===
+                "function"
+            ) {
+
+                const permission =
+                    await DeviceOrientationEvent
+                        .requestPermission();
 
 
-            if (permission !== "granted") {
+                if (
+                    permission !==
+                    "granted"
+                ) {
 
-                status.textContent =
-                    "Доступ к сенсорам запрещен";
+                    status.textContent =
+                        "Доступ к сенсорам запрещён";
 
-                return;
+                    return;
+
+                }
 
             }
 
-        } catch (error) {
 
-            console.error(error);
+            window.addEventListener(
+                "deviceorientation",
+                onBrowserOrientation,
+                true
+            );
+
+
+            sensorEnabled = true;
+
+
+            if (controls) {
+
+                controls.enabled = false;
+
+            }
+
+
+            button.textContent =
+                "Движение включено";
+
 
             status.textContent =
-                "Не удалось получить доступ";
+                "Сенсоры устройства активны";
 
-            return;
+        }
+        catch (error) {
+
+            console.error(
+                "Browser sensor error:",
+                error
+            );
+
+
+            status.textContent =
+                "Ошибка доступа к сенсорам";
 
         }
 
     }
+    else {
 
+        status.textContent =
+            "Сенсоры не поддерживаются";
 
-    window.addEventListener(
-        "deviceorientation",
-        handleBrowserOrientation,
-        true
-    );
+    }
 
-
-    sensorEnabled = true;
-
-    controls.enabled = false;
-
-    button.textContent =
-        "Движение телефона включено";
-
-    status.textContent =
-        "Сенсоры устройства активны";
 }
 
 
-/* =========================================================
-   TELEGRAM ORIENTATION
-========================================================= */
 
-function handleTelegramOrientation(data) {
+/* =========================================================
+   TELEGRAM ORIENTATION EVENT
+========================================================== */
+
+function onTelegramOrientation(data) {
 
     if (!sensorEnabled) {
         return;
     }
 
 
-    /*
-       Telegram передает:
-
-       alpha
-       beta
-       gamma
-
-       В РАДИАНАХ.
-
-       Поэтому здесь не используем
-       THREE.MathUtils.degToRad().
-    */
-
-    let alpha =
-        data.alpha || 0;
-
-    let beta =
-        data.beta || 0;
-
-    let gamma =
-        data.gamma || 0;
+    if (!data) {
+        return;
+    }
 
 
     /*
-       Если это первое значение,
-       запоминаем начальное положение.
+        Telegram отдаёт:
+
+        alpha → Z
+        beta  → X
+        gamma → Y
+
+        ЕДИНИЦЫ: радианы.
     */
 
-    if (startAlpha === null) {
+    const alpha =
+        Number(data.alpha) || 0;
 
-        startAlpha = alpha;
-        startBeta = beta;
-        startGamma = gamma;
+
+    const beta =
+        Number(data.beta) || 0;
+
+
+    const gamma =
+        Number(data.gamma) || 0;
+
+
+    sensorAlpha = alpha;
+
+    sensorBeta = beta;
+
+    sensorGamma = gamma;
+
+
+    /*
+        Первое значение = нулевая точка.
+    */
+
+    if (
+        startAlpha === null
+    ) {
+
+        startAlpha =
+            alpha;
+
+
+        startBeta =
+            beta;
+
+
+        startGamma =
+            gamma;
+
+
+        return;
 
     }
 
 
     /*
-       Относительное вращение.
+        Относительное вращение.
     */
 
-    let yaw =
-        alpha - startAlpha;
-
-    let pitch =
-        beta - startBeta;
-
-    let roll =
-        gamma - startGamma;
+    const deltaAlpha =
+        normalizeAngle(
+            alpha -
+            startAlpha
+        );
 
 
-    /*
-       Ограничиваем наклон,
-       чтобы камера не переворачивалась.
-    */
-
-    pitch =
-        THREE.MathUtils.clamp(
-            pitch,
-            -1.25,
-            1.25
+    const deltaBeta =
+        normalizeAngle(
+            beta -
+            startBeta
         );
 
 
     /*
-       Инверсия yaw может понадобиться
-       в зависимости от ориентации телефона.
+        ПОВОРОТ ТЕЛЕФОНА
+        влево / вправо.
     */
 
-    sensorYaw =
-        yaw;
-
-    sensorPitch =
-        pitch;
+    targetYaw =
+        deltaAlpha;
 
 
-    updateCameraFromSensor();
+    /*
+        НАКЛОН ТЕЛЕФОНА
+        вверх / вниз.
+    */
+
+    targetPitch =
+        THREE.MathUtils.clamp(
+            deltaBeta,
+            -1.30,
+            1.30
+        );
+
 }
 
 
-/* =========================================================
-   BROWSER ORIENTATION FALLBACK
-========================================================= */
 
-function handleBrowserOrientation(event) {
+/* =========================================================
+   TELEGRAM SENSOR ERROR
+========================================================== */
+
+function onTelegramOrientationFailed(
+    data
+) {
+
+    console.error(
+        "Telegram DeviceOrientation failed:",
+        data
+    );
+
+
+    sensorEnabled = false;
+
+
+    const status =
+        document.getElementById(
+            "sensorStatus"
+        );
+
+
+    status.textContent =
+        "Сенсор ориентации недоступен";
+
+
+    if (controls) {
+
+        controls.enabled = true;
+
+    }
+
+}
+
+
+
+/* =========================================================
+   BROWSER ORIENTATION
+========================================================== */
+
+function onBrowserOrientation(
+    event
+) {
 
     if (!sensorEnabled) {
         return;
@@ -1502,15 +1977,24 @@ function handleBrowserOrientation(event) {
     }
 
 
+    /*
+        Browser DeviceOrientation
+        использует ГРАДУСЫ.
+
+        Переводим в радианы.
+    */
+
     const alpha =
         THREE.MathUtils.degToRad(
             event.alpha
         );
 
+
     const beta =
         THREE.MathUtils.degToRad(
             event.beta
         );
+
 
     const gamma =
         THREE.MathUtils.degToRad(
@@ -1518,156 +2002,237 @@ function handleBrowserOrientation(event) {
         );
 
 
-    if (startAlpha === null) {
+    if (
+        startAlpha === null
+    ) {
 
-        startAlpha = alpha;
-        startBeta = beta;
-        startGamma = gamma;
+        startAlpha =
+            alpha;
+
+
+        startBeta =
+            beta;
+
+
+        startGamma =
+            gamma;
+
+
+        return;
 
     }
 
 
-    sensorYaw =
-        alpha - startAlpha;
-
-
-    sensorPitch =
-        beta - startBeta;
-
-
-    sensorPitch =
-        THREE.MathUtils.clamp(
-            sensorPitch,
-            -1.25,
-            1.25
+    const deltaAlpha =
+        normalizeAngle(
+            alpha -
+            startAlpha
         );
 
 
-    updateCameraFromSensor();
+    const deltaBeta =
+        normalizeAngle(
+            beta -
+            startBeta
+        );
+
+
+    targetYaw =
+        deltaAlpha;
+
+
+    targetPitch =
+        THREE.MathUtils.clamp(
+            deltaBeta,
+            -1.30,
+            1.30
+        );
+
 }
 
 
+
 /* =========================================================
-   КАМЕРА ПО СЕНСОРАМ
-========================================================= */
+   ANGLE NORMALIZATION
+========================================================== */
 
-function updateCameraFromSensor() {
+function normalizeAngle(
+    angle
+) {
 
-    if (!camera) {
+    while (
+        angle > Math.PI
+    ) {
+
+        angle -=
+            Math.PI * 2;
+
+    }
+
+
+    while (
+        angle < -Math.PI
+    ) {
+
+        angle +=
+            Math.PI * 2;
+
+    }
+
+
+    return angle;
+
+}
+
+
+
+/* =========================================================
+   SENSOR CAMERA
+========================================================== */
+
+function updateSensorCamera() {
+
+    if (
+        !sensorEnabled ||
+        !camera
+    ) {
+
         return;
+
     }
 
 
     /*
-       Радиус обзора.
+        Плавность.
 
-       Модель остается в:
-
-           0, 0, 0
-
-       а камера находится вокруг нее.
+        Благодаря этому движение
+        не дёргается.
     */
 
-    const radius = 3;
+    currentYaw +=
+        (
+            targetYaw -
+            currentYaw
+        ) *
+        SENSOR_SMOOTHING;
+
+
+    currentPitch +=
+        (
+            targetPitch -
+            currentPitch
+        ) *
+        SENSOR_SMOOTHING;
 
 
     /*
-       Начальная вертикальная высота.
+        Радиус вокруг модели.
     */
 
-    const vertical =
-        Math.sin(sensorPitch)
-        * radius;
+    const radius =
+        CAMERA_DISTANCE;
 
+
+    /*
+        Горизонтальный радиус.
+    */
 
     const horizontalRadius =
-        Math.cos(sensorPitch)
-        * radius;
+        Math.cos(
+            currentPitch
+        ) *
+        radius;
 
 
     /*
-       Камера движется по сфере
-       вокруг центра модели.
+        Положение камеры
+        на сфере вокруг модели.
     */
 
     const x =
-        Math.sin(sensorYaw)
-        * horizontalRadius;
-
-
-    const z =
-        Math.cos(sensorYaw)
-        * horizontalRadius;
+        Math.sin(
+            currentYaw
+        ) *
+        horizontalRadius;
 
 
     const y =
-        0.5 + vertical;
+        CAMERA_HEIGHT +
+        Math.sin(
+            currentPitch
+        ) *
+        radius;
 
 
-    const targetPosition =
+    const z =
+        Math.cos(
+            currentYaw
+        ) *
+        horizontalRadius;
+
+
+    /*
+        Плавное перемещение.
+    */
+
+    camera.position.lerp(
         new THREE.Vector3(
             x,
             y,
             z
-        );
-
-
-    /*
-       Плавное движение.
-    */
-
-    camera.position.lerp(
-        targetPosition,
-        sensorSmooth
+        ),
+        SENSOR_SMOOTHING
     );
 
 
     /*
-       Камера постоянно смотрит
-       на центр координат.
+        Ключевой момент:
+
+        камера ВСЕГДА смотрит
+        в центр модели.
+
+        Модель сама не вращается.
     */
 
     camera.lookAt(
-        0,
-        0,
-        0
+        MODEL_CENTER
     );
 
 }
 
 
+
 /* =========================================================
-   КНОПКА СЕНСОРОВ
-========================================================= */
+   SENSOR BUTTON
+========================================================== */
 
 document
-    .getElementById("sensorButton")
+    .getElementById(
+        "sensorButton"
+    )
     .addEventListener(
         "click",
         async () => {
 
-            if (!sensorEnabled) {
+            if (
+                sensorEnabled
+            ) {
 
-                /*
-                   Сбрасываем начальную точку.
-                */
-
-                startAlpha = null;
-                startBeta = null;
-                startGamma = null;
-
-
-                await startSensor();
+                return;
 
             }
+
+
+            await startSensor();
 
         }
     );
 
 
+
 /* =========================================================
-   ОСТАНОВКА СЕНСОРА
-========================================================= */
+   STOP SENSOR
+========================================================== */
 
 function stopSensor() {
 
@@ -1675,7 +2240,7 @@ function stopSensor() {
 
 
     /*
-       Telegram
+        Telegram.
     */
 
     if (
@@ -1689,9 +2254,12 @@ function stopSensor() {
 
             tg.DeviceOrientation.stop();
 
-        } catch (error) {
+        }
+        catch (error) {
 
-            console.warn(error);
+            console.warn(
+                error
+            );
 
         }
 
@@ -1699,19 +2267,43 @@ function stopSensor() {
 
 
     /*
-       Browser fallback
+        Telegram events.
+    */
+
+    if (
+        tg &&
+        typeof tg.offEvent ===
+        "function"
+    ) {
+
+        tg.offEvent(
+            "deviceOrientationChanged",
+            onTelegramOrientation
+        );
+
+
+        tg.offEvent(
+            "deviceOrientationFailed",
+            onTelegramOrientationFailed
+        );
+
+    }
+
+
+    /*
+        Browser.
     */
 
     window.removeEventListener(
         "deviceorientation",
-        handleBrowserOrientation,
+        onBrowserOrientation,
         true
     );
 
 
     /*
-       Возвращаем обычное управление
-       пальцем.
+        Возвращаем управление
+        пальцем.
     */
 
     if (controls) {
@@ -1726,6 +2318,7 @@ function stopSensor() {
             "sensorButton"
         );
 
+
     const status =
         document.getElementById(
             "sensorStatus"
@@ -1735,24 +2328,34 @@ function stopSensor() {
     button.textContent =
         "Включить движение телефона";
 
+
     status.textContent =
         "Сенсоры выключены";
 
 
     startAlpha = null;
+
     startBeta = null;
+
     startGamma = null;
+
 }
+
 
 
 /* =========================================================
    RESIZE
-========================================================= */
+========================================================== */
 
-function resize() {
+function onResize() {
 
-    if (!camera || !renderer) {
+    if (
+        !camera ||
+        !renderer
+    ) {
+
         return;
+
     }
 
 
@@ -1772,9 +2375,10 @@ function resize() {
 }
 
 
+
 /* =========================================================
    ANIMATION
-========================================================= */
+========================================================== */
 
 function animate() {
 
@@ -1784,14 +2388,36 @@ function animate() {
         );
 
 
-    if (controls?.enabled) {
+    /*
+        Обычное управление пальцем.
+    */
+
+    if (
+        controls &&
+        controls.enabled
+    ) {
 
         controls.update();
 
     }
 
 
-    if (renderer && scene && camera) {
+    /*
+        Управление телефоном.
+    */
+
+    updateSensorCamera();
+
+
+    /*
+        Рендер.
+    */
+
+    if (
+        renderer &&
+        scene &&
+        camera
+    ) {
 
         renderer.render(
             scene,
@@ -1802,7 +2428,12 @@ function animate() {
 
 }
 
+
+
 </script>
 
+
 </body>
+
 </html>
+```
