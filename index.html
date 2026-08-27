@@ -279,7 +279,7 @@ canvas {
 }
 
 /* =====================================================
-   TOP
+   TOP + GALLERY NAVIGATION
 ===================================================== */
 
 .viewerTop {
@@ -293,6 +293,8 @@ canvas {
     left: 12px;
     right: 12px;
 
+    height: 50px;
+
     display: flex;
     align-items: center;
 }
@@ -300,6 +302,8 @@ canvas {
 .viewerBack {
     width: 44px;
     height: 44px;
+
+    flex-shrink: 0;
 
     border-radius: 14px;
 
@@ -313,148 +317,58 @@ canvas {
     backdrop-filter: blur(12px);
 }
 
-.viewerName {
-    margin-left: 12px;
-
-    padding: 10px 15px;
-
-    border-radius: 14px;
-
-    background:
-        rgba(20,20,20,.7);
-
-    font-size: 14px;
-
-    backdrop-filter: blur(12px);
-}
-
-/* =====================================================
-   SENSOR STATUS
-===================================================== */
-
-.sensorStatus {
+.galleryNavigation {
     position: absolute;
-
-    z-index: 30;
-
-    top: 70px;
 
     left: 50%;
 
     transform: translateX(-50%);
 
-    padding: 8px 13px;
+    display: flex;
+    align-items: center;
+
+    gap: 8px;
+
+    padding: 4px;
+
+    border-radius: 16px;
+
+    background:
+        rgba(20,20,20,.72);
+
+    backdrop-filter: blur(12px);
+}
+
+.galleryArrow {
+    width: 42px;
+    height: 42px;
 
     border-radius: 12px;
 
     background:
-        rgba(0,0,0,.72);
+        rgba(255,255,255,.08);
 
-    color: #aaa;
+    color: #fff;
 
-    font-size: 12px;
-
-    white-space: nowrap;
-
-    backdrop-filter: blur(10px);
+    font-size: 28px;
+    line-height: 1;
 }
 
-/* =====================================================
-   SENSOR DATA
-===================================================== */
-
-.sensorData {
-    position: absolute;
-
-    z-index: 30;
-
-    top: 104px;
-
-    left: 50%;
-
-    transform: translateX(-50%);
-
-    padding: 7px 10px;
-
-    border-radius: 10px;
-
-    background:
-        rgba(0,0,0,.65);
-
-    color: #777;
-
-    font-family: monospace;
-
-    font-size: 10px;
-
-    white-space: nowrap;
-
-    pointer-events: none;
+.galleryArrow:active {
+    transform: scale(.92);
 }
 
-/* =====================================================
-   SENSOR BUTTON
-===================================================== */
-
-.sensorButton {
-    position: absolute;
-
-    z-index: 30;
-
-    left: 50%;
-
-    bottom:
-        max(25px, env(safe-area-inset-bottom));
-
-    transform: translateX(-50%);
-
-    width:
-        calc(100% - 40px);
-
-    max-width: 360px;
-
-    min-height: 55px;
-
-    border-radius: 18px;
-
-    background:
-        rgba(255,255,255,.95);
-
-    color: #000;
-
-    font-size: 16px;
-
-    font-weight: 600;
-
-    backdrop-filter: blur(12px);
-}
-
-/* =====================================================
-   HINT
-===================================================== */
-
-.hint {
-    position: absolute;
-
-    z-index: 10;
-
-    left: 50%;
-
-    bottom: 92px;
-
-    transform: translateX(-50%);
-
-    width: 90%;
-
-    color:
-        rgba(255,255,255,.5);
-
-    font-size: 12px;
+.currentGallery {
+    min-width: 42px;
 
     text-align: center;
 
-    pointer-events: none;
+    color: #fff;
+
+    font-size: 16px;
+    font-weight: 600;
 }
+
 
 /* =====================================================
    LOADER
@@ -619,46 +533,34 @@ canvas {
             ‹
         </button>
 
-        <div
-            id="viewerName"
-            class="viewerName"
-        >
-            Creature
+        <div class="galleryNavigation">
+
+            <button
+                id="prevGallery"
+                class="galleryArrow"
+                aria-label="Предыдущая галерея"
+            >
+                ‹
+            </button>
+
+            <div
+                id="currentGallery"
+                class="currentGallery"
+            >
+                1
+            </div>
+
+            <button
+                id="nextGallery"
+                class="galleryArrow"
+                aria-label="Следующая галерея"
+            >
+                ›
+            </button>
+
         </div>
 
     </div>
-
-
-    <div
-        id="sensorStatus"
-        class="sensorStatus"
-    >
-        Сенсоры выключены
-    </div>
-
-
-    <div
-        id="sensorData"
-        class="sensorData"
-    >
-        α: -- | β: -- | γ: --
-    </div>
-
-
-    <div class="hint">
-
-        Поворачивайте и наклоняйте телефон,
-        чтобы осмотреть модель
-
-    </div>
-
-
-    <button
-        id="sensorButton"
-        class="sensorButton"
-    >
-        Включить движение телефона
-    </button>
 
 
     <div
@@ -829,6 +731,20 @@ let controls = null;
 let model = null;
 
 
+/*
+    Галереи по порядку.
+    Здесь можно менять filename для каждой модели.
+*/
+const galleryItems = [
+    { number: 1, filename: "creature.glb" },
+    { number: 2, filename: "creature.glb" },
+    { number: 3, filename: "creature.glb" }
+];
+
+let currentGalleryIndex = 0;
+
+
+
 /* =====================================================
    MODEL
 ===================================================== */
@@ -871,6 +787,20 @@ const CAMERA_Y = 0.35;
 let orientationActive = false;
 
 let orientationReceived = false;
+
+
+/*
+    Статус и данные сенсоров больше не выводятся
+    на экран — интерфейс остаётся чистым.
+*/
+function setSensorStatus(text) {
+    // UI intentionally hidden.
+}
+
+function setSensorData(alpha, beta, gamma) {
+    // UI intentionally hidden.
+}
+
 
 
 /*
@@ -1456,68 +1386,136 @@ function resetCamera() {
 
 
 /* =====================================================
-   GALLERY BUTTONS
+   GALLERY BUTTONS + NAVIGATION
 ===================================================== */
 
-document
-    .querySelectorAll(
+const galleryButtons =
+    document.querySelectorAll(
         ".numberButton"
-    )
-    .forEach(
-        button => {
+    );
 
-            button.addEventListener(
-                "click",
-                () => {
+const currentGallery =
+    document.getElementById(
+        "currentGallery"
+    );
 
-                    const filename =
-                        button.dataset.model;
+const prevGallery =
+    document.getElementById(
+        "prevGallery"
+    );
 
-
-                    document
-                        .getElementById(
-                            "viewerName"
-                        )
-                        .textContent =
-                        "Creature " +
-                        button.textContent;
-
-
-                    showScreen(
-                        viewerScreen
-                    );
-
-
-                    if (!renderer) {
-
-                        initThree();
-
-                    }
-
-
-                    loadModel(
-                        filename
-                    );
-
-                }
-            );
-
-        }
+const nextGallery =
+    document.getElementById(
+        "nextGallery"
     );
 
 
-/* =====================================================
-   SENSOR BUTTON
-===================================================== */
+function updateGalleryNavigation() {
 
-document
-    .getElementById(
-        "sensorButton"
-    )
-    .addEventListener(
-        "click",
-        startSensors
+    currentGallery.textContent =
+        galleryItems[currentGalleryIndex].number;
+
+    prevGallery.style.opacity =
+        currentGalleryIndex === 0 ? "0.35" : "1";
+
+    nextGallery.style.opacity =
+        currentGalleryIndex === galleryItems.length - 1
+            ? "0.35"
+            : "1";
+
+}
+
+
+function openGalleryItem(index) {
+
+    if (
+        index < 0 ||
+        index >= galleryItems.length
+    ) {
+        return;
+    }
+
+    currentGalleryIndex = index;
+
+    const item =
+        galleryItems[currentGalleryIndex];
+
+
+    updateGalleryNavigation();
+
+
+    showScreen(
+        viewerScreen
     );
+
+
+    if (!renderer) {
+
+        initThree();
+
+    }
+
+
+    loadModel(
+        item.filename
+    );
+
+
+    /*
+        Первый клик по номеру/стрелке
+        одновременно разрешает запуск
+        сенсоров телефона.
+    */
+    if (!orientationActive) {
+
+        startSensors();
+
+    }
+
+}
+
+
+galleryButtons.forEach(
+    (button, index) => {
+
+        button.addEventListener(
+            "click",
+            () => {
+
+                openGalleryItem(index);
+
+            }
+        );
+
+    }
+);
+
+
+prevGallery.addEventListener(
+    "click",
+    () => {
+
+        openGalleryItem(
+            currentGalleryIndex - 1
+        );
+
+    }
+);
+
+
+nextGallery.addEventListener(
+    "click",
+    () => {
+
+        openGalleryItem(
+            currentGalleryIndex + 1
+        );
+
+    }
+);
+
+
+updateGalleryNavigation();
 
 
 /* =====================================================
@@ -1525,18 +1523,6 @@ document
 ===================================================== */
 
 async function startSensors() {
-
-    const status =
-        document.getElementById(
-            "sensorStatus"
-        );
-
-
-    const button =
-        document.getElementById(
-            "sensorButton"
-        );
-
 
     /*
         Сбрасываем калибровку.
@@ -1623,12 +1609,9 @@ async function startSensors() {
         }
 
 
-        button.textContent =
-            "Движение включено";
-
-
-        status.textContent =
-            "Ожидание ориентации телефона...";
+        setSensorStatus(
+            "Ожидание ориентации телефона..."
+        );
 
 
         /*
@@ -1700,12 +1683,9 @@ async function startSensors() {
             }
 
 
-            button.textContent =
-                "Движение включено";
-
-
-            status.textContent =
-                "Браузерный сенсор активен";
+            setSensorStatus(
+                "Браузерный сенсор активен"
+            );
 
 
         }
@@ -1716,8 +1696,9 @@ async function startSensors() {
             );
 
 
-            status.textContent =
-                "Ошибка доступа к сенсору";
+            setSensorStatus(
+                "Ошибка доступа к сенсору"
+            );
 
         }
 
@@ -1738,14 +1719,9 @@ async function startSensors() {
 
 function onTelegramOrientationStarted() {
 
-    const status =
-        document.getElementById(
-            "sensorStatus"
-        );
-
-
-    status.textContent =
-        "Telegram: ориентация активна";
+    setSensorStatus(
+        "Telegram: ориентация активна"
+    );
 
 }
 
@@ -1767,14 +1743,9 @@ function onTelegramOrientationFailed(
     orientationActive = false;
 
 
-    const status =
-        document.getElementById(
-            "sensorStatus"
-        );
-
-
-    status.textContent =
-        "Telegram: сенсор недоступен";
+    setSensorStatus(
+        "Telegram: сенсор недоступен"
+    );
 
 
     if (controls) {
@@ -1891,14 +1862,9 @@ function onTelegramOrientation() {
         orientationReceived = true;
 
 
-        const status =
-            document.getElementById(
-                "sensorStatus"
-            );
-
-
-        status.textContent =
-            "Телефон подключён";
+        setSensorStatus(
+            "Телефон подключён"
+        );
 
 
         return;
@@ -2469,29 +2435,11 @@ function showSensorData(
     gamma
 ) {
 
-    const element =
-        document.getElementById(
-            "sensorData"
-        );
-
-
-    element.textContent =
-        "α: " +
-        alpha.toFixed(2) +
-        " | β: " +
-        beta.toFixed(2) +
-        " | γ: " +
-        gamma.toFixed(2);
-
-
-    const status =
-        document.getElementById(
-            "sensorStatus"
-        );
-
-
-    status.textContent =
-        "Получение данных телефона";
+    setSensorData(
+        alpha,
+        beta,
+        gamma
+    );
 
 }
 
@@ -2499,6 +2447,7 @@ function showSensorData(
 /* =====================================================
    STOP SENSORS
 ===================================================== */
+
 
 function stopSensors() {
 
@@ -2641,28 +2590,9 @@ function stopSensors() {
     targetPitch = 0;
 
 
-    document
-        .getElementById(
-            "sensorStatus"
-        )
-        .textContent =
-        "Сенсоры выключены";
-
-
-    document
-        .getElementById(
-            "sensorData"
-        )
-        .textContent =
-        "α: -- | β: -- | γ: --";
-
-
-    document
-        .getElementById(
-            "sensorButton"
-        )
-        .textContent =
-        "Включить движение телефона";
+    setSensorStatus(
+        "Сенсоры выключены"
+    );
 
 }
 
