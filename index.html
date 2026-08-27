@@ -1892,9 +1892,63 @@ async function closeAR() {
 }
 
 
+
+/*
+==================================================
+MODEL
+==================================================
+*/
+function loadModel() {
+
+    const loader = new GLTFLoader();
+
+    loader.load(
+        "./models/creature.glb",
+
+        gltf => {
+
+            model = gltf.scene;
+
+            model.visible = false;
+
+            scene.add(model);
+
+            console.log(
+                "creature.glb успешно загружен"
+            );
+        },
+
+        progress => {
+
+            if (progress.total > 0) {
+
+                const percent =
+                    Math.round(
+                        progress.loaded /
+                        progress.total *
+                        100
+                    );
+
+                console.log(
+                    "Загрузка creature.glb:",
+                    percent + "%"
+                );
+            }
+        },
+
+        error => {
+
+            console.error(
+                "Ошибка загрузки creature.glb:",
+                error
+            );
+        }
+    );
+}
 /*
 ==================================================
 ERROR
+
 ==================================================
 */
 
