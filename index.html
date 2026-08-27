@@ -1,0 +1,1979 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+    name="viewport"
+    content="
+        width=device-width,
+        initial-scale=1,
+        maximum-scale=1,
+        user-scalable=no,
+        viewport-fit=cover
+    "
+>
+
+<meta
+    name="theme-color"
+    content="#000000"
+>
+
+<title>AR Telegram</title>
+
+
+<!-- Telegram Mini App API -->
+
+<script src="https://telegram.org/js/telegram-web-app.js?63"></script>
+
+
+<style>
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+
+html,
+body {
+
+    width: 100%;
+    height: 100%;
+
+    overflow: hidden;
+
+    background: #000;
+
+    color: #fff;
+
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Arial,
+        sans-serif;
+
+    touch-action: none;
+
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+
+/* =========================================
+   APPLICATION
+========================================= */
+
+#app {
+
+    position: fixed;
+
+    inset: 0;
+
+    width: 100%;
+    height: 100%;
+
+    overflow: hidden;
+
+    background: #000;
+}
+
+
+/* =========================================
+   START SCREEN
+========================================= */
+
+#startScreen {
+
+    position: absolute;
+
+    inset: 0;
+
+    z-index: 100;
+
+    display: flex;
+
+    justify-content: center;
+
+    align-items: center;
+
+    padding:
+        calc(
+            30px +
+            var(--tg-safe-top, 0px)
+        )
+        20px
+        calc(
+            30px +
+            var(--tg-safe-bottom, 0px)
+        );
+
+    background:
+        radial-gradient(
+            circle at center,
+            #222 0%,
+            #080808 60%,
+            #000 100%
+        );
+}
+
+
+.startContent {
+
+    width: min(
+        100%,
+        420px
+    );
+
+    text-align: center;
+}
+
+
+.logo {
+
+    width: 76px;
+
+    height: 76px;
+
+    margin:
+        0 auto
+        25px;
+
+    display: flex;
+
+    justify-content: center;
+
+    align-items: center;
+
+    border:
+        1px solid
+        rgba(255,255,255,.7);
+
+    border-radius: 20px;
+
+    font-size: 27px;
+
+    font-weight: 700;
+}
+
+
+h1 {
+
+    font-size:
+        clamp(
+            34px,
+            10vw,
+            60px
+        );
+
+    letter-spacing: 7px;
+
+    margin-bottom: 12px;
+}
+
+
+.subtitle {
+
+    color: #888;
+
+    font-size: 14px;
+
+    margin-bottom: 38px;
+}
+
+
+#startCamera {
+
+    width: 100%;
+
+    min-height: 58px;
+
+    border: 0;
+
+    border-radius: 14px;
+
+    background: #fff;
+
+    color: #000;
+
+    font-size: 15px;
+
+    font-weight: 700;
+
+    letter-spacing: .7px;
+
+    cursor: pointer;
+
+    -webkit-tap-highlight-color:
+        transparent;
+}
+
+
+#startCamera:active {
+
+    transform: scale(.98);
+}
+
+
+#startStatus {
+
+    margin-top: 17px;
+
+    min-height: 18px;
+
+    color: #777;
+
+    font-size: 12px;
+}
+
+
+/* =========================================
+   CAMERA
+========================================= */
+
+#camera {
+
+    position: absolute;
+
+    inset: 0;
+
+    width: 100%;
+    height: 100%;
+
+    object-fit: cover;
+
+    background: #000;
+
+    z-index: 1;
+
+    display: none;
+}
+
+
+/* =========================================
+   THREE
+========================================= */
+
+#three {
+
+    position: absolute;
+
+    inset: 0;
+
+    width: 100%;
+    height: 100%;
+
+    z-index: 2;
+
+    pointer-events: none;
+}
+
+
+/* =========================================
+   AR INTERFACE
+========================================= */
+
+#arUI {
+
+    position: absolute;
+
+    inset: 0;
+
+    z-index: 10;
+
+    display: none;
+
+    pointer-events: none;
+}
+
+
+.topBar {
+
+    position: absolute;
+
+    left: 12px;
+
+    right: 12px;
+
+    top:
+        calc(
+            12px +
+            var(--tg-safe-top, 0px)
+        );
+
+    display: flex;
+
+    justify-content:
+        space-between;
+
+    align-items:
+        center;
+}
+
+
+.status {
+
+    padding:
+        9px
+        13px;
+
+    border-radius: 20px;
+
+    background:
+        rgba(0,0,0,.6);
+
+    backdrop-filter:
+        blur(10px);
+
+    font-size: 12px;
+
+    color: #fff;
+}
+
+
+.closeButton {
+
+    width: 44px;
+
+    height: 44px;
+
+    border: 0;
+
+    border-radius: 50%;
+
+    background:
+        rgba(0,0,0,.65);
+
+    color: #fff;
+
+    font-size: 28px;
+
+    pointer-events: auto;
+}
+
+
+/* =========================================
+   CENTER RETICLE
+========================================= */
+
+#reticle {
+
+    position: absolute;
+
+    left: 50%;
+
+    top: 50%;
+
+    width: 42px;
+
+    height: 42px;
+
+    transform:
+        translate(
+            -50%,
+            -50%
+        );
+
+    border:
+        1px solid
+        rgba(255,255,255,.8);
+
+    border-radius: 50%;
+
+    opacity: .8;
+}
+
+
+/* =========================================
+   BOTTOM CONTROLS
+========================================= */
+
+.bottom {
+
+    position: absolute;
+
+    left: 20px;
+
+    right: 20px;
+
+    bottom:
+        calc(
+            20px +
+            var(--tg-safe-bottom, 0px)
+        );
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 10px;
+
+    align-items: center;
+}
+
+
+.actionButton {
+
+    width: min(
+        100%,
+        350px
+    );
+
+    min-height: 56px;
+
+    border:
+        1px solid
+        rgba(255,255,255,.7);
+
+    border-radius: 15px;
+
+    background:
+        rgba(0,0,0,.7);
+
+    color: #fff;
+
+    font-size: 14px;
+
+    font-weight: 700;
+
+    pointer-events: auto;
+}
+
+
+#placeObject {
+
+    display: none;
+}
+
+
+/* =========================================
+   SENSOR DATA
+========================================= */
+
+#dataPanel {
+
+    position: absolute;
+
+    left: 10px;
+
+    top:
+        calc(
+            70px +
+            var(--tg-safe-top, 0px)
+        );
+
+    z-index: 30;
+
+    width: 170px;
+
+    padding: 10px;
+
+    border-radius: 10px;
+
+    background:
+        rgba(0,0,0,.65);
+
+    backdrop-filter:
+        blur(10px);
+
+    font-family:
+        monospace;
+
+    font-size: 9px;
+
+    line-height: 1.55;
+
+    color: #ccc;
+
+    display: none;
+
+    pointer-events: none;
+}
+
+
+.dataTitle {
+
+    color: #fff;
+
+    margin-bottom: 3px;
+
+    font-weight: 700;
+}
+
+
+/* =========================================
+   ERROR
+========================================= */
+
+#error {
+
+    position: absolute;
+
+    inset: 0;
+
+    z-index: 500;
+
+    display: none;
+
+    justify-content: center;
+
+    align-items: center;
+
+    padding: 25px;
+
+    background: #000;
+}
+
+
+.errorBox {
+
+    width: min(
+        100%,
+        420px
+    );
+
+    text-align: center;
+}
+
+
+.errorBox h2 {
+
+    margin-bottom: 15px;
+}
+
+
+.errorBox p {
+
+    color: #999;
+
+    line-height: 1.5;
+
+    margin-bottom: 25px;
+}
+
+
+#errorButton {
+
+    width: 100%;
+
+    height: 54px;
+
+    border:
+        1px solid
+        #fff;
+
+    border-radius: 12px;
+
+    background:
+        transparent;
+
+    color: #fff;
+}
+
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<div id="app">
+
+
+    <!-- =====================================
+         START
+    ====================================== -->
+
+    <section id="startScreen">
+
+        <div class="startContent">
+
+            <div class="logo">
+                AR
+            </div>
+
+            <h1>
+                AR SPACE
+            </h1>
+
+            <div class="subtitle">
+                Telegram Augmented Reality
+            </div>
+
+            <button
+                id="startCamera"
+                type="button"
+            >
+                ЗАПУСК КАМЕРЫ
+            </button>
+
+            <div id="startStatus">
+                Готово
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- =====================================
+         CAMERA
+    ====================================== -->
+
+    <video
+        id="camera"
+        autoplay
+        muted
+        playsinline
+    ></video>
+
+
+    <!-- =====================================
+         THREE
+    ====================================== -->
+
+    <canvas id="three"></canvas>
+
+
+    <!-- =====================================
+         AR UI
+    ====================================== -->
+
+    <section id="arUI">
+
+
+        <div class="topBar">
+
+            <div
+                id="arStatus"
+                class="status"
+            >
+                Камера запущена
+            </div>
+
+
+            <button
+                id="closeAR"
+                class="closeButton"
+                type="button"
+            >
+                ×
+            </button>
+
+        </div>
+
+
+        <div id="reticle"></div>
+
+
+        <!-- SENSOR DATA -->
+
+        <div id="dataPanel">
+
+            <div class="dataTitle">
+                DEVICE ORIENTATION
+            </div>
+
+            <div id="orientation">
+                α: 0<br>
+                β: 0<br>
+                γ: 0
+            </div>
+
+
+            <br>
+
+
+            <div class="dataTitle">
+                GYROSCOPE
+            </div>
+
+            <div id="gyro">
+                X: 0<br>
+                Y: 0<br>
+                Z: 0
+            </div>
+
+
+            <br>
+
+
+            <div class="dataTitle">
+                ACCELEROMETER
+            </div>
+
+            <div id="accelerometer">
+                X: 0<br>
+                Y: 0<br>
+                Z: 0
+            </div>
+
+
+            <br>
+
+
+            <div class="dataTitle">
+                GPS
+            </div>
+
+            <div id="gps">
+                —
+            </div>
+
+        </div>
+
+
+        <div class="bottom">
+
+
+            <button
+                id="placeObject"
+                class="actionButton"
+                type="button"
+            >
+                РАЗМЕСТИТЬ 3D ОБЪЕКТ
+            </button>
+
+
+            <button
+                id="sendData"
+                class="actionButton"
+                type="button"
+            >
+                ОТПРАВИТЬ ДАННЫЕ В TELEGRAM
+            </button>
+
+
+        </div>
+
+    </section>
+
+
+    <!-- =====================================
+         ERROR
+    ====================================== -->
+
+    <section id="error">
+
+        <div class="errorBox">
+
+            <h2>
+                Ошибка запуска
+            </h2>
+
+            <p id="errorText">
+            </p>
+
+            <button
+                id="errorButton"
+                type="button"
+            >
+                НАЗАД
+            </button>
+
+        </div>
+
+    </section>
+
+
+</div>
+
+
+<script type="module">
+
+/*
+==================================================
+TELEGRAM
+==================================================
+*/
+
+const tg =
+    window.Telegram?.WebApp;
+
+
+/*
+==================================================
+UI
+==================================================
+*/
+
+const startScreen =
+    document.getElementById(
+        "startScreen"
+    );
+
+const startButton =
+    document.getElementById(
+        "startCamera"
+    );
+
+const startStatus =
+    document.getElementById(
+        "startStatus"
+    );
+
+const camera =
+    document.getElementById(
+        "camera"
+    );
+
+const arUI =
+    document.getElementById(
+        "arUI"
+    );
+
+const arStatus =
+    document.getElementById(
+        "arStatus"
+    );
+
+const closeAR =
+    document.getElementById(
+        "closeAR"
+    );
+
+const placeObjectButton =
+    document.getElementById(
+        "placeObject"
+    );
+
+const sendDataButton =
+    document.getElementById(
+        "sendData"
+    );
+
+const errorScreen =
+    document.getElementById(
+        "error"
+    );
+
+const errorText =
+    document.getElementById(
+        "errorText"
+    );
+
+const errorButton =
+    document.getElementById(
+        "errorButton"
+    );
+
+
+/*
+==================================================
+SENSOR UI
+==================================================
+*/
+
+const orientationUI =
+    document.getElementById(
+        "orientation"
+    );
+
+const gyroUI =
+    document.getElementById(
+        "gyro"
+    );
+
+const accelUI =
+    document.getElementById(
+        "accelerometer"
+    );
+
+const gpsUI =
+    document.getElementById(
+        "gps"
+    );
+
+
+/*
+==================================================
+STATE
+==================================================
+*/
+
+let cameraStream = null;
+
+let xrSession = null;
+
+let arMode = false;
+
+let objectPlaced = false;
+
+
+/*
+==================================================
+CURRENT TELEGRAM DATA
+==================================================
+*/
+
+const sensorData = {
+
+    orientation: {
+
+        alpha: 0,
+
+        beta: 0,
+
+        gamma: 0,
+
+        absolute: false
+
+    },
+
+    gyroscope: {
+
+        x: 0,
+
+        y: 0,
+
+        z: 0
+
+    },
+
+    accelerometer: {
+
+        x: 0,
+
+        y: 0,
+
+        z: 0
+
+    },
+
+    gps: {
+
+        latitude: null,
+
+        longitude: null,
+
+        altitude: null,
+
+        accuracy: null
+
+    }
+
+};
+
+
+/*
+==================================================
+TELEGRAM INIT
+==================================================
+*/
+
+function initTelegram() {
+
+    if (!tg) {
+
+        startStatus.textContent =
+            "Откройте приложение через Telegram";
+
+        return;
+    }
+
+
+    tg.ready();
+
+
+    /*
+    Telegram Mini App
+    становится fullscreen
+    */
+
+    if (
+        typeof tg.requestFullscreen ===
+        "function"
+    ) {
+
+        tg.requestFullscreen();
+
+    }
+
+
+    /*
+    Запрещаем свайп,
+    который может конфликтовать
+    с AR-жестами.
+    */
+
+    if (
+        typeof tg.disableVerticalSwipes ===
+        "function"
+    ) {
+
+        tg.disableVerticalSwipes();
+
+    }
+
+
+    /*
+    Цвет интерфейса Telegram
+    */
+
+    tg.setHeaderColor?.(
+        "#000000"
+    );
+
+    tg.setBackgroundColor?.(
+        "#000000"
+    );
+
+
+    /*
+    CSS safe area
+    */
+
+    updateSafeArea();
+
+
+    tg.onEvent(
+        "safeAreaChanged",
+        updateSafeArea
+    );
+
+
+    tg.onEvent(
+        "contentSafeAreaChanged",
+        updateSafeArea
+    );
+
+
+    startStatus.textContent =
+        "Telegram готов";
+}
+
+
+/*
+==================================================
+SAFE AREA
+==================================================
+*/
+
+function updateSafeArea() {
+
+    if (!tg) {
+        return;
+    }
+
+
+    const safe =
+        tg.safeAreaInset || {};
+
+
+    document.documentElement
+        .style
+        .setProperty(
+            "--tg-safe-top",
+            `${safe.top || 0}px`
+        );
+
+
+    document.documentElement
+        .style
+        .setProperty(
+            "--tg-safe-bottom",
+            `${safe.bottom || 0}px`
+        );
+}
+
+
+/*
+==================================================
+START TELEGRAM SENSORS
+==================================================
+*/
+
+function startTelegramSensors() {
+
+    if (!tg) {
+        return;
+    }
+
+
+    /*
+    DEVICE ORIENTATION
+    */
+
+    if (
+        tg.DeviceOrientation
+    ) {
+
+        tg.DeviceOrientation.start(
+
+            {
+                refresh_rate: 50,
+
+                need_absolute: true
+            },
+
+            success => {
+
+                console.log(
+                    "DeviceOrientation:",
+                    success
+                );
+
+            }
+
+        );
+
+
+        tg.onEvent(
+            "deviceOrientationChanged",
+            readOrientation
+        );
+
+    }
+
+
+    /*
+    GYROSCOPE
+    */
+
+    if (
+        tg.Gyroscope
+    ) {
+
+        tg.Gyroscope.start(
+
+            {
+                refresh_rate: 50
+            },
+
+            success => {
+
+                console.log(
+                    "Gyroscope:",
+                    success
+                );
+
+            }
+
+        );
+
+
+        tg.onEvent(
+            "gyroscopeChanged",
+            readGyroscope
+        );
+
+    }
+
+
+    /*
+    ACCELEROMETER
+    */
+
+    if (
+        tg.Accelerometer
+    ) {
+
+        tg.Accelerometer.start(
+
+            {
+                refresh_rate: 50
+            },
+
+            success => {
+
+                console.log(
+                    "Accelerometer:",
+                    success
+                );
+
+            }
+
+        );
+
+
+        tg.onEvent(
+            "accelerometerChanged",
+            readAccelerometer
+        );
+
+    }
+
+
+    /*
+    GPS
+    */
+
+    if (
+        tg.LocationManager
+    ) {
+
+        tg.LocationManager.init(
+            () => {
+
+                tg.LocationManager.getLocation(
+                    location => {
+
+                        if (!location) {
+                            return;
+                        }
+
+
+                        sensorData.gps =
+                            {
+
+                                latitude:
+                                    location.latitude,
+
+                                longitude:
+                                    location.longitude,
+
+                                altitude:
+                                    location.altitude,
+
+                                accuracy:
+                                    location.accuracy
+
+                            };
+
+
+                        updateGPSUI();
+
+                    }
+                );
+
+            }
+        );
+
+    }
+}
+
+
+/*
+==================================================
+ORIENTATION
+==================================================
+*/
+
+function readOrientation() {
+
+    const o =
+        tg?.DeviceOrientation;
+
+
+    if (!o) {
+        return;
+    }
+
+
+    sensorData.orientation = {
+
+        alpha:
+            o.alpha || 0,
+
+        beta:
+            o.beta || 0,
+
+        gamma:
+            o.gamma || 0,
+
+        absolute:
+            !!o.absolute
+
+    };
+
+
+    orientationUI.innerHTML =
+
+        "α: " +
+        sensorData.orientation.alpha.toFixed(3) +
+
+        "<br>" +
+
+        "β: " +
+        sensorData.orientation.beta.toFixed(3) +
+
+        "<br>" +
+
+        "γ: " +
+        sensorData.orientation.gamma.toFixed(3);
+
+}
+
+
+/*
+==================================================
+GYROSCOPE
+==================================================
+*/
+
+function readGyroscope() {
+
+    const g =
+        tg?.Gyroscope;
+
+
+    if (!g) {
+        return;
+    }
+
+
+    sensorData.gyroscope = {
+
+        x:
+            g.x || 0,
+
+        y:
+            g.y || 0,
+
+        z:
+            g.z || 0
+
+    };
+
+
+    gyroUI.innerHTML =
+
+        "X: " +
+        sensorData.gyroscope.x.toFixed(3) +
+
+        "<br>" +
+
+        "Y: " +
+        sensorData.gyroscope.y.toFixed(3) +
+
+        "<br>" +
+
+        "Z: " +
+        sensorData.gyroscope.z.toFixed(3);
+
+}
+
+
+/*
+==================================================
+ACCELEROMETER
+==================================================
+*/
+
+function readAccelerometer() {
+
+    const a =
+        tg?.Accelerometer;
+
+
+    if (!a) {
+        return;
+    }
+
+
+    sensorData.accelerometer = {
+
+        x:
+            a.x || 0,
+
+        y:
+            a.y || 0,
+
+        z:
+            a.z || 0
+
+    };
+
+
+    accelUI.innerHTML =
+
+        "X: " +
+        sensorData.accelerometer.x.toFixed(3) +
+
+        "<br>" +
+
+        "Y: " +
+        sensorData.accelerometer.y.toFixed(3) +
+
+        "<br>" +
+
+        "Z: " +
+        sensorData.accelerometer.z.toFixed(3);
+
+}
+
+
+/*
+==================================================
+GPS
+==================================================
+*/
+
+function updateGPSUI() {
+
+    const g =
+        sensorData.gps;
+
+
+    if (
+        g.latitude === null
+    ) {
+
+        gpsUI.textContent =
+            "—";
+
+        return;
+    }
+
+
+    gpsUI.innerHTML =
+
+        "LAT: " +
+        Number(g.latitude).toFixed(6) +
+
+        "<br>" +
+
+        "LON: " +
+        Number(g.longitude).toFixed(6) +
+
+        "<br>" +
+
+        "ACC: " +
+        Number(g.accuracy || 0).toFixed(1) +
+        "m";
+}
+
+
+/*
+==================================================
+CAMERA
+==================================================
+*/
+
+async function startCamera() {
+
+    startStatus.textContent =
+        "Запуск камеры...";
+
+
+    /*
+    КАМЕРА ЗАПРАШИВАЕТСЯ
+    ТОЛЬКО ПО НАЖАТИЮ КНОПКИ
+    */
+
+    try {
+
+        cameraStream =
+            await navigator.mediaDevices
+                .getUserMedia({
+
+                    video: {
+
+                        facingMode: {
+                            ideal:
+                                "environment"
+                        },
+
+                        width: {
+                            ideal: 1920
+                        },
+
+                        height: {
+                            ideal: 1080
+                        },
+
+                        frameRate: {
+                            ideal: 30
+                        }
+
+                    },
+
+                    audio: false
+
+                });
+
+
+        camera.srcObject =
+            cameraStream;
+
+
+        await camera.play();
+
+
+        /*
+        Telegram sensors
+        */
+
+        startTelegramSensors();
+
+
+        /*
+        Блокируем ориентацию
+        */
+
+        tg?.lockOrientation?.();
+
+
+        /*
+        Показываем AR
+        */
+
+        startScreen.style.display =
+            "none";
+
+
+        camera.style.display =
+            "block";
+
+
+        arUI.style.display =
+            "block";
+
+
+        document.getElementById(
+            "dataPanel"
+        ).style.display =
+            "block";
+
+
+        placeObjectButton.style.display =
+            "block";
+
+
+        arMode =
+            true;
+
+
+        arStatus.textContent =
+            "КАМЕРА + MOTION";
+
+
+        /*
+        Запускаем попытку
+        WebXR AR
+        */
+
+        await tryStartXR();
+
+
+    } catch (error) {
+
+        console.error(
+            error
+        );
+
+
+        showError(
+            getCameraError(
+                error
+            )
+        );
+
+    }
+
+}
+
+
+/*
+==================================================
+CAMERA ERROR
+==================================================
+*/
+
+function getCameraError(error) {
+
+    if (
+        error?.name ===
+        "NotAllowedError"
+    ) {
+
+        return (
+            "Telegram или устройство не предоставили " +
+            "доступ к камере. Разрешите камеру для Telegram."
+        );
+    }
+
+
+    if (
+        error?.name ===
+        "NotFoundError"
+    ) {
+
+        return (
+            "Камера не найдена."
+        );
+    }
+
+
+    if (
+        error?.name ===
+        "SecurityError"
+    ) {
+
+        return (
+            "Доступ к камере заблокирован настройками безопасности."
+        );
+    }
+
+
+    return (
+        "Не удалось открыть камеру: " +
+        (error?.message || "неизвестная ошибка")
+    );
+}
+
+
+/*
+==================================================
+WEBXR AR
+==================================================
+*/
+
+async function tryStartXR() {
+
+    /*
+    Здесь НЕТ проверки устройства
+    при загрузке.
+
+    AR пытается запуститься
+    после нажатия кнопки.
+    */
+
+    if (
+        !navigator.xr
+    ) {
+
+        arStatus.textContent =
+            "КАМЕРА + TELEGRAM MOTION";
+
+        return;
+    }
+
+
+    try {
+
+        xrSession =
+            await navigator.xr.requestSession(
+
+                "immersive-ar",
+
+                {
+
+                    requiredFeatures: [
+                        "local-floor",
+                        "hit-test"
+                    ],
+
+                    optionalFeatures: [
+                        "anchors",
+                        "dom-overlay"
+                    ],
+
+                    domOverlay: {
+                        root:
+                            document.body
+                    }
+
+                }
+
+            );
+
+
+        arStatus.textContent =
+            "AR TRACKING";
+
+
+        /*
+        Если WebXR действительно
+        доступен, Three.js можно
+        подключить здесь.
+
+        Камера и Telegram Motion
+        при этом продолжают работать.
+        */
+
+
+        xrSession.addEventListener(
+            "end",
+            () => {
+
+                xrSession =
+                    null;
+
+                arStatus.textContent =
+                    "КАМЕРА + MOTION";
+
+            }
+        );
+
+
+    } catch (error) {
+
+        /*
+        НЕ считаем это ошибкой
+        всего приложения.
+
+        Telegram camera +
+        Telegram sensors
+        продолжают работать.
+        */
+
+        console.log(
+            "WebXR unavailable:",
+            error
+        );
+
+
+        arStatus.textContent =
+            "КАМЕРА + MOTION";
+    }
+
+}
+
+
+/*
+==================================================
+SEND DATA TO TELEGRAM BOT
+==================================================
+*/
+
+function sendDataToTelegram() {
+
+    if (!tg) {
+
+        alert(
+            "Откройте приложение через Telegram."
+        );
+
+        return;
+    }
+
+
+    const payload = {
+
+        type:
+            "ar_motion",
+
+        timestamp:
+            Date.now(),
+
+        orientation:
+            sensorData.orientation,
+
+        gyroscope:
+            sensorData.gyroscope,
+
+        accelerometer:
+            sensorData.accelerometer,
+
+        gps:
+            sensorData.gps,
+
+        camera:
+            cameraStream !== null,
+
+        ar:
+            xrSession !== null
+
+    };
+
+
+    /*
+    Telegram sendData
+    принимает строку
+    */
+
+    const json =
+        JSON.stringify(
+            payload
+        );
+
+
+    /*
+    Ограничение sendData:
+    предназначено для передачи
+    данных Mini App обратно боту.
+    */
+
+    tg.sendData(
+        json
+    );
+
+}
+
+
+/*
+==================================================
+CLOSE AR
+==================================================
+*/
+
+async function closeAR() {
+
+    /*
+    XR
+    */
+
+    if (
+        xrSession
+    ) {
+
+        try {
+
+            await xrSession.end();
+
+        } catch (_) {}
+
+        xrSession =
+            null;
+    }
+
+
+    /*
+    Camera
+    */
+
+    if (
+        cameraStream
+    ) {
+
+        cameraStream
+            .getTracks()
+            .forEach(
+                track => track.stop()
+            );
+
+
+        cameraStream =
+            null;
+    }
+
+
+    camera.srcObject =
+        null;
+
+
+    /*
+    Telegram motion
+    */
+
+    try {
+
+        tg?.DeviceOrientation?.stop?.();
+
+        tg?.Gyroscope?.stop?.();
+
+        tg?.Accelerometer?.stop?.();
+
+    } catch (_) {}
+
+
+    tg?.unlockOrientation?.();
+
+
+    /*
+    UI
+    */
+
+    arMode =
+        false;
+
+
+    camera.style.display =
+        "none";
+
+
+    arUI.style.display =
+        "none";
+
+
+    startScreen.style.display =
+        "flex";
+
+
+    startStatus.textContent =
+        "Готово";
+}
+
+
+/*
+==================================================
+ERROR
+==================================================
+*/
+
+function showError(text) {
+
+    errorText.textContent =
+        text;
+
+
+    errorScreen.style.display =
+        "flex";
+}
+
+
+errorButton.addEventListener(
+    "click",
+    () => {
+
+        errorScreen.style.display =
+            "none";
+
+    }
+);
+
+
+/*
+==================================================
+EVENTS
+==================================================
+*/
+
+startButton.addEventListener(
+    "click",
+    startCamera
+);
+
+
+closeAR.addEventListener(
+    "click",
+    closeAR
+);
+
+
+sendDataButton.addEventListener(
+    "click",
+    sendDataToTelegram
+);
+
+
+/*
+==================================================
+INIT
+==================================================
+*/
+
+initTelegram();
+
+
+/*
+==================================================
+TELEGRAM VIEWPORT
+==================================================
+*/
+
+if (tg) {
+
+    tg.onEvent(
+        "viewportChanged",
+        () => {
+
+            updateSafeArea();
+
+        }
+    );
+
+}
+
+</script>
+
+</body>
+
+</html>
