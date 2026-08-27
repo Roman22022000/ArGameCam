@@ -1,15 +1,18 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
     <meta charset="UTF-8">
 
     <meta
         name="viewport"
-        content="width=device-width,
-                 initial-scale=1,
-                 maximum-scale=1,
-                 user-scalable=no,
-                 viewport-fit=cover"
+        content="
+            width=device-width,
+            initial-scale=1,
+            maximum-scale=1,
+            user-scalable=no,
+            viewport-fit=cover
+        "
     >
 
     <meta name="theme-color" content="#000000">
@@ -17,19 +20,18 @@
     <title>AR Space</title>
 
     <link rel="stylesheet" href="./style.css">
+
 </head>
 
 <body>
 
-    <!-- START SCREEN -->
+    <!-- START -->
 
-    <main id="startScreen">
+    <div id="startScreen">
 
-        <section class="startBox">
+        <div class="start">
 
-            <div class="logo">
-                AR
-            </div>
+            <div class="logo">AR</div>
 
             <h1>AR SPACE</h1>
 
@@ -37,72 +39,89 @@
                 Дополненная реальность
             </p>
 
-            <button id="startButton">
+            <button id="startAR">
                 ЗАПУСК КАМЕРЫ
             </button>
 
             <div id="status">
-                Готово к запуску
+                Нажмите кнопку для запуска
             </div>
 
-        </section>
+        </div>
 
-    </main>
+    </div>
 
 
-    <!-- AR UI -->
+    <!-- AR -->
 
     <div id="arUI">
 
-        <button
-            id="exitButton"
-            class="exitButton"
-        >
+        <button id="exitAR">
             ×
         </button>
 
-
-        <div
-            id="message"
-            class="message"
-        >
+        <div id="message">
             Наведите камеру на поверхность
         </div>
 
-
-        <button
-            id="placeButton"
-            class="placeButton"
-        >
+        <button id="placeAR">
             РАЗМЕСТИТЬ ОБЪЕКТ
         </button>
 
     </div>
 
 
-    <!-- ERROR -->
+    <!-- SENSOR DEBUG -->
 
-    <div
-        id="errorScreen"
-        class="hidden"
-    >
+    <div id="sensorPanel">
 
-        <div class="errorBox">
+        <div>
+            ORIENTATION
+        </div>
 
-            <h2>AR недоступен</h2>
+        <div id="orientation">
+            α: 0<br>
+            β: 0<br>
+            γ: 0
+        </div>
 
-            <p id="errorText"></p>
+        <div>
+            GYROSCOPE
+        </div>
 
-            <button id="backButton">
-                НАЗАД
-            </button>
+        <div id="gyro">
+            X: 0<br>
+            Y: 0<br>
+            Z: 0
+        </div>
 
+        <div>
+            ACCELEROMETER
+        </div>
+
+        <div id="accel">
+            X: 0<br>
+            Y: 0<br>
+            Z: 0
+        </div>
+
+        <div>
+            GPS
+        </div>
+
+        <div id="gps">
+            unavailable
         </div>
 
     </div>
 
 
+    <script
+        src="https://telegram.org/js/telegram-web-app.js">
+    </script>
+
     <script type="module" src="./app.js"></script>
 
 </body>
+
 </html>
