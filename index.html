@@ -1,25 +1,20 @@
 <!DOCTYPE html>
 <html lang="ru">
-
 <head>
 
     <meta charset="UTF-8">
 
     <meta
         name="viewport"
-        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+        content="width=device-width, initial-scale=1.0"
     >
 
     <title>AR Gallery</title>
 
     <!-- TON CONNECT -->
-    <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
+    <script src="https://unpkg.com/@tonconnect/ui@3.0.0/dist/tonconnect-ui.min.js"></script>
 
     <style>
-
-        /* =====================================================
-           RESET
-        ===================================================== */
 
         * {
             box-sizing: border-box;
@@ -53,36 +48,21 @@
 
         button {
             cursor: pointer;
+            border: 0;
         }
 
-
-        /* =====================================================
-           APP
-        ===================================================== */
-
-        #app {
-            width: 100%;
-            height: 100%;
-
-            background: #000;
-
-            position: relative;
-        }
-
-
-        /* =====================================================
+        /* =========================================================
            SCREENS
-        ===================================================== */
+        ========================================================= */
 
         .screen {
-            position: absolute;
-
+            position: fixed;
             inset: 0;
+
+            display: none;
 
             width: 100%;
             height: 100%;
-
-            display: none;
 
             background: #000;
         }
@@ -92,9 +72,9 @@
         }
 
 
-        /* =====================================================
+        /* =========================================================
            AUTH
-        ===================================================== */
+        ========================================================= */
 
         #authScreen {
             align-items: center;
@@ -103,64 +83,369 @@
             padding: 20px;
         }
 
-        .authPanel {
-            width: min(400px, 100%);
-
-            border: 1px solid #222;
-
-            padding: 32px 24px;
+        .auth {
+            width: 320px;
+            max-width: 100%;
 
             text-align: center;
         }
 
-        .brand {
-            font-size: 17px;
+        .authTitle {
+            margin-bottom: 30px;
 
-            font-weight: 400;
-
-            letter-spacing: 4px;
-
-            margin-bottom: 12px;
+            font-size: 28px;
+            font-weight: 500;
+            letter-spacing: -0.5px;
         }
 
-        .authDescription {
-            color: #666;
+        /*
+            Собственная кнопка.
+            TON Connect modal открывается через openModal().
+        */
 
-            font-size: 11px;
+        .connectButton {
+            width: 100%;
+            height: 52px;
 
-            line-height: 1.7;
+            background: #fff;
+            color: #000;
 
-            margin-bottom: 28px;
+            border: 1px solid #fff;
+
+            font-size: 14px;
+            font-weight: 500;
+
+            transition: opacity .15s ease;
         }
 
-        #ton-connect {
-            display: flex;
-
-            justify-content: center;
-
-            min-height: 44px;
+        .connectButton:hover {
+            opacity: .85;
         }
 
-        #authStatus {
-            min-height: 22px;
+        .connectButton:active {
+            opacity: .65;
+        }
+
+        .authStatus {
+            min-height: 20px;
 
             margin-top: 18px;
 
             color: #666;
 
-            font-size: 11px;
-
-            line-height: 1.5;
+            font-size: 12px;
+            line-height: 1.4;
         }
 
 
-        /* =====================================================
+        /* =========================================================
+           HOME
+        ========================================================= */
+
+        #homeScreen {
+            align-items: center;
+            justify-content: center;
+
+            padding: 20px;
+        }
+
+        .home {
+            width: 320px;
+            max-width: 100%;
+        }
+
+        .homeTitle {
+            margin-bottom: 30px;
+
+            text-align: center;
+
+            font-size: 28px;
+            font-weight: 500;
+        }
+
+        .walletInfo {
+            width: 100%;
+
+            margin-bottom: 20px;
+
+            padding-bottom: 14px;
+
+            border-bottom: 1px solid #181818;
+
+            color: #555;
+
+            font-size: 11px;
+            line-height: 1.4;
+
+            text-align: center;
+
+            word-break: break-all;
+        }
+
+        .menu {
+            width: 100%;
+        }
+
+        .menuButton {
+            width: 100%;
+            height: 52px;
+
+            margin-bottom: 8px;
+
+            background: #080808;
+            color: #fff;
+
+            border: 1px solid #242424;
+
+            font-size: 13px;
+            font-weight: 400;
+
+            text-align: left;
+
+            padding: 0 16px;
+        }
+
+        .menuButton:hover {
+            background: #111;
+        }
+
+        .menuButton:active {
+            background: #181818;
+        }
+
+
+        /* =========================================================
+           PAGE HEADER
+        ========================================================= */
+
+        .page {
+            flex-direction: column;
+
+            padding:
+                14px
+                18px
+                18px
+                18px;
+        }
+
+        .header {
+            position: relative;
+
+            width: 100%;
+            height: 48px;
+
+            flex-shrink: 0;
+
+            display: flex;
+            align-items: center;
+        }
+
+        .backButton {
+            width: 40px;
+            height: 40px;
+
+            background: #080808;
+            color: #fff;
+
+            border: 1px solid #242424;
+
+            font-size: 22px;
+            line-height: 1;
+        }
+
+        .backButton:hover {
+            background: #111;
+        }
+
+        .pageTitle {
+            position: absolute;
+
+            left: 50%;
+            transform: translateX(-50%);
+
+            font-size: 14px;
+            font-weight: 400;
+        }
+
+
+        /* =========================================================
+           GALLERY
+        ========================================================= */
+
+        .galleryGrid {
+            width: 100%;
+            max-width: 900px;
+
+            margin: auto;
+
+            display: grid;
+
+            grid-template-columns:
+                repeat(
+                    auto-fill,
+                    minmax(140px, 1fr)
+                );
+
+            gap: 10px;
+
+            overflow-y: auto;
+        }
+
+        .galleryItem {
+            aspect-ratio: 1;
+
+            background: #080808;
+            color: #fff;
+
+            border: 1px solid #202020;
+
+            font-size: 18px;
+            font-weight: 400;
+        }
+
+        .galleryItem:hover {
+            background: #111;
+        }
+
+
+        /* =========================================================
+           VIEWER
+        ========================================================= */
+
+        #viewerScreen {
+            background: #000;
+        }
+
+        #viewerCanvas {
+            position: absolute;
+            inset: 0;
+
+            width: 100%;
+            height: 100%;
+        }
+
+        #viewerCanvas canvas {
+            display: block;
+
+            width: 100%;
+            height: 100%;
+        }
+
+        .viewerHeader {
+            position: absolute;
+
+            z-index: 10;
+
+            top: 14px;
+            left: 14px;
+            right: 14px;
+
+            height: 40px;
+
+            display: flex;
+            align-items: center;
+        }
+
+        .viewerNumber {
+            position: absolute;
+
+            left: 50%;
+            transform: translateX(-50%);
+
+            font-size: 14px;
+        }
+
+
+        /* =========================================================
+           GENERATION
+        ========================================================= */
+
+        #generationScreen {
+            align-items: center;
+            justify-content: center;
+
+            padding: 20px;
+        }
+
+        .generation {
+            width: 320px;
+            max-width: 100%;
+        }
+
+        .generationTitle {
+            margin-bottom: 24px;
+
+            font-size: 20px;
+            font-weight: 400;
+
+            text-align: center;
+        }
+
+        .codeInput {
+            width: 100%;
+            height: 58px;
+
+            background: #050505;
+            color: #fff;
+
+            border: 1px solid #292929;
+
+            outline: none;
+
+            padding: 0 16px;
+
+            font-size: 24px;
+            letter-spacing: 8px;
+
+            text-align: center;
+        }
+
+        .codeInput:focus {
+            border-color: #555;
+        }
+
+        .codeInput::placeholder {
+            color: #333;
+        }
+
+        .sendButton {
+            width: 100%;
+            height: 52px;
+
+            margin-top: 8px;
+
+            background: #fff;
+            color: #000;
+
+            border: 1px solid #fff;
+
+            font-size: 13px;
+        }
+
+        .sendButton:disabled {
+            opacity: .25;
+            cursor: default;
+        }
+
+        .generationStatus {
+            min-height: 18px;
+
+            margin-top: 14px;
+
+            color: #666;
+
+            font-size: 12px;
+
+            text-align: center;
+        }
+
+
+        /* =========================================================
            LOADING
-        ===================================================== */
+        ========================================================= */
 
-        #loadingOverlay {
+        #loading {
             position: fixed;
-
             inset: 0;
 
             z-index: 1000;
@@ -173,496 +458,33 @@
             background: #000;
         }
 
-        #loadingOverlay.active {
+        #loading.active {
             display: flex;
         }
 
         .loadingText {
-            color: #666;
-
-            font-size: 11px;
-
-            letter-spacing: 2px;
-        }
-
-
-        /* =====================================================
-           HEADER
-        ===================================================== */
-
-        .header {
-            width: 100%;
-
-            height: 64px;
-
-            min-height: 64px;
-
-            border-bottom: 1px solid #1c1c1c;
-
-            display: flex;
-
-            align-items: center;
-
-            justify-content: space-between;
-
-            padding: 0 18px;
-        }
-
-        .headerTitle {
-            font-size: 12px;
-
-            letter-spacing: 3px;
-        }
-
-        .headerWallet {
-            max-width: 220px;
-
-            overflow: hidden;
-
-            text-overflow: ellipsis;
-
-            white-space: nowrap;
-
-            color: #555;
-
-            font-size: 10px;
-        }
-
-
-        /* =====================================================
-           HOME
-        ===================================================== */
-
-        #homeScreen {
-            flex-direction: column;
-        }
-
-        .homeContent {
-            flex: 1;
-
-            display: flex;
-
-            align-items: center;
-
-            justify-content: center;
-
-            padding: 20px;
-        }
-
-        .homeMenu {
-            width: min(360px, 100%);
-
-            display: flex;
-
-            flex-direction: column;
-
-            gap: 8px;
-        }
-
-        .menuButton {
-            width: 100%;
-
-            height: 58px;
-
-            background: #050505;
-
-            border: 1px solid #252525;
-
-            color: #fff;
-
-            font-size: 11px;
-
-            letter-spacing: 3px;
-
-            transition:
-                background 0.15s,
-                border-color 0.15s;
-        }
-
-        .menuButton:hover {
-            background: #101010;
-
-            border-color: #444;
-        }
-
-        .menuButton:active {
-            background: #181818;
-        }
-
-
-        /* =====================================================
-           GALLERY
-        ===================================================== */
-
-        #galleryScreen {
-            flex-direction: column;
-        }
-
-        .galleryBody {
-            flex: 1;
-
-            overflow-y: auto;
-
-            padding: 16px;
-        }
-
-        .galleryGrid {
-            width: 100%;
-
-            display: grid;
-
-            grid-template-columns:
-                repeat(
-                    auto-fill,
-                    minmax(150px, 1fr)
-                );
-
-            gap: 10px;
-        }
-
-        .galleryItem {
-            position: relative;
-
-            aspect-ratio: 1 / 1;
-
-            background: #050505;
-
-            border: 1px solid #202020;
-
-            overflow: hidden;
-
-            transition:
-                border-color 0.15s;
-        }
-
-        .galleryItem:hover {
-            border-color: #444;
-        }
-
-        .galleryNumber {
-            position: absolute;
-
-            top: 12px;
-
-            left: 12px;
-
             color: #777;
-
-            font-size: 10px;
-
-            letter-spacing: 2px;
-
-            z-index: 2;
-        }
-
-        .galleryPlaceholder {
-            position: absolute;
-
-            inset: 0;
-
-            display: flex;
-
-            align-items: center;
-
-            justify-content: center;
-
-            color: #333;
-
-            font-size: 28px;
-        }
-
-
-        /* =====================================================
-           VIEWER
-        ===================================================== */
-
-        #viewerScreen {
-            flex-direction: column;
-        }
-
-        #viewerContainer {
-            position: relative;
-
-            flex: 1;
-
-            min-height: 0;
-
-            overflow: hidden;
-        }
-
-        #viewerCanvas {
-            position: absolute;
-
-            inset: 0;
-
-            width: 100%;
-
-            height: 100%;
-
-            display: block;
-        }
-
-        .viewerLoader {
-            position: absolute;
-
-            inset: 0;
-
-            z-index: 10;
-
-            display: none;
-
-            align-items: center;
-
-            justify-content: center;
-
-            background: #000;
-        }
-
-        .viewerLoader.active {
-            display: flex;
-        }
-
-        .viewerLoaderText {
-            color: #555;
-
-            font-size: 10px;
-
-            letter-spacing: 2px;
-        }
-
-        .viewerHint {
-            position: absolute;
-
-            left: 15px;
-
-            bottom: 15px;
-
-            z-index: 20;
-
-            color: #444;
-
-            font-size: 9px;
-
-            letter-spacing: 1px;
-        }
-
-
-        /* =====================================================
-           GENERATION
-        ===================================================== */
-
-        #generationScreen {
-            flex-direction: column;
-        }
-
-        .generationBody {
-            flex: 1;
-
-            overflow-y: auto;
-
-            display: flex;
-
-            justify-content: center;
-
-            align-items: flex-start;
-
-            padding: 50px 20px;
-        }
-
-        .generationPanel {
-            width: min(380px, 100%);
-
-            border: 1px solid #222;
-
-            padding: 26px;
-        }
-
-        .generationTitle {
-            font-size: 12px;
-
-            letter-spacing: 3px;
-
-            margin-bottom: 12px;
-        }
-
-        .generationDescription {
-            color: #555;
-
             font-size: 11px;
-
-            line-height: 1.7;
-
-            margin-bottom: 24px;
-        }
-
-        #generationCode {
-            width: 100%;
-
-            height: 56px;
-
-            border: 1px solid #2a2a2a;
-
-            outline: none;
-
-            background: #050505;
-
-            color: #fff;
-
-            text-align: center;
-
-            font-size: 20px;
-
-            letter-spacing: 8px;
-        }
-
-        #generationCode:focus {
-            border-color: #555;
-        }
-
-        #generationCode::placeholder {
-            color: #333;
-        }
-
-        #generationSubmit {
-            width: 100%;
-
-            height: 54px;
-
-            margin-top: 10px;
-
-            border: 1px solid #fff;
-
-            background: #fff;
-
-            color: #000;
-
-            font-size: 10px;
-
-            letter-spacing: 3px;
-        }
-
-        #generationSubmit:hover {
-            background: #ddd;
-        }
-
-        #generationSubmit:disabled {
-            opacity: 0.3;
-
-            cursor: not-allowed;
-        }
-
-        #generationStatus {
-            min-height: 22px;
-
-            margin-top: 15px;
-
-            color: #555;
-
-            font-size: 10px;
-
-            line-height: 1.5;
-
-            text-align: center;
         }
 
 
-        /* =====================================================
-           BACK BUTTON
-        ===================================================== */
-
-        .backButton {
-            height: 34px;
-
-            padding: 0 13px;
-
-            background: #000;
-
-            border: 1px solid #252525;
-
-            color: #777;
-
-            font-size: 9px;
-
-            letter-spacing: 2px;
-        }
-
-        .backButton:hover {
-            color: #fff;
-
-            border-color: #444;
-        }
-
-
-        /* =====================================================
-           SCROLLBAR
-        ===================================================== */
-
-        * {
-            scrollbar-width: thin;
-
-            scrollbar-color:
-                #333
-                #000;
-        }
-
-        ::-webkit-scrollbar {
-            width: 4px;
-
-            height: 4px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: #000;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: #333;
-        }
-
-
-        /* =====================================================
+        /* =========================================================
            MOBILE
-        ===================================================== */
+        ========================================================= */
 
-        @media (max-width: 600px) {
+        @media (max-width: 500px) {
 
-            .header {
-                height: 58px;
-
-                min-height: 58px;
-
-                padding: 0 14px;
-            }
-
-            .headerWallet {
-                max-width: 145px;
-            }
-
-            .homeContent {
-                padding: 16px;
-            }
-
-            .homeMenu {
-                width: 100%;
-            }
-
-            .galleryBody {
-                padding: 10px;
+            .authTitle,
+            .homeTitle {
+                font-size: 24px;
             }
 
             .galleryGrid {
                 grid-template-columns:
-                    repeat(2, 1fr);
-
-                gap: 8px;
-            }
-
-            .generationBody {
-                padding: 30px 15px;
-            }
-
-            .generationPanel {
-                padding: 20px;
+                    repeat(
+                        2,
+                        1fr
+                    );
             }
 
         }
@@ -671,565 +493,429 @@
 
 </head>
 
-
 <body>
 
 
-<div id="app">
+<!-- =============================================================
+     AUTH
+============================================================= -->
 
+<section
+    id="authScreen"
+    class="screen active"
+>
 
-    <!-- =====================================================
-         AUTH SCREEN
-    ===================================================== -->
+    <div class="auth">
 
-    <section
-        id="authScreen"
-        class="screen active"
-    >
-
-        <div class="authPanel">
-
-            <div class="brand">
-                AR GALLERY
-            </div>
-
-            <div class="authDescription">
-
-                Подключите TON-кошелёк.
-                <br>
-                Доступ предоставляется владельцам
-                NFT необходимой коллекции.
-
-            </div>
-
-            <div id="ton-connect"></div>
-
-            <div id="authStatus">
-                Подключите кошелёк
-            </div>
-
+        <div class="authTitle">
+            AR Gallery
         </div>
 
-    </section>
+        <button
+            id="connectWallet"
+            class="connectButton"
+            type="button"
+        >
+            ПОДКЛЮЧИТЬ КОШЕЛЁК
+        </button>
+
+        <div
+            id="authStatus"
+            class="authStatus"
+        >
+            Подключите TON-кошелёк
+        </div>
+
+    </div>
+
+</section>
 
 
-    <!-- =====================================================
-         HOME
-    ===================================================== -->
+<!-- =============================================================
+     HOME
+============================================================= -->
 
-    <section
-        id="homeScreen"
-        class="screen"
-    >
+<section
+    id="homeScreen"
+    class="screen"
+>
 
-        <header class="header">
+    <div class="home">
 
-            <div class="headerTitle">
-                AR GALLERY
-            </div>
+        <div class="homeTitle">
+            AR Gallery
+        </div>
 
-            <div
-                id="walletInfo"
-                class="headerWallet"
+        <div
+            id="walletInfo"
+            class="walletInfo"
+        ></div>
+
+        <div class="menu">
+
+            <button
+                id="openGallery"
+                class="menuButton"
+                type="button"
             >
-                —
-            </div>
-
-        </header>
-
-
-        <main class="homeContent">
-
-            <nav class="homeMenu">
-
-                <button
-                    id="openGallery"
-                    class="menuButton"
-                    type="button"
-                >
-                    ГАЛЕРЕЯ
-                </button>
-
-                <button
-                    id="openGeneration"
-                    class="menuButton"
-                    type="button"
-                >
-                    ГЕНЕРАЦИЯ
-                </button>
-
-            </nav>
-
-        </main>
-
-    </section>
-
-
-    <!-- =====================================================
-         GALLERY
-    ===================================================== -->
-
-    <section
-        id="galleryScreen"
-        class="screen"
-    >
-
-        <header class="header">
-
-            <div class="headerTitle">
                 ГАЛЕРЕЯ
-            </div>
-
-            <button
-                id="galleryBack"
-                class="backButton"
-                type="button"
-            >
-                НАЗАД
             </button>
 
-        </header>
-
-
-        <main class="galleryBody">
-
-            <div
-                id="galleryGrid"
-                class="galleryGrid"
-            ></div>
-
-        </main>
-
-    </section>
-
-
-    <!-- =====================================================
-         VIEWER
-    ===================================================== -->
-
-    <section
-        id="viewerScreen"
-        class="screen"
-    >
-
-        <header class="header">
-
-            <div
-                id="viewerTitle"
-                class="headerTitle"
-            >
-                3D MODEL
-            </div>
-
             <button
-                id="viewerBack"
-                class="backButton"
+                id="openGeneration"
+                class="menuButton"
                 type="button"
             >
-                НАЗАД
+                ГЕНЕРАЦИЯ
             </button>
-
-        </header>
-
-
-        <div id="viewerContainer">
-
-            <canvas
-                id="viewerCanvas"
-            ></canvas>
-
-
-            <div
-                id="viewerLoader"
-                class="viewerLoader"
-            >
-
-                <div
-                    id="viewerLoaderText"
-                    class="viewerLoaderText"
-                >
-                    ЗАГРУЗКА
-                </div>
-
-            </div>
-
-
-            <div class="viewerHint">
-                ВРАЩЕНИЕ · МАСШТАБ
-            </div>
 
         </div>
 
-    </section>
+    </div>
+
+</section>
 
 
-    <!-- =====================================================
-         GENERATION
-    ===================================================== -->
+<!-- =============================================================
+     GALLERY
+============================================================= -->
 
-    <section
-        id="generationScreen"
-        class="screen"
-    >
+<section
+    id="galleryScreen"
+    class="screen page"
+>
 
-        <header class="header">
+    <div class="header">
 
-            <div class="headerTitle">
-                ГЕНЕРАЦИЯ
-            </div>
+        <button
+            id="galleryBack"
+            class="backButton"
+            type="button"
+        >
+            ←
+        </button>
 
-            <button
-                id="generationBack"
-                class="backButton"
-                type="button"
-            >
-                НАЗАД
-            </button>
+        <div class="pageTitle">
+            ГАЛЕРЕЯ
+        </div>
 
-        </header>
+    </div>
 
+    <div
+        id="galleryGrid"
+        class="galleryGrid"
+    ></div>
 
-        <main class="generationBody">
-
-            <div class="generationPanel">
-
-                <div class="generationTitle">
-                    НОМЕР
-                </div>
+</section>
 
 
-                <div class="generationDescription">
+<!-- =============================================================
+     VIEWER
+============================================================= -->
 
-                    Введите пятизначный номер.
-                    <br>
-                    После отправки номер и адрес
-                    подключённого кошелька будут
-                    переданы на сервер.
-
-                </div>
-
-
-                <input
-                    id="generationCode"
-
-                    type="text"
-
-                    inputmode="numeric"
-
-                    autocomplete="off"
-
-                    maxlength="5"
-
-                    placeholder="00000"
-                >
-
-
-                <button
-                    id="generationSubmit"
-
-                    type="button"
-
-                    disabled
-                >
-                    ОТПРАВИТЬ
-                </button>
-
-
-                <div
-                    id="generationStatus"
-                >
-                    —
-                </div>
-
-            </div>
-
-        </main>
-
-    </section>
-
-
-</div>
-
-
-<!-- =========================================================
-     LOADING
-========================================================= -->
-
-<div
-    id="loadingOverlay"
+<section
+    id="viewerScreen"
+    class="screen"
 >
 
     <div
-        id="loadingText"
-        class="loadingText"
-    >
-        ПРОВЕРКА
+        id="viewerCanvas"
+    ></div>
+
+    <div class="viewerHeader">
+
+        <button
+            id="viewerBack"
+            class="backButton"
+            type="button"
+        >
+            ←
+        </button>
+
+        <div
+            id="viewerNumber"
+            class="viewerNumber"
+        >
+            1
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =============================================================
+     GENERATION
+============================================================= -->
+
+<section
+    id="generationScreen"
+    class="screen"
+>
+
+    <div class="generation">
+
+        <div class="generationTitle">
+            ГЕНЕРАЦИЯ
+        </div>
+
+        <input
+            id="generationCode"
+            class="codeInput"
+            type="text"
+            inputmode="numeric"
+            autocomplete="off"
+            maxlength="5"
+            placeholder="00000"
+        >
+
+        <button
+            id="generationSubmit"
+            class="sendButton"
+            type="button"
+            disabled
+        >
+            ОТПРАВИТЬ
+        </button>
+
+        <div
+            id="generationStatus"
+            class="generationStatus"
+        ></div>
+
+    </div>
+
+</section>
+
+
+<!-- =============================================================
+     LOADING
+============================================================= -->
+
+<div id="loading">
+
+    <div class="loadingText">
+        ПРОВЕРКА NFT
     </div>
 
 </div>
 
 
-<!-- =========================================================
-     MAIN JAVASCRIPT
-========================================================= -->
+<!-- =============================================================
+     THREE.JS
+============================================================= -->
+
+<script type="importmap">
+
+{
+    "imports": {
+        "three":
+            "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+
+        "three/addons/":
+            "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
+    }
+}
+
+</script>
+
 
 <script type="module">
 
-
-/* ============================================================
-   THREE.JS
-============================================================ */
-
-import * as THREE from
-    "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
+import * as THREE from "three";
 
 import {
     GLTFLoader
-}
-from
-    "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/GLTFLoader.js";
+} from "three/addons/loaders/GLTFLoader.js";
 
 import {
     OrbitControls
-}
-from
-    "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/controls/OrbitControls.js";
+} from "three/addons/controls/OrbitControls.js";
 
 
-/* ============================================================
-   CONFIGURATION
-============================================================ */
+/* =============================================================
+   CONFIG
+============================================================= */
 
 const TON_MANIFEST =
     "https://roman22022000.github.io/Ton_site/tonconnect-manifest.json";
+
+
+const REQUIRED_COLLECTION =
+    "EQD9mm3hx-QvHyNG18gDaaJtSTTQTVVYVj6zhonXocj2eyI";
+
+
+const REQUIRED_COLLECTION_RAW =
+    "0:fd9a6de1c7e42f1d8346d7c80369a26d4934d04d5558563eb38689d7a1c8f6";
 
 
 const GENERATION_API =
     "https://api.araicameragame.party/api/generation";
 
 
-/*
-    Getgems collection:
-
-    EQD9mm3hx-QvHyNG18gDaaJtSTTQTVVYVj6zhonXocj2eyI
-*/
-
-const REQUIRED_COLLECTION =
-    "EQD9mm3hx-QvHyNG18gDaaJtSTTQTVVYVj6zhonXocj2eyI";
-
-
-/*
-    Raw address:
-
-    0:fd9a6de1c7e42f1d8346d7c80369a26d4934d04d5558563eb38689d7a1c8f6
-*/
-
-const REQUIRED_COLLECTION_RAW =
-    "0:fd9a6de1c7e42f1d8346d7c80369a26d4934d04d5558563eb38689d7a1c8f6";
-
-
 const MODEL_BASE =
     "https://raw.githubusercontent.com/Roman22022000/ArGameCam/main/models/";
 
 
-/* ============================================================
-   STATE
-============================================================ */
-
-let currentWallet = null;
-
-let accessGranted = false;
-
-let checkingWallet = false;
-
-
-/* ============================================================
+/* =============================================================
    DOM
-============================================================ */
+============================================================= */
 
 const authScreen =
-    document.getElementById(
-        "authScreen"
-    );
+    document.getElementById("authScreen");
 
 const homeScreen =
-    document.getElementById(
-        "homeScreen"
-    );
+    document.getElementById("homeScreen");
 
 const galleryScreen =
-    document.getElementById(
-        "galleryScreen"
-    );
+    document.getElementById("galleryScreen");
 
 const viewerScreen =
-    document.getElementById(
-        "viewerScreen"
-    );
+    document.getElementById("viewerScreen");
 
 const generationScreen =
-    document.getElementById(
-        "generationScreen"
-    );
+    document.getElementById("generationScreen");
 
+
+const connectWallet =
+    document.getElementById("connectWallet");
 
 const authStatus =
-    document.getElementById(
-        "authStatus"
-    );
+    document.getElementById("authStatus");
 
 const walletInfo =
-    document.getElementById(
-        "walletInfo"
-    );
-
-
-const loadingOverlay =
-    document.getElementById(
-        "loadingOverlay"
-    );
-
-const loadingText =
-    document.getElementById(
-        "loadingText"
-    );
-
-
-const generationCode =
-    document.getElementById(
-        "generationCode"
-    );
-
-const generationSubmit =
-    document.getElementById(
-        "generationSubmit"
-    );
-
-const generationStatus =
-    document.getElementById(
-        "generationStatus"
-    );
+    document.getElementById("walletInfo");
 
 
 const galleryGrid =
-    document.getElementById(
-        "galleryGrid"
-    );
+    document.getElementById("galleryGrid");
 
-
-const viewerTitle =
-    document.getElementById(
-        "viewerTitle"
-    );
 
 const viewerCanvas =
-    document.getElementById(
-        "viewerCanvas"
-    );
+    document.getElementById("viewerCanvas");
 
-const viewerContainer =
-    document.getElementById(
-        "viewerContainer"
-    );
-
-const viewerLoader =
-    document.getElementById(
-        "viewerLoader"
-    );
-
-const viewerLoaderText =
-    document.getElementById(
-        "viewerLoaderText"
-    );
+const viewerNumber =
+    document.getElementById("viewerNumber");
 
 
-/* ============================================================
+const generationCode =
+    document.getElementById("generationCode");
+
+const generationSubmit =
+    document.getElementById("generationSubmit");
+
+const generationStatus =
+    document.getElementById("generationStatus");
+
+
+const loading =
+    document.getElementById("loading");
+
+
+/* =============================================================
    SCREEN
-============================================================ */
+============================================================= */
 
 function showScreen(screen) {
 
     document
         .querySelectorAll(".screen")
-        .forEach(
-            element => {
+        .forEach(element => {
+            element.classList.remove("active");
+        });
 
-                element.classList.remove(
-                    "active"
-                );
+    screen.classList.add("active");
+}
 
-            }
-        );
 
-    screen.classList.add(
-        "active"
+/* =============================================================
+   TON CONNECT
+============================================================= */
+
+if (!window.TON_CONNECT_UI) {
+
+    authStatus.textContent =
+        "TON Connect не загрузился";
+
+    throw new Error(
+        "TON_CONNECT_UI not loaded"
     );
 }
 
 
-/* ============================================================
-   ACCESS
-============================================================ */
+const tonConnectUI =
+    new TON_CONNECT_UI.TonConnectUI({
 
-function requireAccess() {
+        manifestUrl:
+            TON_MANIFEST,
 
-    if (!accessGranted) {
+        buttonRootId:
+            null,
 
-        showScreen(
-            authScreen
-        );
+        restoreConnection:
+            true
 
-        authStatus.textContent =
-            "Сначала подключите кошелёк";
+    });
 
-        return false;
-    }
-
-    return true;
-}
-
-
-/* ============================================================
-   WALLET DISPLAY
-============================================================ */
-
-function shortenWallet(address) {
-
-    if (!address) {
-        return "—";
-    }
-
-    if (address.length <= 18) {
-        return address;
-    }
-
-    return (
-        address.slice(0, 9) +
-        "..." +
-        address.slice(-9)
-    );
-}
-
-
-/* ============================================================
-   TON ADDRESS NORMALIZATION
-============================================================ */
 
 /*
-    TON Connect:
+    Важно:
 
-        wallet.account.address
-
-    already returns:
-
-        <workchain>:<hex>
-
-    raw format.
-
-    We therefore only decode friendly addresses when
-    processing the collection returned by TonAPI.
+    uiOptions является setter.
+    Поэтому присваиваем объект целиком.
 */
 
+tonConnectUI.uiOptions = {
+
+    language: "ru",
+
+    uiPreferences: {
+        theme:
+            "DARK",
+
+        borderRadius:
+            "none"
+    }
+
+};
+
+
+/*
+    Наша кнопка открывает
+    официальное TON Connect окно.
+
+    Именно внутри этого окна
+    TON Connect показывает QR-код
+    на desktop.
+*/
+
+connectWallet.addEventListener(
+    "click",
+    async () => {
+
+        try {
+
+            await tonConnectUI.openModal();
+
+        } catch (error) {
+
+            console.error(
+                "TON Connect:",
+                error
+            );
+
+            authStatus.textContent =
+                "Ошибка открытия TON Connect";
+
+        }
+
+    }
+);
+
+
+/* =============================================================
+   TON ADDRESS
+============================================================= */
 
 function base64UrlToBytes(value) {
 
@@ -1244,6 +930,7 @@ function base64UrlToBytes(value) {
     ) {
 
         normalized += "=";
+
     }
 
 
@@ -1265,10 +952,12 @@ function base64UrlToBytes(value) {
 
         bytes[i] =
             binary.charCodeAt(i);
+
     }
 
 
     return bytes;
+
 }
 
 
@@ -1284,10 +973,8 @@ function normalizeTonAddress(address) {
 
 
     /*
-        RAW:
-
+        Уже raw:
         0:64hex
-        -1:64hex
     */
 
     if (
@@ -1304,12 +991,12 @@ function normalizeTonAddress(address) {
             ":" +
             parts[1].toLowerCase()
         );
+
     }
 
 
     /*
-        FRIENDLY:
-
+        Friendly:
         EQ...
         UQ...
     */
@@ -1327,27 +1014,20 @@ function normalizeTonAddress(address) {
         ) {
 
             return address.toLowerCase();
+
         }
 
-
-        /*
-            TON friendly address:
-
-            byte 0 = tag
-            byte 1 = workchain
-            bytes 2..33 = account hash
-            bytes 34..35 = CRC16
-        */
 
         let workchain =
             bytes[1];
 
 
         if (
-            workchain >= 128
+            workchain === 255
         ) {
 
-            workchain -= 256;
+            workchain = -1;
+
         }
 
 
@@ -1363,10 +1043,8 @@ function normalizeTonAddress(address) {
             hash +=
                 bytes[i]
                     .toString(16)
-                    .padStart(
-                        2,
-                        "0"
-                    );
+                    .padStart(2, "0");
+
         }
 
 
@@ -1379,13 +1057,11 @@ function normalizeTonAddress(address) {
     } catch {
 
         return address.toLowerCase();
+
     }
+
 }
 
-
-/* ============================================================
-   COLLECTION
-============================================================ */
 
 const normalizedRequiredCollection =
     normalizeTonAddress(
@@ -1393,69 +1069,33 @@ const normalizedRequiredCollection =
     );
 
 
-console.log(
-    "Required collection:",
-    REQUIRED_COLLECTION
-);
-
-
-console.log(
-    "Required collection raw:",
-    REQUIRED_COLLECTION_RAW
-);
-
-
-console.log(
-    "Normalized collection:",
-    normalizedRequiredCollection
-);
-
-
-/* ============================================================
+/* =============================================================
    NFT CHECK
-============================================================ */
+============================================================= */
 
 async function checkCollectionNFT(
     walletAddress
 ) {
 
-    /*
-        walletAddress from TON Connect
-        is already raw.
-    */
-
-    const normalizedWallet =
-        normalizeTonAddress(
-            walletAddress
-        );
-
-
-    console.log(
-        "Checking wallet:",
-        normalizedWallet
-    );
-
-
     const url =
         "https://tonapi.io/v2/accounts/" +
         encodeURIComponent(
-            normalizedWallet
+            walletAddress
         ) +
         "/nfts?limit=1000";
 
 
     const response =
-        await fetch(
-            url,
-            {
-                method: "GET",
+        await fetch(url, {
 
-                headers: {
-                    "Accept":
-                        "application/json"
-                }
+            method: "GET",
+
+            headers: {
+                "Accept":
+                    "application/json"
             }
-        );
+
+        });
 
 
     if (!response.ok) {
@@ -1464,6 +1104,7 @@ async function checkCollectionNFT(
             "TonAPI HTTP " +
             response.status
         );
+
     }
 
 
@@ -1478,16 +1119,6 @@ async function checkCollectionNFT(
             ? data.nft_items
             : [];
 
-
-    console.log(
-        "NFT count:",
-        nftItems.length
-    );
-
-
-    /*
-        Проверяем каждый NFT.
-    */
 
     for (
         const nft of nftItems
@@ -1504,145 +1135,124 @@ async function checkCollectionNFT(
         }
 
 
-        const normalizedNFTCollection =
+        const normalized =
             normalizeTonAddress(
                 collectionAddress
             );
 
 
-        console.log(
-            "NFT collection:",
-            normalizedNFTCollection
-        );
-
-
-        /*
-            Сравнение с обоими известными
-            представлениями адреса.
-        */
-
         if (
-            normalizedNFTCollection ===
-                normalizedRequiredCollection ||
-
-            normalizedNFTCollection ===
-                REQUIRED_COLLECTION_RAW.toLowerCase()
+            normalized ===
+                normalizedRequiredCollection
+            ||
+            normalized ===
+                REQUIRED_COLLECTION_RAW
         ) {
 
-            console.log(
-                "NFT FROM REQUIRED COLLECTION FOUND"
-            );
+            return true;
 
-
-            return {
-                found: true,
-                nft: nft
-            };
         }
+
     }
 
 
-    return {
-        found: false,
-        nft: null
-    };
+    return false;
+
 }
 
 
-/* ============================================================
-   PROCESS WALLET
-============================================================ */
+/* =============================================================
+   WALLET
+============================================================= */
+
+let currentWallet =
+    null;
+
+let accessGranted =
+    false;
+
+let checkingNFT =
+    false;
+
 
 async function processWallet(
     wallet
 ) {
 
-    /*
-        DISCONNECTED
-    */
-
     if (!wallet) {
 
-        currentWallet = null;
+        currentWallet =
+            null;
 
-        accessGranted = false;
+        accessGranted =
+            false;
 
         walletInfo.textContent =
-            "—";
+            "";
 
         authStatus.textContent =
-            "Подключите кошелёк";
+            "Подключите TON-кошелёк";
 
         showScreen(
             authScreen
         );
 
         return;
+
     }
 
 
-    /*
-        Prevent duplicate checks.
-    */
+    if (
+        checkingNFT
+    ) {
 
-    if (checkingWallet) {
         return;
+
     }
 
 
-    /*
-        RAW WALLET ADDRESS
-    */
+    if (
+        !wallet.account ||
+        !wallet.account.address
+    ) {
+
+        return;
+
+    }
+
 
     currentWallet =
         wallet.account.address;
 
 
-    walletInfo.textContent =
-        shortenWallet(
-            currentWallet
-        );
+    accessGranted =
+        false;
 
-
-    console.log(
-        "Connected wallet:",
-        currentWallet
-    );
-
-
-    checkingWallet = true;
-
-    accessGranted = false;
-
-
-    loadingOverlay.classList.add(
-        "active"
-    );
-
-    loadingText.textContent =
-        "ПРОВЕРКА NFT";
+    checkingNFT =
+        true;
 
 
     authStatus.textContent =
         "Проверка NFT...";
 
 
+    loading.classList.add(
+        "active"
+    );
+
+
     try {
 
-        const result =
+        const hasNFT =
             await checkCollectionNFT(
                 currentWallet
             );
 
 
-        if (!result.found) {
+        if (!hasNFT) {
 
-            accessGranted = false;
-
-
-            loadingOverlay.classList.remove(
-                "active"
-            );
+            accessGranted =
+                false;
 
 
             authStatus.textContent =
@@ -1655,19 +1265,16 @@ async function processWallet(
 
 
             return;
+
         }
 
 
-        /*
-            NFT FOUND
-        */
-
-        accessGranted = true;
+        accessGranted =
+            true;
 
 
-        loadingOverlay.classList.remove(
-            "active"
-        );
+        walletInfo.textContent =
+            currentWallet;
 
 
         authStatus.textContent =
@@ -1679,25 +1286,16 @@ async function processWallet(
         );
 
 
-        console.log(
-            "ACCESS GRANTED"
-        );
-
-
     } catch (error) {
 
         console.error(
-            "NFT check error:",
+            "NFT CHECK ERROR:",
             error
         );
 
 
-        accessGranted = false;
-
-
-        loadingOverlay.classList.remove(
-            "active"
-        );
+        accessGranted =
+            false;
 
 
         authStatus.textContent =
@@ -1708,41 +1306,31 @@ async function processWallet(
             authScreen
         );
 
+
     } finally {
 
-        checkingWallet = false;
+        checkingNFT =
+            false;
+
+
+        loading.classList.remove(
+            "active"
+        );
 
     }
+
 }
 
 
-/* ============================================================
-   TON CONNECT
-============================================================ */
-
-const tonConnectUI =
-    new TON_CONNECT_UI.TonConnectUI({
-
-        manifestUrl:
-            TON_MANIFEST,
-
-        buttonRootId:
-            "ton-connect",
-
-        uiPreferences: {
-            theme: "DARK"
-        }
-
-    });
-
-
 /*
-    TON Connect officially calls this callback
-    after connection, disconnection and session restore.
+    Срабатывает после:
+
+    - подключения
+    - отключения
+    - восстановления сессии
 */
 
 tonConnectUI.onStatusChange(
-
     async wallet => {
 
         await processWallet(
@@ -1750,7 +1338,6 @@ tonConnectUI.onStatusChange(
         );
 
     },
-
     error => {
 
         console.error(
@@ -1758,23 +1345,47 @@ tonConnectUI.onStatusChange(
             error
         );
 
-
         authStatus.textContent =
-            "Ошибка подключения кошелька";
+            "Ошибка TON Connect";
 
     }
-
 );
 
 
-/* ============================================================
-   HOME → GALLERY
-============================================================ */
+/* =============================================================
+   ACCESS
+============================================================= */
+
+function requireAccess() {
+
+    if (
+        !accessGranted ||
+        !currentWallet
+    ) {
+
+        showScreen(
+            authScreen
+        );
+
+        authStatus.textContent =
+            "Доступ закрыт";
+
+        return false;
+
+    }
+
+
+    return true;
+
+}
+
+
+/* =============================================================
+   MENU
+============================================================= */
 
 document
-    .getElementById(
-        "openGallery"
-    )
+    .getElementById("openGallery")
     .addEventListener(
         "click",
         () => {
@@ -1794,14 +1405,8 @@ document
     );
 
 
-/* ============================================================
-   HOME → GENERATION
-============================================================ */
-
 document
-    .getElementById(
-        "openGeneration"
-    )
+    .getElementById("openGeneration")
     .addEventListener(
         "click",
         () => {
@@ -1817,10 +1422,10 @@ document
                 "";
 
             generationStatus.textContent =
-                "Введите 5 цифр";
+                "";
 
-
-            updateGenerationButton();
+            generationSubmit.disabled =
+                true;
 
 
             showScreen(
@@ -1841,117 +1446,9 @@ document
     );
 
 
-/* ============================================================
-   GALLERY DATA
-============================================================ */
-
-const galleryItems = [
-
-    {
-        number: 1,
-        filename: "creature.glb"
-    },
-
-    {
-        number: 2,
-        filename: "creature.glb"
-    },
-
-    {
-        number: 3,
-        filename: "creature.glb"
-    }
-
-];
-
-
-/* ============================================================
-   BUILD GALLERY
-============================================================ */
-
-function buildGallery() {
-
-    galleryGrid.innerHTML =
-        "";
-
-
-    galleryItems.forEach(
-        (item, index) => {
-
-            const button =
-                document.createElement(
-                    "button"
-                );
-
-
-            button.type =
-                "button";
-
-
-            button.className =
-                "galleryItem";
-
-
-            button.innerHTML = `
-
-                <span class="galleryNumber">
-                    ${String(item.number).padStart(2, "0")}
-                </span>
-
-                <span class="galleryPlaceholder">
-                    ${String(item.number)}
-                </span>
-
-            `;
-
-
-            button.addEventListener(
-                "click",
-                () => {
-
-                    openViewer(
-                        index
-                    );
-
-                }
-            );
-
-
-            galleryGrid.appendChild(
-                button
-            );
-
-        }
-    );
-}
-
-
-buildGallery();
-
-
-/* ============================================================
-   GALLERY BACK
-============================================================ */
-
-document
-    .getElementById(
-        "galleryBack"
-    )
-    .addEventListener(
-        "click",
-        () => {
-
-            showScreen(
-                homeScreen
-            );
-
-        }
-    );
-
-
-/* ============================================================
+/* =============================================================
    GENERATION INPUT
-============================================================ */
+============================================================= */
 
 generationCode.addEventListener(
     "input",
@@ -1959,55 +1456,20 @@ generationCode.addEventListener(
 
         generationCode.value =
             generationCode.value
-                .replace(
-                    /\D/g,
-                    ""
-                )
-                .slice(
-                    0,
-                    5
-                );
+                .replace(/\D/g, "")
+                .slice(0, 5);
 
 
-        if (
-            generationCode.value.length <
-            5
-        ) {
-
-            generationStatus.textContent =
-                "";
-
-        }
-
-
-        updateGenerationButton();
+        generationSubmit.disabled =
+            generationCode.value.length !== 5;
 
     }
 );
 
 
-/* ============================================================
-   GENERATION BUTTON
-============================================================ */
-
-function updateGenerationButton() {
-
-    const validCode =
-        /^\d{5}$/.test(
-            generationCode.value
-        );
-
-
-    generationSubmit.disabled =
-        !validCode ||
-        !currentWallet ||
-        !accessGranted;
-}
-
-
-/* ============================================================
-   SEND GENERATION DATA
-============================================================ */
+/* =============================================================
+   GENERATION SEND
+============================================================= */
 
 generationSubmit.addEventListener(
     "click",
@@ -2025,15 +1487,14 @@ generationSubmit.addEventListener(
 
 
         if (
-            !/^\d{5}$/.test(
-                code
-            )
+            !/^\d{5}$/.test(code)
         ) {
 
             generationStatus.textContent =
                 "Введите 5 цифр";
 
             return;
+
         }
 
 
@@ -2043,28 +1504,8 @@ generationSubmit.addEventListener(
                 "Кошелёк не подключён";
 
             return;
+
         }
-
-
-        /*
-            EXACT DATA SENT TO PC
-        */
-
-        const payload = {
-
-            code:
-                code,
-
-            wallet:
-                currentWallet
-
-        };
-
-
-        console.log(
-            "GENERATION REQUEST:",
-            payload
-        );
 
 
         generationSubmit.disabled =
@@ -2091,41 +1532,22 @@ generationSubmit.addEventListener(
                         },
 
                         body:
-                            JSON.stringify(
-                                payload
-                            )
+                            JSON.stringify({
+
+                                code:
+                                    code,
+
+                                wallet:
+                                    currentWallet
+
+                            })
 
                     }
                 );
 
 
-            const text =
-                await response.text();
-
-
-            console.log(
-                "GENERATION RESPONSE:",
-                text
-            );
-
-
-            let data;
-
-
-            try {
-
-                data =
-                    JSON.parse(
-                        text
-                    );
-
-            } catch {
-
-                throw new Error(
-                    "Сервер вернул некорректный ответ"
-                );
-
-            }
+            const data =
+                await response.json();
 
 
             if (
@@ -2152,7 +1574,7 @@ generationSubmit.addEventListener(
         } catch (error) {
 
             console.error(
-                "Generation error:",
+                "GENERATION ERROR:",
                 error
             );
 
@@ -2160,9 +1582,11 @@ generationSubmit.addEventListener(
             generationStatus.textContent =
                 "Ошибка отправки";
 
+
         } finally {
 
-            updateGenerationButton();
+            generationSubmit.disabled =
+                true;
 
         }
 
@@ -2170,26 +1594,15 @@ generationSubmit.addEventListener(
 );
 
 
-/* ============================================================
-   GENERATION BACK
-============================================================ */
+/* =============================================================
+   BACK
+============================================================= */
 
 document
-    .getElementById(
-        "generationBack"
-    )
+    .getElementById("galleryBack")
     .addEventListener(
         "click",
         () => {
-
-            generationCode.value =
-                "";
-
-            generationStatus.textContent =
-                "";
-
-            updateGenerationButton();
-
 
             showScreen(
                 homeScreen
@@ -2199,30 +1612,181 @@ document
     );
 
 
-/* ============================================================
-   THREE.JS
-============================================================ */
+document
+    .getElementById("viewerBack")
+    .addEventListener(
+        "click",
+        () => {
 
-let scene = null;
+            showScreen(
+                galleryScreen
+            );
 
-let camera = null;
+        }
+    );
 
-let renderer = null;
 
-let controls = null;
+/* =============================================================
+   GENERATION BACK
+============================================================= */
 
-let model = null;
+const generationBack =
+    document.createElement(
+        "button"
+    );
 
-let animationFrame = null;
+generationBack.type =
+    "button";
+
+generationBack.style.position =
+    "fixed";
+
+generationBack.style.top =
+    "14px";
+
+generationBack.style.left =
+    "14px";
+
+generationBack.style.width =
+    "40px";
+
+generationBack.style.height =
+    "40px";
+
+generationBack.style.background =
+    "#080808";
+
+generationBack.style.color =
+    "#fff";
+
+generationBack.style.border =
+    "1px solid #242424";
+
+generationBack.style.fontSize =
+    "22px";
+
+generationBack.textContent =
+    "←";
+
+generationScreen.appendChild(
+    generationBack
+);
+
+generationBack.addEventListener(
+    "click",
+    () => {
+
+        showScreen(
+            homeScreen
+        );
+
+    }
+);
+
+
+/* =============================================================
+   GALLERY DATA
+============================================================= */
+
+const galleryItems = [
+
+    {
+        number: 1,
+        filename: "creature.glb"
+    },
+
+    {
+        number: 2,
+        filename: "creature.glb"
+    },
+
+    {
+        number: 3,
+        filename: "creature.glb"
+    }
+
+];
+
+
+/* =============================================================
+   GALLERY
+============================================================= */
+
+function buildGallery() {
+
+    galleryGrid.innerHTML =
+        "";
+
+
+    galleryItems.forEach(
+        (item, index) => {
+
+            const button =
+                document.createElement(
+                    "button"
+                );
+
+
+            button.className =
+                "galleryItem";
+
+
+            button.type =
+                "button";
+
+
+            button.textContent =
+                item.number;
+
+
+            button.addEventListener(
+                "click",
+                () => {
+
+                    openViewer(
+                        index
+                    );
+
+                }
+            );
+
+
+            galleryGrid.appendChild(
+                button
+            );
+
+        }
+    );
+
+}
+
+
+buildGallery();
+
+
+/* =============================================================
+   THREE.JS VIEWER
+============================================================= */
+
+let scene =
+    null;
+
+let camera =
+    null;
+
+let renderer =
+    null;
+
+let controls =
+    null;
+
+let model =
+    null;
 
 
 const loader =
     new GLTFLoader();
 
-
-/* ============================================================
-   VIEWER INIT
-============================================================ */
 
 function initViewer() {
 
@@ -2243,31 +1807,23 @@ function initViewer() {
 
     camera =
         new THREE.PerspectiveCamera(
-
             45,
-
-            viewerContainer.clientWidth /
-                viewerContainer.clientHeight,
-
+            window.innerWidth /
+                window.innerHeight,
             0.01,
-
             1000
-
         );
 
 
     camera.position.set(
         0,
-        0.35,
+        0.3,
         3
     );
 
 
     renderer =
         new THREE.WebGLRenderer({
-
-            canvas:
-                viewerCanvas,
 
             antialias:
                 true,
@@ -2279,64 +1835,43 @@ function initViewer() {
 
 
     renderer.setPixelRatio(
-
         Math.min(
             window.devicePixelRatio,
             2
         )
-
     );
 
 
     renderer.setSize(
-
-        viewerContainer.clientWidth,
-
-        viewerContainer.clientHeight
-
+        window.innerWidth,
+        window.innerHeight
     );
 
 
-    renderer.outputColorSpace =
-        THREE.SRGBColorSpace;
+    viewerCanvas.appendChild(
+        renderer.domElement
+    );
 
 
     controls =
         new OrbitControls(
-
             camera,
-
             renderer.domElement
-
         );
 
 
     controls.enableDamping =
         true;
 
-
-    controls.dampingFactor =
-        0.05;
-
+    controls.enablePan =
+        true;
 
     controls.minDistance =
-        0.3;
-
+        0.5;
 
     controls.maxDistance =
         20;
 
-
-    controls.target.set(
-        0,
-        0,
-        0
-    );
-
-
-    /*
-        LIGHT
-    */
 
     const ambient =
         new THREE.AmbientLight(
@@ -2350,51 +1885,95 @@ function initViewer() {
     );
 
 
-    const light1 =
+    const light =
         new THREE.DirectionalLight(
             0xffffff,
             3
         );
 
 
-    light1.position.set(
+    light.position.set(
         4,
-        6,
-        5
+        5,
+        4
     );
 
 
     scene.add(
-        light1
+        light
     );
 
 
-    const light2 =
-        new THREE.DirectionalLight(
-            0xffffff,
-            1.5
-        );
-
-
-    light2.position.set(
-        -4,
-        2,
-        -4
-    );
-
-
-    scene.add(
-        light2
+    window.addEventListener(
+        "resize",
+        resizeViewer
     );
 
 
     animateViewer();
+
 }
 
 
-/* ============================================================
-   OPEN VIEWER
-============================================================ */
+function resizeViewer() {
+
+    if (
+        !camera ||
+        !renderer
+    ) {
+
+        return;
+
+    }
+
+
+    camera.aspect =
+        window.innerWidth /
+        window.innerHeight;
+
+
+    camera.updateProjectionMatrix();
+
+
+    renderer.setSize(
+        window.innerWidth,
+        window.innerHeight
+    );
+
+}
+
+
+function animateViewer() {
+
+    requestAnimationFrame(
+        animateViewer
+    );
+
+
+    if (controls) {
+        controls.update();
+    }
+
+
+    if (
+        renderer &&
+        scene &&
+        camera
+    ) {
+
+        renderer.render(
+            scene,
+            camera
+        );
+
+    }
+
+}
+
+
+/* =============================================================
+   OPEN MODEL
+============================================================= */
 
 function openViewer(index) {
 
@@ -2409,14 +1988,13 @@ function openViewer(index) {
         galleryItems[index];
 
 
-    viewerTitle.textContent =
-        "MODEL " +
-        String(
-            item.number
-        ).padStart(
-            2,
-            "0"
-        );
+    if (!item) {
+        return;
+    }
+
+
+    viewerNumber.textContent =
+        item.number;
 
 
     showScreen(
@@ -2426,31 +2004,6 @@ function openViewer(index) {
 
     initViewer();
 
-
-    loadModel(
-        item.filename
-    );
-}
-
-
-/* ============================================================
-   LOAD MODEL
-============================================================ */
-
-function loadModel(filename) {
-
-    viewerLoader.classList.add(
-        "active"
-    );
-
-
-    viewerLoaderText.textContent =
-        "ЗАГРУЗКА МОДЕЛИ";
-
-
-    /*
-        REMOVE OLD MODEL
-    */
 
     if (model) {
 
@@ -2463,17 +2016,17 @@ function loadModel(filename) {
             object => {
 
                 if (
-                    object.isMesh
+                    object.geometry
                 ) {
 
-                    if (
-                        object.geometry
-                    ) {
+                    object.geometry.dispose();
 
-                        object.geometry.dispose();
+                }
 
-                    }
 
+                if (
+                    object.material
+                ) {
 
                     if (
                         Array.isArray(
@@ -2490,9 +2043,7 @@ function loadModel(filename) {
                                 }
                             );
 
-                    } else if (
-                        object.material
-                    ) {
+                    } else {
 
                         object.material.dispose();
 
@@ -2506,12 +2057,15 @@ function loadModel(filename) {
 
         model =
             null;
+
     }
 
 
     const url =
         MODEL_BASE +
-        filename;
+        encodeURIComponent(
+            item.filename
+        );
 
 
     loader.load(
@@ -2523,10 +2077,6 @@ function loadModel(filename) {
             model =
                 gltf.scene;
 
-
-            /*
-                FIND BOUNDS
-            */
 
             const box =
                 new THREE.Box3()
@@ -2547,18 +2097,10 @@ function loadModel(filename) {
                 );
 
 
-            /*
-                CENTER
-            */
-
             model.position.sub(
                 center
             );
 
-
-            /*
-                SCALE
-            */
 
             const maxSize =
                 Math.max(
@@ -2579,39 +2121,8 @@ function loadModel(filename) {
             }
 
 
-            /*
-                MATERIALS
-            */
-
-            model.traverse(
-                object => {
-
-                    if (
-                        object.isMesh
-                    ) {
-
-                        object.frustumCulled =
-                            false;
-
-                    }
-
-                }
-            );
-
-
             scene.add(
                 model
-            );
-
-
-            /*
-                CAMERA
-            */
-
-            camera.position.set(
-                0,
-                0.35,
-                3
             );
 
 
@@ -2624,225 +2135,53 @@ function loadModel(filename) {
 
             controls.update();
 
-
-            viewerLoader.classList.remove(
-                "active"
-            );
-
         },
 
-        progress => {
-
-            if (
-                progress.total
-            ) {
-
-                const percent =
-                    Math.round(
-                        (
-                            progress.loaded /
-                            progress.total
-                        ) *
-                        100
-                    );
-
-
-                viewerLoaderText.textContent =
-                    "ЗАГРУЗКА " +
-                    percent +
-                    "%";
-
-            }
-
-        },
+        undefined,
 
         error => {
 
             console.error(
-                "Model loading error:",
+                "MODEL ERROR:",
                 error
             );
 
-
-            viewerLoaderText.textContent =
-                "ОШИБКА ЗАГРУЗКИ";
-
-
         }
 
     );
+
 }
 
 
-/* ============================================================
-   VIEWER BACK
-============================================================ */
+/* =============================================================
+   RESTORE
+============================================================= */
 
-document
-    .getElementById(
-        "viewerBack"
+tonConnectUI.connectionRestored
+    .then(
+        restored => {
+
+            console.log(
+                "TON connection restored:",
+                restored
+            );
+
+        }
     )
-    .addEventListener(
-        "click",
-        () => {
+    .catch(
+        error => {
 
-            showScreen(
-                galleryScreen
+            console.error(
+                "TON RESTORE ERROR:",
+                error
             );
 
         }
     );
-
-
-/* ============================================================
-   ANIMATION
-============================================================ */
-
-function animateViewer() {
-
-    animationFrame =
-        requestAnimationFrame(
-            animateViewer
-        );
-
-
-    if (controls) {
-
-        controls.update();
-
-    }
-
-
-    if (
-        renderer &&
-        scene &&
-        camera
-    ) {
-
-        renderer.render(
-            scene,
-            camera
-        );
-
-    }
-
-}
-
-
-/* ============================================================
-   RESIZE
-============================================================ */
-
-window.addEventListener(
-    "resize",
-    () => {
-
-        if (
-            !camera ||
-            !renderer
-        ) {
-
-            return;
-        }
-
-
-        const width =
-            viewerContainer.clientWidth;
-
-
-        const height =
-            viewerContainer.clientHeight;
-
-
-        if (
-            width <= 0 ||
-            height <= 0
-        ) {
-
-            return;
-        }
-
-
-        camera.aspect =
-            width / height;
-
-
-        camera.updateProjectionMatrix();
-
-
-        renderer.setSize(
-            width,
-            height
-        );
-
-    }
-);
-
-
-/* ============================================================
-   TELEGRAM MINI APP
-============================================================ */
-
-const tg =
-    window.Telegram?.WebApp ||
-    null;
-
-
-if (tg) {
-
-    tg.ready();
-
-    tg.expand();
-
-
-    if (
-        tg.setHeaderColor
-    ) {
-
-        tg.setHeaderColor(
-            "#000000"
-        );
-
-    }
-
-
-    if (
-        tg.setBackgroundColor
-    ) {
-
-        tg.setBackgroundColor(
-            "#000000"
-        );
-
-    }
-
-}
-
-
-/* ============================================================
-   INITIAL STATE
-============================================================ */
-
-updateGenerationButton();
-
-
-console.log(
-    "AR Gallery initialized"
-);
-
-console.log(
-    "Generation API:",
-    GENERATION_API
-);
-
-console.log(
-    "Required collection:",
-    REQUIRED_COLLECTION
-);
 
 
 </script>
 
-</body>
 
+</body>
 </html>
