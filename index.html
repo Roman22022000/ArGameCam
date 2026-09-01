@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
+
     <meta charset="UTF-8">
 
     <meta
@@ -24,7 +26,7 @@
             height: 100%;
             background: #000;
             color: #fff;
-            font-family: Arial, sans-serif;
+            font-family: Arial, Helvetica, sans-serif;
         }
 
         body {
@@ -33,7 +35,7 @@
 
         button,
         input {
-            font-family: Arial, sans-serif;
+            font-family: inherit;
         }
 
         button {
@@ -63,35 +65,48 @@
 
         .loginBox {
             width: 100%;
-            max-width: 400px;
+            max-width: 420px;
+
             border: 1px solid #333;
-            padding: 30px 20px;
+
+            padding: 30px 22px;
+
             text-align: center;
         }
 
         .title {
-            font-size: 20px;
+            font-size: 21px;
             letter-spacing: 3px;
+
             margin-bottom: 15px;
         }
 
         .description {
             color: #777;
+
             font-size: 12px;
+
             line-height: 1.6;
+
             margin-bottom: 25px;
         }
 
         #tonConnect {
             display: flex;
             justify-content: center;
+            min-height: 44px;
         }
 
         #loginStatus {
-            margin-top: 20px;
             min-height: 20px;
+
+            margin-top: 20px;
+
             color: #777;
+
             font-size: 12px;
+
+            line-height: 1.5;
         }
 
 
@@ -106,6 +121,7 @@
         .header {
             height: 65px;
             min-height: 65px;
+
             border-bottom: 1px solid #222;
 
             display: flex;
@@ -121,12 +137,16 @@
         }
 
         #walletDisplay {
-            max-width: 180px;
+            max-width: 220px;
+
             overflow: hidden;
+
             text-overflow: ellipsis;
+
             white-space: nowrap;
 
             color: #777;
+
             font-size: 10px;
         }
 
@@ -134,7 +154,9 @@
             flex: 1;
 
             display: flex;
+
             align-items: center;
+
             justify-content: center;
 
             padding: 20px;
@@ -142,22 +164,29 @@
 
         .menu {
             width: 100%;
+
             max-width: 400px;
 
             display: flex;
+
             flex-direction: column;
+
             gap: 10px;
         }
 
         .mainButton {
             width: 100%;
+
             height: 58px;
 
             background: #080808;
+
             border: 1px solid #333;
+
             color: #fff;
 
             font-size: 12px;
+
             letter-spacing: 2px;
         }
 
@@ -178,7 +207,9 @@
             flex: 1;
 
             display: flex;
+
             align-items: flex-start;
+
             justify-content: center;
 
             overflow-y: auto;
@@ -188,7 +219,8 @@
 
         .generationBox {
             width: 100%;
-            max-width: 400px;
+
+            max-width: 420px;
 
             border: 1px solid #222;
 
@@ -197,6 +229,7 @@
 
         .generationTitle {
             font-size: 14px;
+
             letter-spacing: 2px;
 
             margin-bottom: 12px;
@@ -204,7 +237,9 @@
 
         .generationDescription {
             color: #777;
+
             font-size: 12px;
+
             line-height: 1.6;
 
             margin-bottom: 25px;
@@ -212,6 +247,7 @@
 
         #generationCode {
             width: 100%;
+
             height: 55px;
 
             background: #050505;
@@ -225,6 +261,7 @@
             text-align: center;
 
             font-size: 22px;
+
             letter-spacing: 7px;
         }
 
@@ -234,26 +271,30 @@
 
         #generationSubmit {
             width: 100%;
+
             height: 55px;
 
             margin-top: 12px;
 
             background: #fff;
+
             color: #000;
 
             border: 1px solid #fff;
 
             font-size: 12px;
+
             letter-spacing: 2px;
         }
 
         #generationSubmit:disabled {
             opacity: 0.35;
+
             cursor: not-allowed;
         }
 
         #generationStatus {
-            min-height: 22px;
+            min-height: 40px;
 
             margin-top: 18px;
 
@@ -262,6 +303,8 @@
             color: #777;
 
             font-size: 11px;
+
+            line-height: 1.5;
         }
 
 
@@ -297,7 +340,9 @@
             border: 1px solid #222;
 
             display: flex;
+
             align-items: center;
+
             justify-content: center;
 
             color: #555;
@@ -307,7 +352,7 @@
 
 
         /* =====================================================
-           BUTTON BACK
+           BACK
         ===================================================== */
 
         .backButton {
@@ -352,6 +397,7 @@
         }
 
     </style>
+
 </head>
 
 
@@ -387,7 +433,9 @@
 
             </div>
 
+
             <div id="tonConnect"></div>
+
 
             <div id="loginStatus">
                 Кошелёк не подключён
@@ -520,11 +568,11 @@
 
                     Введите номер из пяти цифр.
 
-                    <br>
+                    <br><br>
 
-                    Номер будет отправлен
-                    вместе с адресом
-                    подключённого TON-кошелька.
+                    Номер будет отправлен вместе
+                    с адресом подключённого
+                    TON-кошелька.
 
                 </div>
 
@@ -578,7 +626,6 @@
 <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
 
 
-
 <script>
 
 
@@ -595,18 +642,28 @@ const API_URL =
 
 
 /*
-    Твоя коллекция Getgems
+    КОЛЛЕКЦИЯ GETGEMS
+
+    EQD9mm3hx-QvHyNG18gDaaJtSTTQTVVYVj6zhonXocj2eyI
 */
 
 const REQUIRED_COLLECTION =
     "EQD9mm3hx-QvHyNG18gDaaJtSTTQTVVYVj6zhonXocj2eyI";
 
 
+/*
+    Канонический raw-адрес этой коллекции.
+*/
+
+const REQUIRED_COLLECTION_RAW =
+    "0:fd9a6de1c7e42f1d8346d7c80369a26d4934d04d5558563eb38689d7a1c8f6";
+
+
 /* ============================================================
    STATE
 ============================================================ */
 
-let currentWallet = "";
+let currentWallet = null;
 
 let accessGranted = false;
 
@@ -701,17 +758,13 @@ function showScreen(screen) {
 
 
 /* ============================================================
-   SHORT WALLET
+   WALLET DISPLAY
 ============================================================ */
 
 function shortWallet(address) {
 
     if (!address) {
         return "—";
-    }
-
-    if (address.length < 18) {
-        return address;
     }
 
     return (
@@ -725,294 +778,24 @@ function shortWallet(address) {
 
 
 /* ============================================================
-   TON CONNECT
-============================================================ */
-
-const tonConnectUI =
-    new TON_CONNECT_UI.TonConnectUI({
-
-        manifestUrl:
-            TON_MANIFEST,
-
-        buttonRootId:
-            "tonConnect"
-
-    });
-
-
-/* ============================================================
-   WALLET STATUS
-============================================================ */
-
-tonConnectUI.onStatusChange(
-    async wallet => {
-
-        console.log(
-            "TON CONNECT:",
-            wallet
-        );
-
-
-        if (!wallet) {
-
-            currentWallet = "";
-
-            accessGranted = false;
-
-            walletDisplay.textContent =
-                "—";
-
-            loginStatus.textContent =
-                "Кошелёк не подключён";
-
-            updateSendButton();
-
-            showScreen(
-                loginScreen
-            );
-
-            return;
-        }
-
-
-        /*
-            Получаем адрес кошелька
-        */
-
-        currentWallet =
-            wallet.account.address;
-
-
-        console.log(
-            "WALLET:",
-            currentWallet
-        );
-
-
-        walletDisplay.textContent =
-            shortWallet(
-                currentWallet
-            );
-
-
-        loginStatus.textContent =
-            "Проверка NFT...";
-
-
-        /*
-            Проверяем NFT
-        */
-
-        const hasNFT =
-            await checkNFT(
-                currentWallet
-            );
-
-
-        if (!hasNFT) {
-
-            accessGranted = false;
-
-            loginStatus.textContent =
-                "NFT коллекции не найден";
-
-            updateSendButton();
-
-            alert(
-                "У этого кошелька нет NFT из необходимой коллекции."
-            );
-
-            try {
-
-                await tonConnectUI.disconnect();
-
-            } catch (error) {
-
-                console.error(
-                    error
-                );
-            }
-
-            return;
-        }
-
-
-        /*
-            NFT найден
-        */
-
-        accessGranted = true;
-
-        loginStatus.textContent =
-            "Доступ разрешён";
-
-        updateSendButton();
-
-        showScreen(
-            homeScreen
-        );
-
-    }
-);
-
-
-/* ============================================================
-   NFT CHECK
-============================================================ */
-
-async function checkNFT(walletAddress) {
-
-    try {
-
-        const url =
-            "https://tonapi.io/v2/accounts/" +
-            encodeURIComponent(
-                walletAddress
-            ) +
-            "/nfts?limit=1000";
-
-
-        const response =
-            await fetch(
-                url
-            );
-
-
-        if (!response.ok) {
-
-            console.error(
-                "TonAPI:",
-                response.status
-            );
-
-            return false;
-        }
-
-
-        const data =
-            await response.json();
-
-
-        const nfts =
-            Array.isArray(
-                data.nft_items
-            )
-                ? data.nft_items
-                : [];
-
-
-        for (
-            const nft of nfts
-        ) {
-
-            let collectionAddress = "";
-
-
-            if (
-                nft.collection &&
-                nft.collection.address
-            ) {
-
-                collectionAddress =
-                    nft.collection.address;
-
-            }
-
-
-            if (
-                !collectionAddress &&
-                nft.collection_address
-            ) {
-
-                collectionAddress =
-                    nft.collection_address;
-
-            }
-
-
-            if (!collectionAddress) {
-                continue;
-            }
-
-
-            /*
-                Сравниваем адреса
-                без учёта EQ/UQ/raw формата.
-            */
-
-            const a =
-                normalizeAddress(
-                    collectionAddress
-                );
-
-
-            const b =
-                normalizeAddress(
-                    REQUIRED_COLLECTION
-                );
-
-
-            if (a === b) {
-
-                console.log(
-                    "NFT FOUND"
-                );
-
-                return true;
-            }
-
-        }
-
-
-        return false;
-
-    } catch (error) {
-
-        console.error(
-            "NFT CHECK ERROR:",
-            error
-        );
-
-        return false;
-    }
-}
-
-
-/* ============================================================
    TON ADDRESS NORMALIZATION
 ============================================================ */
 
-function normalizeAddress(address) {
+/*
+    ВАЖНО:
 
-    if (!address) {
-        return "";
-    }
+    wallet.account.address от TON Connect уже является
+    raw-адресом вида:
 
+        0:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    address =
-        String(
-            address
-        ).trim();
+    Поэтому для кошелька НИКАКОЙ decode не нужен.
 
+    Для friendly-адресов коллекции используем полноценный
+    Base64URL decode + CRC и правильный workchain byte.
+*/
 
-    /*
-        Raw TON address
-    */
-
-    if (
-        /^-?\d+:[0-9a-fA-F]{64}$/
-            .test(address)
-    ) {
-
-        return address
-            .toLowerCase();
-
-    }
-
-
-    /*
-        Friendly TON address
-    */
+function friendlyToRaw(address) {
 
     try {
 
@@ -1029,7 +812,7 @@ function normalizeAddress(address) {
 
 
         while (
-            value.length % 4
+            value.length % 4 !== 0
         ) {
 
             value += "=";
@@ -1038,9 +821,7 @@ function normalizeAddress(address) {
 
 
         const binary =
-            atob(
-                value
-            );
+            atob(value);
 
 
         const bytes =
@@ -1065,33 +846,27 @@ function normalizeAddress(address) {
             bytes.length !== 36
         ) {
 
-            return address
-                .toLowerCase();
+            return null;
 
         }
 
 
-        const tag =
-            bytes[0];
-
-
-        let workchain;
-
-
         /*
-            Bounceable / non-bounceable
+            byte 0 = tag
+            byte 1 = signed workchain
+            bytes 2..33 = 32-byte hash
+            bytes 34..35 = CRC16
         */
 
+        let workchain =
+            bytes[1];
+
+
         if (
-            tag === 0x11 ||
-            tag === 0x51
+            workchain >= 128
         ) {
 
-            workchain = 0;
-
-        } else {
-
-            workchain = 0;
+            workchain -= 256;
 
         }
 
@@ -1122,18 +897,539 @@ function normalizeAddress(address) {
             hash
         ).toLowerCase();
 
-
     } catch (error) {
+
+        console.error(
+            "Friendly address decode error:",
+            error
+        );
+
+        return null;
+    }
+}
+
+
+function normalizeAddress(address) {
+
+    if (!address) {
+        return "";
+    }
+
+
+    address =
+        String(
+            address
+        ).trim();
+
+
+    /*
+        Raw TON address.
+    */
+
+    if (
+        /^-?\d+:[0-9a-fA-F]{64}$/
+            .test(address)
+    ) {
 
         return address
             .toLowerCase();
 
     }
+
+
+    /*
+        Friendly TON address.
+    */
+
+    const raw =
+        friendlyToRaw(
+            address
+        );
+
+
+    if (raw) {
+
+        return raw;
+
+    }
+
+
+    return address
+        .toLowerCase();
 }
 
 
 /* ============================================================
-   HOME BUTTONS
+   TON CONNECT
+============================================================ */
+
+const tonConnectUI =
+    new TON_CONNECT_UI.TonConnectUI({
+
+        manifestUrl:
+            TON_MANIFEST,
+
+        buttonRootId:
+            "tonConnect"
+
+    });
+
+
+/*
+    Важно:
+
+    Не делаем принудительный disconnect,
+    если NFT не найден.
+
+    Сначала показываем причину.
+*/
+
+tonConnectUI.onStatusChange(
+
+    async wallet => {
+
+        console.log(
+            "TON CONNECT WALLET:",
+            wallet
+        );
+
+
+        if (!wallet) {
+
+            currentWallet = null;
+
+            accessGranted = false;
+
+            walletDisplay.textContent =
+                "—";
+
+            loginStatus.textContent =
+                "Кошелёк не подключён";
+
+            updateSendButton();
+
+            showScreen(
+                loginScreen
+            );
+
+            return;
+        }
+
+
+        /*
+            TON Connect отдаёт raw address.
+
+            Пример:
+
+            0:xxxxxxxxxxxxxxxx...
+        */
+
+        currentWallet =
+            wallet.account.address;
+
+
+        console.log(
+            "RAW WALLET:",
+            currentWallet
+        );
+
+
+        walletDisplay.textContent =
+            shortWallet(
+                currentWallet
+            );
+
+
+        loginStatus.textContent =
+            "Кошелёк подключён. Проверка NFT...";
+
+
+        /*
+            Проверяем NFT.
+        */
+
+        const result =
+            await checkCollectionNFT(
+                currentWallet
+            );
+
+
+        console.log(
+            "NFT RESULT:",
+            result
+        );
+
+
+        if (!result.success) {
+
+            accessGranted = false;
+
+            loginStatus.innerHTML =
+                result.message;
+
+            updateSendButton();
+
+            /*
+                НЕ отключаем кошелёк.
+                Это позволит увидеть адрес и причину ошибки.
+            */
+
+            return;
+        }
+
+
+        /*
+            NFT найден.
+        */
+
+        accessGranted = true;
+
+
+        loginStatus.textContent =
+            "NFT найден. Доступ разрешён";
+
+
+        updateSendButton();
+
+
+        showScreen(
+            homeScreen
+        );
+
+    },
+
+    error => {
+
+        console.error(
+            "TON CONNECT ERROR:",
+            error
+        );
+
+
+        loginStatus.textContent =
+            "Ошибка TON Connect: " +
+            (
+                error?.message ||
+                "неизвестная ошибка"
+            );
+    }
+
+);
+
+
+/* ============================================================
+   NFT CHECK
+============================================================ */
+
+async function checkCollectionNFT(
+    walletAddress
+) {
+
+    try {
+
+        /*
+            Получаем raw-адрес кошелька.
+        */
+
+        const walletRaw =
+            normalizeAddress(
+                walletAddress
+            );
+
+
+        /*
+            Получаем raw-адрес коллекции.
+        */
+
+        const collectionRaw =
+            normalizeAddress(
+                REQUIRED_COLLECTION
+            );
+
+
+        console.log(
+            "WALLET RAW:",
+            walletRaw
+        );
+
+
+        console.log(
+            "COLLECTION RAW:",
+            collectionRaw
+        );
+
+
+        /*
+            Основной запрос TonAPI.
+
+            Получаем NFT владельца.
+        */
+
+        const url =
+            "https://tonapi.io/v2/accounts/" +
+            encodeURIComponent(
+                walletRaw
+            ) +
+            "/nfts?limit=1000";
+
+
+        console.log(
+            "NFT API:",
+            url
+        );
+
+
+        const response =
+            await fetch(
+                url,
+                {
+                    method: "GET",
+
+                    headers: {
+                        "Accept":
+                            "application/json"
+                    }
+                }
+            );
+
+
+        console.log(
+            "TONAPI STATUS:",
+            response.status
+        );
+
+
+        const responseText =
+            await response.text();
+
+
+        if (!response.ok) {
+
+            console.error(
+                "TONAPI ERROR:",
+                responseText
+            );
+
+
+            return {
+
+                success: false,
+
+                message:
+                    "Ошибка TonAPI: HTTP " +
+                    response.status
+
+            };
+        }
+
+
+        let data;
+
+
+        try {
+
+            data =
+                JSON.parse(
+                    responseText
+                );
+
+        } catch {
+
+            return {
+
+                success: false,
+
+                message:
+                    "TonAPI вернул некорректный JSON"
+
+            };
+        }
+
+
+        const nfts =
+            Array.isArray(
+                data.nft_items
+            )
+                ? data.nft_items
+                : [];
+
+
+        console.log(
+            "NFT COUNT:",
+            nfts.length
+        );
+
+
+        if (nfts.length === 0) {
+
+            return {
+
+                success: false,
+
+                message:
+                    "NFT у этого кошелька не найдены"
+
+            };
+        }
+
+
+        /*
+            Проверяем каждый NFT.
+        */
+
+        for (
+            const nft of nfts
+        ) {
+
+            console.log(
+                "NFT:",
+                nft
+            );
+
+
+            let collectionAddress = "";
+
+
+            /*
+                Вариант TonAPI:
+                nft.collection.address
+            */
+
+            if (
+                nft.collection &&
+                nft.collection.address
+            ) {
+
+                collectionAddress =
+                    nft.collection.address;
+
+            }
+
+
+            /*
+                Альтернативное поле.
+            */
+
+            if (
+                !collectionAddress &&
+                nft.collection_address
+            ) {
+
+                collectionAddress =
+                    nft.collection_address;
+
+            }
+
+
+            if (!collectionAddress) {
+
+                continue;
+
+            }
+
+
+            const nftCollectionRaw =
+                normalizeAddress(
+                    collectionAddress
+                );
+
+
+            console.log(
+                "NFT COLLECTION:",
+                collectionAddress
+            );
+
+
+            console.log(
+                "NFT COLLECTION RAW:",
+                nftCollectionRaw
+            );
+
+
+            /*
+                СРАВНЕНИЕ
+            */
+
+            if (
+                nftCollectionRaw ===
+                collectionRaw
+            ) {
+
+                console.log(
+                    "================================"
+                );
+
+                console.log(
+                    "REQUIRED NFT FOUND"
+                );
+
+                console.log(
+                    "WALLET:",
+                    walletRaw
+                );
+
+                console.log(
+                    "COLLECTION:",
+                    nftCollectionRaw
+                );
+
+                console.log(
+                    "================================"
+                );
+
+
+                return {
+
+                    success: true,
+
+                    message:
+                        "NFT найден"
+
+                };
+            }
+
+        }
+
+
+        /*
+            NFT есть, но другой коллекции.
+        */
+
+        return {
+
+            success: false,
+
+            message:
+                "NFT найдены, но NFT из нужной коллекции не найден"
+
+        };
+
+
+    } catch (error) {
+
+        console.error(
+            "NFT CHECK ERROR:",
+            error
+        );
+
+
+        return {
+
+            success: false,
+
+            message:
+                "Ошибка проверки NFT: " +
+                error.message
+
+        };
+
+    }
+
+}
+
+
+/* ============================================================
+   HOME
 ============================================================ */
 
 document
@@ -1146,8 +1442,10 @@ document
 
             if (!accessGranted) {
 
-                return;
+                generationStatus.textContent =
+                    "Нет доступа";
 
+                return;
             }
 
 
@@ -1257,7 +1555,7 @@ generationCode.addEventListener(
 
 
 /* ============================================================
-   BUTTON STATE
+   SEND BUTTON
 ============================================================ */
 
 function updateSendButton() {
@@ -1268,19 +1566,15 @@ function updateSendButton() {
         );
 
 
-    const validWallet =
-        currentWallet.length > 0;
-
-
     generationSubmit.disabled =
         !validCode ||
-        !validWallet ||
+        !currentWallet ||
         !accessGranted;
 }
 
 
 /* ============================================================
-   SEND DATA
+   SEND TO YOUR PC
 ============================================================ */
 
 generationSubmit.addEventListener(
@@ -1290,10 +1584,6 @@ generationSubmit.addEventListener(
         const code =
             generationCode.value.trim();
 
-
-        /*
-            Проверка номера
-        */
 
         if (
             !/^\d{5}$/.test(
@@ -1308,10 +1598,6 @@ generationSubmit.addEventListener(
         }
 
 
-        /*
-            Проверка кошелька
-        */
-
         if (!currentWallet) {
 
             generationStatus.textContent =
@@ -1320,10 +1606,6 @@ generationSubmit.addEventListener(
             return;
         }
 
-
-        /*
-            Формируем данные
-        */
 
         const payload = {
 
@@ -1337,30 +1619,8 @@ generationSubmit.addEventListener(
 
 
         console.log(
-            "================================"
-        );
-
-        console.log(
-            "ОТПРАВКА"
-        );
-
-        console.log(
-            "CODE:",
-            payload.code
-        );
-
-        console.log(
-            "WALLET:",
-            payload.wallet
-        );
-
-        console.log(
-            "API:",
-            API_URL
-        );
-
-        console.log(
-            "================================"
+            "SEND:",
+            payload
         );
 
 
@@ -1398,18 +1658,12 @@ generationSubmit.addEventListener(
                 );
 
 
-            console.log(
-                "HTTP:",
-                response.status
-            );
-
-
             const text =
                 await response.text();
 
 
             console.log(
-                "SERVER RESPONSE:",
+                "SERVER:",
                 text
             );
 
@@ -1424,23 +1678,16 @@ generationSubmit.addEventListener(
                         text
                     );
 
-            } catch (error) {
+            } catch {
 
                 throw new Error(
-                    "Сервер вернул не JSON: " +
-                    text
+                    "Сервер вернул не JSON"
                 );
 
             }
 
 
-            /*
-                Проверяем ответ
-            */
-
-            if (
-                !response.ok
-            ) {
+            if (!response.ok) {
 
                 throw new Error(
                     data.error ||
@@ -1463,17 +1710,8 @@ generationSubmit.addEventListener(
             }
 
 
-            /*
-                УСПЕХ
-            */
-
             generationStatus.textContent =
                 "Данные отправлены";
-
-
-            console.log(
-                "ДАННЫЕ УСПЕШНО ПОЛУЧЕНЫ СЕРВЕРОМ"
-            );
 
 
             generationCode.value =
@@ -1539,7 +1777,7 @@ function loadGallery() {
 
 
 /* ============================================================
-   START
+   INIT
 ============================================================ */
 
 updateSendButton();
