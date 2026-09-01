@@ -2,6 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
+
     <meta
         name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
@@ -10,6 +11,7 @@
     <title>AR Gallery</title>
 
     <style>
+
         * {
             box-sizing: border-box;
             margin: 0;
@@ -22,316 +24,208 @@
             height: 100%;
             background: #000;
             color: #fff;
-            font-family: Arial, Helvetica, sans-serif;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
             overflow: hidden;
         }
 
         button,
         input {
-            font-family: inherit;
+            font-family: Arial, sans-serif;
         }
 
         button {
             cursor: pointer;
         }
 
-        /* =========================
-           APP
-        ========================= */
-
-        #app {
-            width: 100%;
-            height: 100%;
-            position: relative;
-            background: #000;
-        }
-
         .screen {
-            position: absolute;
-            inset: 0;
+            display: none;
             width: 100%;
             height: 100%;
-            display: none;
-            background: #000;
         }
 
         .screen.active {
             display: flex;
         }
 
-        /* =========================
+
+        /* =====================================================
            LOGIN
-        ========================= */
+        ===================================================== */
 
         #loginScreen {
             align-items: center;
             justify-content: center;
-            flex-direction: column;
             padding: 20px;
         }
 
-        .login-box {
-            width: min(420px, 100%);
+        .loginBox {
+            width: 100%;
+            max-width: 400px;
             border: 1px solid #333;
-            padding: 30px 24px;
+            padding: 30px 20px;
             text-align: center;
         }
 
-        .login-title {
-            font-size: 22px;
-            font-weight: 400;
-            letter-spacing: 2px;
-            margin-bottom: 14px;
+        .title {
+            font-size: 20px;
+            letter-spacing: 3px;
+            margin-bottom: 15px;
         }
 
-        .login-text {
-            color: #888;
-            font-size: 13px;
-            line-height: 1.5;
+        .description {
+            color: #777;
+            font-size: 12px;
+            line-height: 1.6;
             margin-bottom: 25px;
         }
 
-        #ton-connect {
+        #tonConnect {
             display: flex;
             justify-content: center;
-            min-height: 44px;
         }
 
         #loginStatus {
+            margin-top: 20px;
             min-height: 20px;
-            margin-top: 18px;
+            color: #777;
             font-size: 12px;
-            color: #888;
         }
 
-        /* =========================
+
+        /* =====================================================
            HOME
-        ========================= */
+        ===================================================== */
 
         #homeScreen {
             flex-direction: column;
         }
 
-        .topbar {
-            height: 70px;
-            min-height: 70px;
+        .header {
+            height: 65px;
+            min-height: 65px;
             border-bottom: 1px solid #222;
+
             display: flex;
             align-items: center;
             justify-content: space-between;
+
             padding: 0 18px;
         }
 
-        .logo {
-            font-size: 15px;
+        .headerTitle {
+            font-size: 13px;
             letter-spacing: 2px;
         }
 
-        .wallet-info {
-            font-size: 10px;
-            color: #777;
-            max-width: 160px;
+        #walletDisplay {
+            max-width: 180px;
             overflow: hidden;
-            white-space: nowrap;
             text-overflow: ellipsis;
+            white-space: nowrap;
+
+            color: #777;
+            font-size: 10px;
         }
 
-        .home-content {
+        .homeContent {
             flex: 1;
+
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 25px;
-        }
 
-        .home-menu {
-            width: min(420px, 100%);
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .main-button {
-            width: 100%;
-            height: 60px;
-            border: 1px solid #333;
-            background: #080808;
-            color: #fff;
-            font-size: 13px;
-            letter-spacing: 2px;
-            transition: 0.2s;
-        }
-
-        .main-button:hover {
-            background: #151515;
-            border-color: #666;
-        }
-
-        /* =========================
-           GALLERY
-        ========================= */
-
-        #galleryScreen {
-            flex-direction: column;
-        }
-
-        .screen-header {
-            height: 70px;
-            min-height: 70px;
-            border-bottom: 1px solid #222;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 18px;
-        }
-
-        .screen-title {
-            font-size: 14px;
-            letter-spacing: 2px;
-        }
-
-        .back-button {
-            border: 1px solid #333;
-            background: #000;
-            color: #fff;
-            height: 38px;
-            padding: 0 16px;
-            font-size: 11px;
-        }
-
-        .back-button:hover {
-            background: #111;
-        }
-
-        .gallery {
-            flex: 1;
-            overflow-y: auto;
             padding: 20px;
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-            gap: 15px;
-            align-content: start;
         }
 
-        .gallery::-webkit-scrollbar {
-            width: 4px;
-        }
-
-        .gallery::-webkit-scrollbar-thumb {
-            background: #333;
-        }
-
-        .gallery-item {
-            border: 1px solid #222;
-            background: #050505;
-            aspect-ratio: 1 / 1;
-            position: relative;
-            overflow: hidden;
-            cursor: pointer;
-        }
-
-        .gallery-item:hover {
-            border-color: #555;
-        }
-
-        .gallery-item canvas,
-        .gallery-item img {
+        .menu {
             width: 100%;
-            height: 100%;
-            display: block;
-            object-fit: cover;
-        }
+            max-width: 400px;
 
-        .gallery-label {
-            position: absolute;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            padding: 9px;
-            background: rgba(0, 0, 0, 0.75);
-            font-size: 10px;
-            color: #aaa;
-        }
-
-        /* =========================
-           VIEWER
-        ========================= */
-
-        #viewerScreen {
+            display: flex;
             flex-direction: column;
+            gap: 10px;
         }
 
-        #viewerContainer {
-            flex: 1;
-            position: relative;
-            min-height: 0;
-        }
-
-        #viewerCanvas {
-            position: absolute;
-            inset: 0;
+        .mainButton {
             width: 100%;
-            height: 100%;
+            height: 58px;
+
+            background: #080808;
+            border: 1px solid #333;
+            color: #fff;
+
+            font-size: 12px;
+            letter-spacing: 2px;
         }
 
-        .viewer-info {
-            position: absolute;
-            left: 15px;
-            bottom: 15px;
-            z-index: 5;
-            padding: 9px 12px;
-            background: rgba(0, 0, 0, 0.7);
-            border: 1px solid #222;
-            font-size: 10px;
-            color: #888;
+        .mainButton:hover {
+            background: #151515;
         }
 
-        /* =========================
+
+        /* =====================================================
            GENERATION
-        ========================= */
+        ===================================================== */
 
         #generationScreen {
             flex-direction: column;
         }
 
-        .generation-content {
+        .generationContent {
             flex: 1;
+
             display: flex;
-            justify-content: center;
             align-items: flex-start;
+            justify-content: center;
+
             overflow-y: auto;
+
             padding: 40px 20px;
         }
 
-        .generation-box {
-            width: min(420px, 100%);
+        .generationBox {
+            width: 100%;
+            max-width: 400px;
+
             border: 1px solid #222;
+
             padding: 25px;
         }
 
-        .generation-title {
-            font-size: 15px;
+        .generationTitle {
+            font-size: 14px;
             letter-spacing: 2px;
-            margin-bottom: 10px;
+
+            margin-bottom: 12px;
         }
 
-        .generation-description {
+        .generationDescription {
+            color: #777;
             font-size: 12px;
             line-height: 1.6;
-            color: #777;
+
             margin-bottom: 25px;
         }
 
         #generationCode {
             width: 100%;
             height: 55px;
+
             background: #050505;
+
             border: 1px solid #333;
-            outline: none;
+
             color: #fff;
+
+            outline: none;
+
             text-align: center;
+
             font-size: 22px;
-            letter-spacing: 8px;
+            letter-spacing: 7px;
         }
 
         #generationCode:focus {
@@ -341,16 +235,16 @@
         #generationSubmit {
             width: 100%;
             height: 55px;
+
             margin-top: 12px;
+
             background: #fff;
             color: #000;
+
             border: 1px solid #fff;
+
             font-size: 12px;
             letter-spacing: 2px;
-        }
-
-        #generationSubmit:hover {
-            background: #ddd;
         }
 
         #generationSubmit:disabled {
@@ -359,65 +253,141 @@
         }
 
         #generationStatus {
-            min-height: 20px;
+            min-height: 22px;
+
             margin-top: 18px;
+
             text-align: center;
+
             color: #777;
+
             font-size: 11px;
-            line-height: 1.5;
         }
 
-        /* =========================
+
+        /* =====================================================
+           GALLERY
+        ===================================================== */
+
+        #galleryScreen {
+            flex-direction: column;
+        }
+
+        .gallery {
+            flex: 1;
+
+            overflow-y: auto;
+
+            padding: 15px;
+
+            display: grid;
+
+            grid-template-columns:
+                repeat(
+                    auto-fill,
+                    minmax(150px, 1fr)
+                );
+
+            gap: 12px;
+        }
+
+        .galleryItem {
+            aspect-ratio: 1;
+
+            border: 1px solid #222;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            color: #555;
+
+            font-size: 30px;
+        }
+
+
+        /* =====================================================
+           BUTTON BACK
+        ===================================================== */
+
+        .backButton {
+            height: 36px;
+
+            padding: 0 15px;
+
+            background: #000;
+
+            border: 1px solid #333;
+
+            color: #fff;
+
+            font-size: 10px;
+        }
+
+
+        /* =====================================================
            MOBILE
-        ========================= */
+        ===================================================== */
 
         @media (max-width: 600px) {
-            .topbar,
-            .screen-header {
+
+            .header {
                 height: 60px;
                 min-height: 60px;
             }
 
             .gallery {
-                grid-template-columns: repeat(2, 1fr);
-                padding: 12px;
-                gap: 10px;
+                grid-template-columns:
+                    repeat(2, 1fr);
             }
 
-            .generation-content {
+            .generationContent {
                 padding: 25px 15px;
             }
 
-            .generation-box {
+            .generationBox {
                 padding: 20px;
             }
+
         }
+
     </style>
 </head>
 
+
 <body>
+
 
 <div id="app">
 
+
     <!-- =====================================================
          LOGIN
-    ====================================================== -->
+    ===================================================== -->
 
-    <section id="loginScreen" class="screen active">
+    <section
+        id="loginScreen"
+        class="screen active"
+    >
 
-        <div class="login-box">
+        <div class="loginBox">
 
-            <div class="login-title">
+            <div class="title">
                 AR GALLERY
             </div>
 
-            <div class="login-text">
-                Подключите TON-кошелёк.<br>
-                Доступ предоставляется владельцам NFT
-                необходимой коллекции.
+            <div class="description">
+
+                Подключите TON-кошелёк.
+
+                <br><br>
+
+                После подключения будет
+                выполнена проверка NFT.
+
             </div>
 
-            <div id="ton-connect"></div>
+            <div id="tonConnect"></div>
 
             <div id="loginStatus">
                 Кошелёк не подключён
@@ -428,41 +398,44 @@
     </section>
 
 
+
     <!-- =====================================================
          HOME
-    ====================================================== -->
+    ===================================================== -->
 
-    <section id="homeScreen" class="screen">
+    <section
+        id="homeScreen"
+        class="screen"
+    >
 
-        <div class="topbar">
+        <div class="header">
 
-            <div class="logo">
+            <div class="headerTitle">
                 AR GALLERY
             </div>
 
-            <div
-                id="walletInfo"
-                class="wallet-info"
-            >
+            <div id="walletDisplay">
                 —
             </div>
 
         </div>
 
-        <div class="home-content">
 
-            <div class="home-menu">
+        <div class="homeContent">
+
+            <div class="menu">
 
                 <button
                     id="galleryButton"
-                    class="main-button"
+                    class="mainButton"
                 >
                     ГАЛЕРЕЯ
                 </button>
 
+
                 <button
                     id="generationButton"
-                    class="main-button"
+                    class="mainButton"
                 >
                     ГЕНЕРАЦИЯ
                 </button>
@@ -474,26 +447,31 @@
     </section>
 
 
+
     <!-- =====================================================
          GALLERY
-    ====================================================== -->
+    ===================================================== -->
 
-    <section id="galleryScreen" class="screen">
+    <section
+        id="galleryScreen"
+        class="screen"
+    >
 
-        <div class="screen-header">
+        <div class="header">
 
-            <div class="screen-title">
+            <div class="headerTitle">
                 ГАЛЕРЕЯ
             </div>
 
             <button
                 id="galleryBack"
-                class="back-button"
+                class="backButton"
             >
                 НАЗАД
             </button>
 
         </div>
+
 
         <div
             id="gallery"
@@ -503,93 +481,78 @@
     </section>
 
 
-    <!-- =====================================================
-         VIEWER
-    ====================================================== -->
-
-    <section id="viewerScreen" class="screen">
-
-        <div class="screen-header">
-
-            <div
-                id="viewerTitle"
-                class="screen-title"
-            >
-                3D MODEL
-            </div>
-
-            <button
-                id="viewerBack"
-                class="back-button"
-            >
-                НАЗАД
-            </button>
-
-        </div>
-
-        <div id="viewerContainer">
-
-            <canvas id="viewerCanvas"></canvas>
-
-            <div class="viewer-info">
-                Вращение — мышь / касание
-            </div>
-
-        </div>
-
-    </section>
-
 
     <!-- =====================================================
          GENERATION
-    ====================================================== -->
+    ===================================================== -->
 
-    <section id="generationScreen" class="screen">
+    <section
+        id="generationScreen"
+        class="screen"
+    >
 
-        <div class="screen-header">
+        <div class="header">
 
-            <div class="screen-title">
+            <div class="headerTitle">
                 ГЕНЕРАЦИЯ
             </div>
 
             <button
                 id="generationBack"
-                class="back-button"
+                class="backButton"
             >
                 НАЗАД
             </button>
 
         </div>
 
-        <div class="generation-content">
 
-            <div class="generation-box">
+        <div class="generationContent">
 
-                <div class="generation-title">
-                    ВВЕДИТЕ НОМЕР
+            <div class="generationBox">
+
+                <div class="generationTitle">
+                    НОМЕР
                 </div>
 
-                <div class="generation-description">
-                    Введите пятизначный номер.
-                    После отправки номер будет передан
-                    вместе с адресом подключённого
-                    TON-кошелька на сервер.
+
+                <div class="generationDescription">
+
+                    Введите номер из пяти цифр.
+
+                    <br>
+
+                    Номер будет отправлен
+                    вместе с адресом
+                    подключённого TON-кошелька.
+
                 </div>
+
 
                 <input
                     id="generationCode"
+
                     type="text"
+
                     inputmode="numeric"
+
+                    pattern="[0-9]*"
+
                     maxlength="5"
+
                     autocomplete="off"
+
                     placeholder="00000"
                 >
 
+
                 <button
                     id="generationSubmit"
+                    disabled
                 >
                     ОТПРАВИТЬ
                 </button>
+
 
                 <div
                     id="generationStatus"
@@ -603,7 +566,9 @@
 
     </section>
 
+
 </div>
+
 
 
 <!-- =========================================================
@@ -613,439 +578,233 @@
 <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
 
 
-<!-- =========================================================
-     THREE.JS
-========================================================= -->
 
-<script type="module">
+<script>
 
-    import * as THREE from
-        "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
 
-    import { OrbitControls } from
-        "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/controls/OrbitControls.js";
+/* ============================================================
+   CONFIG
+============================================================ */
 
-    import { GLTFLoader } from
-        "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/GLTFLoader.js";
+const TON_MANIFEST =
+    "https://roman22022000.github.io/Ton_site/tonconnect-manifest.json";
 
 
-    /* =====================================================
-       CONFIG
-    ====================================================== */
+const API_URL =
+    "https://api.araicameragame.party/api/generation";
 
-    const TON_MANIFEST =
-        "https://roman22022000.github.io/Ton_site/tonconnect-manifest.json";
 
-    const GENERATION_API =
-        "https://api.araicameragame.party/api/generation";
+/*
+    Твоя коллекция Getgems
+*/
 
-    const REQUIRED_COLLECTION =
-        "EQD9mm3hx-QvHyNG18gDaaJtSTTQTVVYVjJ6zhonXocj2eyI";
+const REQUIRED_COLLECTION =
+    "EQD9mm3hx-QvHyNG18gDaaJtSTTQTVVYVj6zhonXocj2eyI";
 
-    const REQUIRED_COLLECTION_RAW =
-        "0:fd9a6de1c7e42f1d8346d7c80369a26d4934d04d5558563eb38689d7a1c8f6";
 
-    const MODEL_BASE =
-        "https://raw.githubusercontent.com/Roman22022000/ArGameCam/main/models/";
+/* ============================================================
+   STATE
+============================================================ */
 
+let currentWallet = "";
 
-    /* =====================================================
-       STATE
-    ====================================================== */
+let accessGranted = false;
 
-    let currentWallet = null;
-    let accessGranted = false;
 
-    let currentModel = null;
+/* ============================================================
+   DOM
+============================================================ */
 
-    let scene = null;
-    let camera = null;
-    let renderer = null;
-    let controls = null;
+const loginScreen =
+    document.getElementById(
+        "loginScreen"
+    );
 
-    let animationFrame = null;
 
+const homeScreen =
+    document.getElementById(
+        "homeScreen"
+    );
 
-    /* =====================================================
-       DOM
-    ====================================================== */
 
-    const loginScreen =
-        document.getElementById("loginScreen");
+const galleryScreen =
+    document.getElementById(
+        "galleryScreen"
+    );
 
-    const homeScreen =
-        document.getElementById("homeScreen");
 
-    const galleryScreen =
-        document.getElementById("galleryScreen");
+const generationScreen =
+    document.getElementById(
+        "generationScreen"
+    );
 
-    const viewerScreen =
-        document.getElementById("viewerScreen");
 
-    const generationScreen =
-        document.getElementById("generationScreen");
+const loginStatus =
+    document.getElementById(
+        "loginStatus"
+    );
 
-    const loginStatus =
-        document.getElementById("loginStatus");
 
-    const walletInfo =
-        document.getElementById("walletInfo");
+const walletDisplay =
+    document.getElementById(
+        "walletDisplay"
+    );
 
-    const gallery =
-        document.getElementById("gallery");
 
-    const generationCode =
-        document.getElementById("generationCode");
+const generationCode =
+    document.getElementById(
+        "generationCode"
+    );
 
-    const generationSubmit =
-        document.getElementById("generationSubmit");
 
-    const generationStatus =
-        document.getElementById("generationStatus");
+const generationSubmit =
+    document.getElementById(
+        "generationSubmit"
+    );
 
-    const viewerTitle =
-        document.getElementById("viewerTitle");
 
-    const viewerCanvas =
-        document.getElementById("viewerCanvas");
+const generationStatus =
+    document.getElementById(
+        "generationStatus"
+    );
 
-    const viewerContainer =
-        document.getElementById("viewerContainer");
 
+const gallery =
+    document.getElementById(
+        "gallery"
+    );
 
-    /* =====================================================
-       SCREEN SWITCH
-    ====================================================== */
 
-    function showScreen(screen) {
+/* ============================================================
+   SCREEN
+============================================================ */
 
-        document.querySelectorAll(".screen")
-            .forEach(element => {
-                element.classList.remove("active");
-            });
+function showScreen(screen) {
 
-        screen.classList.add("active");
-    }
+    document
+        .querySelectorAll(".screen")
+        .forEach(
+            element => {
 
-
-    /* =====================================================
-       TON ADDRESS NORMALIZATION
-    ====================================================== */
-
-    function normalizeTonAddress(address) {
-
-        if (!address) {
-            return "";
-        }
-
-        address = String(address).trim();
-
-        /*
-         * Уже raw:
-         * 0:xxxxxxxx...
-         * -1:xxxxxxxx...
-         */
-
-        if (
-            /^-?\d+:[0-9a-fA-F]{64}$/.test(address)
-        ) {
-            return address.toLowerCase();
-        }
-
-
-        /*
-         * TON friendly address:
-         * EQ...
-         * UQ...
-         */
-
-        try {
-
-            let value = address;
-
-            let bytes = base64UrlToBytes(value);
-
-            if (bytes.length !== 36) {
-                return address.toLowerCase();
-            }
-
-            const crcStored =
-                bytes.slice(34, 36);
-
-            const data =
-                bytes.slice(0, 34);
-
-            const crcCalculated =
-                crc16(data);
-
-            if (
-                crcStored[0] !== crcCalculated[0] ||
-                crcStored[1] !== crcCalculated[1]
-            ) {
-                return address.toLowerCase();
-            }
-
-            const tag =
-                data[0];
-
-            let workchain;
-
-            if (tag === 0x11 || tag === 0x51) {
-                workchain = 0;
-            } else if (tag === 0x10 || tag === 0x50) {
-                workchain = -1;
-            } else {
-                workchain =
-                    new DataView(
-                        new Uint8Array(
-                            [data[1]]
-                        ).buffer
-                    ).getInt8(0);
-            }
-
-            const hash =
-                data
-                    .slice(2, 34);
-
-            let hex = "";
-
-            for (const byte of hash) {
-                hex += byte
-                    .toString(16)
-                    .padStart(2, "0");
-            }
-
-            return `${workchain}:${hex}`.toLowerCase();
-
-        } catch (error) {
-
-            console.error(
-                "Ошибка нормализации TON адреса:",
-                error
-            );
-
-            return address.toLowerCase();
-        }
-    }
-
-
-    function base64UrlToBytes(base64) {
-
-        let value =
-            base64
-                .replace(/-/g, "+")
-                .replace(/_/g, "/");
-
-        while (value.length % 4) {
-            value += "=";
-        }
-
-        const binary =
-            atob(value);
-
-        const bytes =
-            new Uint8Array(
-                binary.length
-            );
-
-        for (
-            let i = 0;
-            i < binary.length;
-            i++
-        ) {
-            bytes[i] =
-                binary.charCodeAt(i);
-        }
-
-        return bytes;
-    }
-
-
-    function crc16(data) {
-
-        let crc = 0;
-
-        for (const byte of data) {
-
-            crc ^= byte << 8;
-
-            for (let i = 0; i < 8; i++) {
-
-                if (crc & 0x8000) {
-
-                    crc =
-                        (crc << 1) ^
-                        0x1021;
-
-                } else {
-
-                    crc <<= 1;
-                }
-
-                crc &=
-                    0xffff;
-            }
-        }
-
-        return new Uint8Array([
-            (crc >> 8) & 0xff,
-            crc & 0xff
-        ]);
-    }
-
-
-    /* =====================================================
-       NFT CHECK
-    ====================================================== */
-
-    async function checkCollectionNFT(walletAddress) {
-
-        try {
-
-            loginStatus.textContent =
-                "Проверка NFT...";
-
-
-            const normalizedWallet =
-                normalizeTonAddress(
-                    walletAddress
+                element.classList.remove(
+                    "active"
                 );
 
-
-            const url =
-                `https://tonapi.io/v2/accounts/${encodeURIComponent(
-                    normalizedWallet
-                )}/nfts?limit=1000`;
-
-
-            const response =
-                await fetch(url);
-
-
-            if (!response.ok) {
-
-                throw new Error(
-                    `TonAPI HTTP ${response.status}`
-                );
             }
+        );
 
 
-            const data =
-                await response.json();
+    screen.classList.add(
+        "active"
+    );
+}
 
 
-            const nfts =
-                Array.isArray(data.nft_items)
-                    ? data.nft_items
-                    : [];
+/* ============================================================
+   SHORT WALLET
+============================================================ */
 
+function shortWallet(address) {
 
-            const requiredCollection =
-                normalizeTonAddress(
-                    REQUIRED_COLLECTION
-                );
-
-
-            const requiredCollectionRaw =
-                normalizeTonAddress(
-                    REQUIRED_COLLECTION_RAW
-                );
-
-
-            for (const nft of nfts) {
-
-                let collectionAddress = "";
-
-
-                if (
-                    nft.collection &&
-                    nft.collection.address
-                ) {
-
-                    collectionAddress =
-                        nft.collection.address;
-
-                } else if (
-                    nft.collection_address
-                ) {
-
-                    collectionAddress =
-                        nft.collection_address;
-
-                }
-
-
-                const normalizedCollection =
-                    normalizeTonAddress(
-                        collectionAddress
-                    );
-
-
-                if (
-                    normalizedCollection ===
-                        requiredCollection ||
-
-                    normalizedCollection ===
-                        requiredCollectionRaw
-                ) {
-
-                    return true;
-                }
-            }
-
-
-            return false;
-
-        } catch (error) {
-
-            console.error(
-                "Ошибка проверки NFT:",
-                error
-            );
-
-            return false;
-        }
+    if (!address) {
+        return "—";
     }
 
+    if (address.length < 18) {
+        return address;
+    }
 
-    /* =====================================================
-       PROCESS WALLET
-    ====================================================== */
+    return (
+        address.substring(0, 8) +
+        "..." +
+        address.substring(
+            address.length - 8
+        )
+    );
+}
 
-    async function processWallet(wallet) {
+
+/* ============================================================
+   TON CONNECT
+============================================================ */
+
+const tonConnectUI =
+    new TON_CONNECT_UI.TonConnectUI({
+
+        manifestUrl:
+            TON_MANIFEST,
+
+        buttonRootId:
+            "tonConnect"
+
+    });
+
+
+/* ============================================================
+   WALLET STATUS
+============================================================ */
+
+tonConnectUI.onStatusChange(
+    async wallet => {
+
+        console.log(
+            "TON CONNECT:",
+            wallet
+        );
+
 
         if (!wallet) {
 
-            currentWallet = null;
+            currentWallet = "";
+
             accessGranted = false;
 
-            walletInfo.textContent = "—";
+            walletDisplay.textContent =
+                "—";
 
             loginStatus.textContent =
                 "Кошелёк не подключён";
 
-            showScreen(loginScreen);
+            updateSendButton();
+
+            showScreen(
+                loginScreen
+            );
 
             return;
         }
 
 
+        /*
+            Получаем адрес кошелька
+        */
+
         currentWallet =
             wallet.account.address;
 
 
-        walletInfo.textContent =
-            shortenAddress(
+        console.log(
+            "WALLET:",
+            currentWallet
+        );
+
+
+        walletDisplay.textContent =
+            shortWallet(
                 currentWallet
             );
 
 
         loginStatus.textContent =
-            "Проверка кошелька...";
+            "Проверка NFT...";
 
+
+        /*
+            Проверяем NFT
+        */
 
         const hasNFT =
-            await checkCollectionNFT(
+            await checkNFT(
                 currentWallet
             );
 
@@ -1055,882 +814,736 @@
             accessGranted = false;
 
             loginStatus.textContent =
-                "NFT нужной коллекции не найден";
+                "NFT коллекции не найден";
+
+            updateSendButton();
 
             alert(
-                "У подключённого кошелька нет NFT из необходимой коллекции."
+                "У этого кошелька нет NFT из необходимой коллекции."
             );
 
             try {
+
                 await tonConnectUI.disconnect();
+
             } catch (error) {
-                console.error(error);
+
+                console.error(
+                    error
+                );
             }
 
             return;
         }
 
 
+        /*
+            NFT найден
+        */
+
         accessGranted = true;
 
         loginStatus.textContent =
             "Доступ разрешён";
 
-        showScreen(homeScreen);
-    }
-
-
-    function shortenAddress(address) {
-
-        if (!address) {
-            return "—";
-        }
-
-        if (address.length < 15) {
-            return address;
-        }
-
-        return (
-            address.slice(0, 7) +
-            "..." +
-            address.slice(-7)
-        );
-    }
-
-
-    /* =====================================================
-       TON CONNECT
-    ====================================================== */
-
-    const tonConnectUI =
-        new TON_CONNECT_UI.TonConnectUI({
-            manifestUrl: TON_MANIFEST,
-            buttonRootId: "ton-connect"
-        });
-
-
-    tonConnectUI.onStatusChange(
-        async wallet => {
-
-            console.log(
-                "TON wallet:",
-                wallet
-            );
-
-            await processWallet(
-                wallet
-            );
-        },
-        error => {
-
-            console.error(
-                "TON Connect error:",
-                error
-            );
-
-            loginStatus.textContent =
-                "Ошибка подключения кошелька";
-        }
-    );
-
-
-    /* =====================================================
-       HOME BUTTONS
-    ====================================================== */
-
-    document
-        .getElementById("galleryButton")
-        .addEventListener(
-            "click",
-            () => {
-
-                if (!accessGranted) {
-                    return;
-                }
-
-                showScreen(
-                    galleryScreen
-                );
-
-                loadGallery();
-            }
-        );
-
-
-    document
-        .getElementById("generationButton")
-        .addEventListener(
-            "click",
-            () => {
-
-                if (!accessGranted) {
-
-                    generationStatus.textContent =
-                        "Доступ запрещён";
-
-                    return;
-                }
-
-                generationStatus.textContent =
-                    "—";
-
-                showScreen(
-                    generationScreen
-                );
-            }
-        );
-
-
-    /* =====================================================
-       BACK BUTTONS
-    ====================================================== */
-
-    document
-        .getElementById("galleryBack")
-        .addEventListener(
-            "click",
-            () => {
-
-                showScreen(
-                    homeScreen
-                );
-            }
-        );
-
-
-    document
-        .getElementById("viewerBack")
-        .addEventListener(
-            "click",
-            () => {
-
-                stopViewer();
-
-                showScreen(
-                    galleryScreen
-                );
-            }
-        );
-
-
-    document
-        .getElementById("generationBack")
-        .addEventListener(
-            "click",
-            () => {
-
-                showScreen(
-                    homeScreen
-                );
-            }
-        );
-
-
-    /* =====================================================
-       GENERATION INPUT
-    ====================================================== */
-
-    generationCode.addEventListener(
-        "input",
-        () => {
-
-            generationCode.value =
-                generationCode.value
-                    .replace(/\D/g, "")
-                    .slice(0, 5);
-
-            updateGenerationButton();
-        }
-    );
-
-
-    function updateGenerationButton() {
-
-        const valid =
-            /^\d{5}$/.test(
-                generationCode.value
-            );
-
-        generationSubmit.disabled =
-            !valid ||
-            !currentWallet ||
-            !accessGranted;
-    }
-
-
-    /* =====================================================
-       SEND GENERATION DATA
-    ====================================================== */
-
-    generationSubmit.addEventListener(
-        "click",
-        async () => {
-
-            if (!accessGranted) {
-
-                generationStatus.textContent =
-                    "Доступ запрещён";
-
-                return;
-            }
-
-
-            const code =
-                generationCode.value.trim();
-
-
-            if (!/^\d{5}$/.test(code)) {
-
-                generationStatus.textContent =
-                    "Введите 5 цифр";
-
-                return;
-            }
-
-
-            if (!currentWallet) {
-
-                generationStatus.textContent =
-                    "Кошелёк не подключён";
-
-                return;
-            }
-
-
-            generationSubmit.disabled =
-                true;
-
-
-            generationStatus.textContent =
-                "Отправка...";
-
-
-            const payload = {
-
-                code: code,
-
-                wallet: currentWallet
-            };
-
-
-            console.log(
-                "Отправляем:",
-                payload
-            );
-
-
-            try {
-
-                const response =
-                    await fetch(
-                        GENERATION_API,
-                        {
-                            method: "POST",
-
-                            headers: {
-                                "Content-Type":
-                                    "application/json"
-                            },
-
-                            body:
-                                JSON.stringify(
-                                    payload
-                                )
-                        }
-                    );
-
-
-                let data;
-
-                try {
-
-                    data =
-                        await response.json();
-
-                } catch {
-
-                    throw new Error(
-                        "Сервер вернул некорректный ответ"
-                    );
-                }
-
-
-                if (
-                    !response.ok ||
-                    data.success !== true
-                ) {
-
-                    throw new Error(
-                        data.error ||
-                        "Ошибка сервера"
-                    );
-                }
-
-
-                generationStatus.textContent =
-                    "Данные отправлены";
-
-
-                generationCode.value =
-                    "";
-
-
-            } catch (error) {
-
-                console.error(
-                    "Ошибка отправки:",
-                    error
-                );
-
-
-                generationStatus.textContent =
-                    "Не удалось отправить данные";
-
-
-            } finally {
-
-                updateGenerationButton();
-            }
-        }
-    );
-
-
-    /* =====================================================
-       GALLERY
-    ====================================================== */
-
-    const galleryModels = [
-
-        {
-            name: "Creature 01",
-            file: "creature.glb"
-        },
-
-        {
-            name: "Creature 02",
-            file: "creature.glb"
-        },
-
-        {
-            name: "Creature 03",
-            file: "creature.glb"
-        },
-
-        {
-            name: "Creature 04",
-            file: "creature.glb"
-        },
-
-        {
-            name: "Creature 05",
-            file: "creature.glb"
-        },
-
-        {
-            name: "Creature 06",
-            file: "creature.glb"
-        }
-
-    ];
-
-
-    function loadGallery() {
-
-        gallery.innerHTML = "";
-
-
-        galleryModels.forEach(
-            (model, index) => {
-
-                const item =
-                    document.createElement(
-                        "div"
-                    );
-
-                item.className =
-                    "gallery-item";
-
-
-                const placeholder =
-                    document.createElement(
-                        "div"
-                    );
-
-
-                placeholder.style.width =
-                    "100%";
-
-                placeholder.style.height =
-                    "100%";
-
-                placeholder.style.display =
-                    "flex";
-
-                placeholder.style.alignItems =
-                    "center";
-
-                placeholder.style.justifyContent =
-                    "center";
-
-                placeholder.style.color =
-                    "#444";
-
-                placeholder.style.fontSize =
-                    "30px";
-
-                placeholder.textContent =
-                    String(index + 1);
-
-
-                item.appendChild(
-                    placeholder
-                );
-
-
-                const label =
-                    document.createElement(
-                        "div"
-                    );
-
-                label.className =
-                    "gallery-label";
-
-                label.textContent =
-                    model.name;
-
-
-                item.appendChild(
-                    label
-                );
-
-
-                item.addEventListener(
-                    "click",
-                    () => {
-
-                        openViewer(
-                            model
-                        );
-                    }
-                );
-
-
-                gallery.appendChild(
-                    item
-                );
-            }
-        );
-    }
-
-
-    /* =====================================================
-       3D VIEWER
-    ====================================================== */
-
-    function openViewer(model) {
+        updateSendButton();
 
         showScreen(
-            viewerScreen
+            homeScreen
         );
 
-
-        viewerTitle.textContent =
-            model.name;
-
-
-        initViewer();
-
-
-        loadModel(
-            MODEL_BASE +
-            model.file
-        );
     }
+);
 
 
-    function initViewer() {
+/* ============================================================
+   NFT CHECK
+============================================================ */
 
-        stopViewer();
+async function checkNFT(walletAddress) {
+
+    try {
+
+        const url =
+            "https://tonapi.io/v2/accounts/" +
+            encodeURIComponent(
+                walletAddress
+            ) +
+            "/nfts?limit=1000";
 
 
-        scene =
-            new THREE.Scene();
-
-
-        scene.background =
-            new THREE.Color(
-                0x000000
+        const response =
+            await fetch(
+                url
             );
 
 
-        camera =
-            new THREE.PerspectiveCamera(
-                45,
-                viewerContainer.clientWidth /
-                    viewerContainer.clientHeight,
-                0.01,
-                1000
+        if (!response.ok) {
+
+            console.error(
+                "TonAPI:",
+                response.status
             );
 
-
-        camera.position.set(
-            0,
-            1,
-            4
-        );
+            return false;
+        }
 
 
-        renderer =
-            new THREE.WebGLRenderer({
-                canvas:
-                    viewerCanvas,
-
-                antialias:
-                    true,
-
-                alpha:
-                    false
-            });
+        const data =
+            await response.json();
 
 
-        renderer.setPixelRatio(
-            Math.min(
-                window.devicePixelRatio,
-                2
+        const nfts =
+            Array.isArray(
+                data.nft_items
             )
-        );
+                ? data.nft_items
+                : [];
 
 
-        renderer.setSize(
-            viewerContainer.clientWidth,
-            viewerContainer.clientHeight
-        );
+        for (
+            const nft of nfts
+        ) {
+
+            let collectionAddress = "";
 
 
-        renderer.outputColorSpace =
-            THREE.SRGBColorSpace;
+            if (
+                nft.collection &&
+                nft.collection.address
+            ) {
 
+                collectionAddress =
+                    nft.collection.address;
 
-        controls =
-            new OrbitControls(
-                camera,
-                renderer.domElement
-            );
-
-
-        controls.enableDamping =
-            true;
-
-
-        controls.dampingFactor =
-            0.05;
-
-
-        controls.minDistance =
-            0.2;
-
-
-        controls.maxDistance =
-            20;
-
-
-        const ambient =
-            new THREE.AmbientLight(
-                0xffffff,
-                2
-            );
-
-
-        scene.add(
-            ambient
-        );
-
-
-        const directional =
-            new THREE.DirectionalLight(
-                0xffffff,
-                3
-            );
-
-
-        directional.position.set(
-            3,
-            5,
-            4
-        );
-
-
-        scene.add(
-            directional
-        );
-
-
-        const directional2 =
-            new THREE.DirectionalLight(
-                0xffffff,
-                1.5
-            );
-
-
-        directional2.position.set(
-            -4,
-            2,
-            -3
-        );
-
-
-        scene.add(
-            directional2
-        );
-
-
-        animateViewer();
-    }
-
-
-    function loadModel(url) {
-
-        const loader =
-            new GLTFLoader();
-
-
-        loader.load(
-
-            url,
-
-            gltf => {
-
-                if (
-                    currentModel &&
-                    scene
-                ) {
-
-                    scene.remove(
-                        currentModel
-                    );
-                }
-
-
-                currentModel =
-                    gltf.scene;
-
-
-                scene.add(
-                    currentModel
-                );
-
-
-                fitModel(
-                    currentModel
-                );
-            },
-
-            undefined,
-
-            error => {
-
-                console.error(
-                    "Ошибка загрузки модели:",
-                    error
-                );
-
-                viewerTitle.textContent =
-                    "ОШИБКА ЗАГРУЗКИ";
             }
-        );
-    }
 
 
-    function fitModel(model) {
+            if (
+                !collectionAddress &&
+                nft.collection_address
+            ) {
 
-        const box =
-            new THREE.Box3()
-                .setFromObject(
-                    model
+                collectionAddress =
+                    nft.collection_address;
+
+            }
+
+
+            if (!collectionAddress) {
+                continue;
+            }
+
+
+            /*
+                Сравниваем адреса
+                без учёта EQ/UQ/raw формата.
+            */
+
+            const a =
+                normalizeAddress(
+                    collectionAddress
                 );
 
 
-        const size =
-            box.getSize(
-                new THREE.Vector3()
-            );
+            const b =
+                normalizeAddress(
+                    REQUIRED_COLLECTION
+                );
 
 
-        const center =
-            box.getCenter(
-                new THREE.Vector3()
-            );
+            if (a === b) {
+
+                console.log(
+                    "NFT FOUND"
+                );
+
+                return true;
+            }
+
+        }
 
 
-        model.position.sub(
-            center
+        return false;
+
+    } catch (error) {
+
+        console.error(
+            "NFT CHECK ERROR:",
+            error
         );
 
-
-        const maxSize =
-            Math.max(
-                size.x,
-                size.y,
-                size.z
-            );
+        return false;
+    }
+}
 
 
-        const scale =
-            2.5 / maxSize;
+/* ============================================================
+   TON ADDRESS NORMALIZATION
+============================================================ */
 
+function normalizeAddress(address) {
 
-        model.scale.setScalar(
-            scale
-        );
-
-
-        camera.position.set(
-            0,
-            maxSize * scale * 0.5,
-            maxSize * scale * 3
-        );
-
-
-        camera.lookAt(
-            0,
-            0,
-            0
-        );
-
-
-        controls.target.set(
-            0,
-            0,
-            0
-        );
-
-
-        controls.update();
+    if (!address) {
+        return "";
     }
 
 
-    function animateViewer() {
+    address =
+        String(
+            address
+        ).trim();
 
-        animationFrame =
-            requestAnimationFrame(
-                animateViewer
+
+    /*
+        Raw TON address
+    */
+
+    if (
+        /^-?\d+:[0-9a-fA-F]{64}$/
+            .test(address)
+    ) {
+
+        return address
+            .toLowerCase();
+
+    }
+
+
+    /*
+        Friendly TON address
+    */
+
+    try {
+
+        let value =
+            address
+                .replace(
+                    /-/g,
+                    "+"
+                )
+                .replace(
+                    /_/g,
+                    "/"
+                );
+
+
+        while (
+            value.length % 4
+        ) {
+
+            value += "=";
+
+        }
+
+
+        const binary =
+            atob(
+                value
             );
 
 
-        if (controls) {
-            controls.update();
+        const bytes =
+            new Uint8Array(
+                binary.length
+            );
+
+
+        for (
+            let i = 0;
+            i < binary.length;
+            i++
+        ) {
+
+            bytes[i] =
+                binary.charCodeAt(i);
+
         }
 
 
         if (
-            currentModel &&
-            currentModel.userData.autoRotate
+            bytes.length !== 36
         ) {
 
-            currentModel.rotation.y +=
-                0.003;
+            return address
+                .toLowerCase();
+
         }
 
 
-        if (renderer && scene && camera) {
+        const tag =
+            bytes[0];
 
-            renderer.render(
-                scene,
-                camera
-            );
+
+        let workchain;
+
+
+        /*
+            Bounceable / non-bounceable
+        */
+
+        if (
+            tag === 0x11 ||
+            tag === 0x51
+        ) {
+
+            workchain = 0;
+
+        } else {
+
+            workchain = 0;
+
         }
+
+
+        let hash = "";
+
+
+        for (
+            let i = 2;
+            i < 34;
+            i++
+        ) {
+
+            hash +=
+                bytes[i]
+                    .toString(16)
+                    .padStart(
+                        2,
+                        "0"
+                    );
+
+        }
+
+
+        return (
+            workchain +
+            ":" +
+            hash
+        ).toLowerCase();
+
+
+    } catch (error) {
+
+        return address
+            .toLowerCase();
+
     }
+}
 
 
-    function stopViewer() {
+/* ============================================================
+   HOME BUTTONS
+============================================================ */
 
-        if (animationFrame) {
-
-            cancelAnimationFrame(
-                animationFrame
-            );
-
-            animationFrame =
-                null;
-        }
-
-
-        if (renderer) {
-
-            renderer.dispose();
-
-            renderer =
-                null;
-        }
-
-
-        currentModel =
-            null;
-
-        scene =
-            null;
-
-        camera =
-            null;
-
-        controls =
-            null;
-    }
-
-
-    /* =====================================================
-       RESIZE
-    ====================================================== */
-
-    window.addEventListener(
-        "resize",
+document
+    .getElementById(
+        "generationButton"
+    )
+    .addEventListener(
+        "click",
         () => {
 
-            if (
-                !camera ||
-                !renderer ||
-                !viewerContainer
-            ) {
+            if (!accessGranted) {
+
                 return;
+
             }
 
 
-            const width =
-                viewerContainer.clientWidth;
+            generationCode.value =
+                "";
 
 
-            const height =
-                viewerContainer.clientHeight;
+            generationStatus.textContent =
+                "Введите 5 цифр";
 
 
-            if (
-                width <= 0 ||
-                height <= 0
-            ) {
-                return;
-            }
+            updateSendButton();
 
 
-            camera.aspect =
-                width / height;
-
-
-            camera.updateProjectionMatrix();
-
-
-            renderer.setSize(
-                width,
-                height
+            showScreen(
+                generationScreen
             );
+
         }
     );
 
 
-    /* =====================================================
-       START
-    ====================================================== */
+document
+    .getElementById(
+        "galleryButton"
+    )
+    .addEventListener(
+        "click",
+        () => {
 
-    updateGenerationButton();
+            if (!accessGranted) {
+                return;
+            }
+
+
+            loadGallery();
+
+
+            showScreen(
+                galleryScreen
+            );
+
+        }
+    );
+
+
+/* ============================================================
+   BACK
+============================================================ */
+
+document
+    .getElementById(
+        "generationBack"
+    )
+    .addEventListener(
+        "click",
+        () => {
+
+            showScreen(
+                homeScreen
+            );
+
+        }
+    );
+
+
+document
+    .getElementById(
+        "galleryBack"
+    )
+    .addEventListener(
+        "click",
+        () => {
+
+            showScreen(
+                homeScreen
+            );
+
+        }
+    );
+
+
+/* ============================================================
+   INPUT
+============================================================ */
+
+generationCode.addEventListener(
+    "input",
+    () => {
+
+        generationCode.value =
+            generationCode.value
+                .replace(
+                    /\D/g,
+                    ""
+                )
+                .substring(
+                    0,
+                    5
+                );
+
+
+        updateSendButton();
+
+    }
+);
+
+
+/* ============================================================
+   BUTTON STATE
+============================================================ */
+
+function updateSendButton() {
+
+    const validCode =
+        /^\d{5}$/.test(
+            generationCode.value
+        );
+
+
+    const validWallet =
+        currentWallet.length > 0;
+
+
+    generationSubmit.disabled =
+        !validCode ||
+        !validWallet ||
+        !accessGranted;
+}
+
+
+/* ============================================================
+   SEND DATA
+============================================================ */
+
+generationSubmit.addEventListener(
+    "click",
+    async () => {
+
+        const code =
+            generationCode.value.trim();
+
+
+        /*
+            Проверка номера
+        */
+
+        if (
+            !/^\d{5}$/.test(
+                code
+            )
+        ) {
+
+            generationStatus.textContent =
+                "Введите 5 цифр";
+
+            return;
+        }
+
+
+        /*
+            Проверка кошелька
+        */
+
+        if (!currentWallet) {
+
+            generationStatus.textContent =
+                "Кошелёк не подключён";
+
+            return;
+        }
+
+
+        /*
+            Формируем данные
+        */
+
+        const payload = {
+
+            code:
+                code,
+
+            wallet:
+                currentWallet
+
+        };
+
+
+        console.log(
+            "================================"
+        );
+
+        console.log(
+            "ОТПРАВКА"
+        );
+
+        console.log(
+            "CODE:",
+            payload.code
+        );
+
+        console.log(
+            "WALLET:",
+            payload.wallet
+        );
+
+        console.log(
+            "API:",
+            API_URL
+        );
+
+        console.log(
+            "================================"
+        );
+
+
+        generationSubmit.disabled =
+            true;
+
+
+        generationStatus.textContent =
+            "Отправка...";
+
+
+        try {
+
+            const response =
+                await fetch(
+                    API_URL,
+                    {
+
+                        method:
+                            "POST",
+
+                        headers: {
+
+                            "Content-Type":
+                                "application/json"
+
+                        },
+
+                        body:
+                            JSON.stringify(
+                                payload
+                            )
+
+                    }
+                );
+
+
+            console.log(
+                "HTTP:",
+                response.status
+            );
+
+
+            const text =
+                await response.text();
+
+
+            console.log(
+                "SERVER RESPONSE:",
+                text
+            );
+
+
+            let data;
+
+
+            try {
+
+                data =
+                    JSON.parse(
+                        text
+                    );
+
+            } catch (error) {
+
+                throw new Error(
+                    "Сервер вернул не JSON: " +
+                    text
+                );
+
+            }
+
+
+            /*
+                Проверяем ответ
+            */
+
+            if (
+                !response.ok
+            ) {
+
+                throw new Error(
+                    data.error ||
+                    "HTTP " +
+                    response.status
+                );
+
+            }
+
+
+            if (
+                data.success !== true
+            ) {
+
+                throw new Error(
+                    data.error ||
+                    "Сервер отклонил запрос"
+                );
+
+            }
+
+
+            /*
+                УСПЕХ
+            */
+
+            generationStatus.textContent =
+                "Данные отправлены";
+
+
+            console.log(
+                "ДАННЫЕ УСПЕШНО ПОЛУЧЕНЫ СЕРВЕРОМ"
+            );
+
+
+            generationCode.value =
+                "";
+
+
+        } catch (error) {
+
+            console.error(
+                "SEND ERROR:",
+                error
+            );
+
+
+            generationStatus.textContent =
+                "Ошибка: " +
+                error.message;
+
+        }
+
+
+        updateSendButton();
+
+    }
+);
+
+
+/* ============================================================
+   GALLERY
+============================================================ */
+
+function loadGallery() {
+
+    gallery.innerHTML = "";
+
+
+    for (
+        let i = 1;
+        i <= 12;
+        i++
+    ) {
+
+        const item =
+            document.createElement(
+                "div"
+            );
+
+
+        item.className =
+            "galleryItem";
+
+
+        item.textContent =
+            String(i);
+
+
+        gallery.appendChild(
+            item
+        );
+
+    }
+}
+
+
+/* ============================================================
+   START
+============================================================ */
+
+updateSendButton();
+
 
 </script>
 
