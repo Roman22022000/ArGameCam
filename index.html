@@ -12,7 +12,14 @@
 
     <title>AR Gallery</title>
 
+    <!-- TON CONNECT -->
+    <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
+
     <style>
+
+        /* =====================================================
+           RESET
+        ===================================================== */
 
         * {
             box-sizing: border-box;
@@ -24,28 +31,60 @@
         body {
             width: 100%;
             height: 100%;
+            overflow: hidden;
+
             background: #000;
             color: #fff;
-            font-family: Arial, Helvetica, sans-serif;
+
+            font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
         }
 
         body {
-            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
         }
 
         button,
         input {
-            font-family: inherit;
+            font: inherit;
         }
 
         button {
             cursor: pointer;
         }
 
-        .screen {
-            display: none;
+
+        /* =====================================================
+           APP
+        ===================================================== */
+
+        #app {
             width: 100%;
             height: 100%;
+
+            background: #000;
+
+            position: relative;
+        }
+
+
+        /* =====================================================
+           SCREENS
+        ===================================================== */
+
+        .screen {
+            position: absolute;
+
+            inset: 0;
+
+            width: 100%;
+            height: 100%;
+
+            display: none;
+
+            background: #000;
         }
 
         .screen.active {
@@ -54,59 +93,139 @@
 
 
         /* =====================================================
-           LOGIN
+           AUTH
         ===================================================== */
 
-        #loginScreen {
+        #authScreen {
             align-items: center;
             justify-content: center;
+
             padding: 20px;
         }
 
-        .loginBox {
-            width: 100%;
-            max-width: 420px;
+        .authPanel {
+            width: min(400px, 100%);
 
-            border: 1px solid #333;
+            border: 1px solid #222;
 
-            padding: 30px 22px;
+            padding: 32px 24px;
 
             text-align: center;
         }
 
-        .title {
-            font-size: 21px;
-            letter-spacing: 3px;
+        .brand {
+            font-size: 17px;
 
-            margin-bottom: 15px;
+            font-weight: 400;
+
+            letter-spacing: 4px;
+
+            margin-bottom: 12px;
         }
 
-        .description {
-            color: #777;
+        .authDescription {
+            color: #666;
 
-            font-size: 12px;
+            font-size: 11px;
 
-            line-height: 1.6;
+            line-height: 1.7;
 
-            margin-bottom: 25px;
+            margin-bottom: 28px;
         }
 
-        #tonConnect {
+        #ton-connect {
             display: flex;
+
             justify-content: center;
+
             min-height: 44px;
         }
 
-        #loginStatus {
-            min-height: 20px;
+        #authStatus {
+            min-height: 22px;
 
-            margin-top: 20px;
+            margin-top: 18px;
 
-            color: #777;
+            color: #666;
 
-            font-size: 12px;
+            font-size: 11px;
 
             line-height: 1.5;
+        }
+
+
+        /* =====================================================
+           LOADING
+        ===================================================== */
+
+        #loadingOverlay {
+            position: fixed;
+
+            inset: 0;
+
+            z-index: 1000;
+
+            display: none;
+
+            align-items: center;
+            justify-content: center;
+
+            background: #000;
+        }
+
+        #loadingOverlay.active {
+            display: flex;
+        }
+
+        .loadingText {
+            color: #666;
+
+            font-size: 11px;
+
+            letter-spacing: 2px;
+        }
+
+
+        /* =====================================================
+           HEADER
+        ===================================================== */
+
+        .header {
+            width: 100%;
+
+            height: 64px;
+
+            min-height: 64px;
+
+            border-bottom: 1px solid #1c1c1c;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: space-between;
+
+            padding: 0 18px;
+        }
+
+        .headerTitle {
+            font-size: 12px;
+
+            letter-spacing: 3px;
+        }
+
+        .headerWallet {
+            max-width: 220px;
+
+            overflow: hidden;
+
+            text-overflow: ellipsis;
+
+            white-space: nowrap;
+
+            color: #555;
+
+            font-size: 10px;
         }
 
 
@@ -116,38 +235,6 @@
 
         #homeScreen {
             flex-direction: column;
-        }
-
-        .header {
-            height: 65px;
-            min-height: 65px;
-
-            border-bottom: 1px solid #222;
-
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-
-            padding: 0 18px;
-        }
-
-        .headerTitle {
-            font-size: 13px;
-            letter-spacing: 2px;
-        }
-
-        #walletDisplay {
-            max-width: 220px;
-
-            overflow: hidden;
-
-            text-overflow: ellipsis;
-
-            white-space: nowrap;
-
-            color: #777;
-
-            font-size: 10px;
         }
 
         .homeContent {
@@ -162,149 +249,44 @@
             padding: 20px;
         }
 
-        .menu {
-            width: 100%;
-
-            max-width: 400px;
+        .homeMenu {
+            width: min(360px, 100%);
 
             display: flex;
 
             flex-direction: column;
 
-            gap: 10px;
+            gap: 8px;
         }
 
-        .mainButton {
+        .menuButton {
             width: 100%;
 
             height: 58px;
 
-            background: #080808;
-
-            border: 1px solid #333;
-
-            color: #fff;
-
-            font-size: 12px;
-
-            letter-spacing: 2px;
-        }
-
-        .mainButton:hover {
-            background: #151515;
-        }
-
-
-        /* =====================================================
-           GENERATION
-        ===================================================== */
-
-        #generationScreen {
-            flex-direction: column;
-        }
-
-        .generationContent {
-            flex: 1;
-
-            display: flex;
-
-            align-items: flex-start;
-
-            justify-content: center;
-
-            overflow-y: auto;
-
-            padding: 40px 20px;
-        }
-
-        .generationBox {
-            width: 100%;
-
-            max-width: 420px;
-
-            border: 1px solid #222;
-
-            padding: 25px;
-        }
-
-        .generationTitle {
-            font-size: 14px;
-
-            letter-spacing: 2px;
-
-            margin-bottom: 12px;
-        }
-
-        .generationDescription {
-            color: #777;
-
-            font-size: 12px;
-
-            line-height: 1.6;
-
-            margin-bottom: 25px;
-        }
-
-        #generationCode {
-            width: 100%;
-
-            height: 55px;
-
             background: #050505;
 
-            border: 1px solid #333;
+            border: 1px solid #252525;
 
             color: #fff;
-
-            outline: none;
-
-            text-align: center;
-
-            font-size: 22px;
-
-            letter-spacing: 7px;
-        }
-
-        #generationCode:focus {
-            border-color: #777;
-        }
-
-        #generationSubmit {
-            width: 100%;
-
-            height: 55px;
-
-            margin-top: 12px;
-
-            background: #fff;
-
-            color: #000;
-
-            border: 1px solid #fff;
-
-            font-size: 12px;
-
-            letter-spacing: 2px;
-        }
-
-        #generationSubmit:disabled {
-            opacity: 0.35;
-
-            cursor: not-allowed;
-        }
-
-        #generationStatus {
-            min-height: 40px;
-
-            margin-top: 18px;
-
-            text-align: center;
-
-            color: #777;
 
             font-size: 11px;
 
-            line-height: 1.5;
+            letter-spacing: 3px;
+
+            transition:
+                background 0.15s,
+                border-color 0.15s;
+        }
+
+        .menuButton:hover {
+            background: #101010;
+
+            border-color: #444;
+        }
+
+        .menuButton:active {
+            background: #181818;
         }
 
 
@@ -316,12 +298,16 @@
             flex-direction: column;
         }
 
-        .gallery {
+        .galleryBody {
             flex: 1;
 
             overflow-y: auto;
 
-            padding: 15px;
+            padding: 16px;
+        }
+
+        .galleryGrid {
+            width: 100%;
 
             display: grid;
 
@@ -331,13 +317,48 @@
                     minmax(150px, 1fr)
                 );
 
-            gap: 12px;
+            gap: 10px;
         }
 
         .galleryItem {
-            aspect-ratio: 1;
+            position: relative;
 
-            border: 1px solid #222;
+            aspect-ratio: 1 / 1;
+
+            background: #050505;
+
+            border: 1px solid #202020;
+
+            overflow: hidden;
+
+            transition:
+                border-color 0.15s;
+        }
+
+        .galleryItem:hover {
+            border-color: #444;
+        }
+
+        .galleryNumber {
+            position: absolute;
+
+            top: 12px;
+
+            left: 12px;
+
+            color: #777;
+
+            font-size: 10px;
+
+            letter-spacing: 2px;
+
+            z-index: 2;
+        }
+
+        .galleryPlaceholder {
+            position: absolute;
+
+            inset: 0;
 
             display: flex;
 
@@ -345,28 +366,257 @@
 
             justify-content: center;
 
-            color: #555;
+            color: #333;
 
-            font-size: 30px;
+            font-size: 28px;
         }
 
 
         /* =====================================================
-           BACK
+           VIEWER
         ===================================================== */
 
-        .backButton {
-            height: 36px;
+        #viewerScreen {
+            flex-direction: column;
+        }
 
-            padding: 0 15px;
+        #viewerContainer {
+            position: relative;
+
+            flex: 1;
+
+            min-height: 0;
+
+            overflow: hidden;
+        }
+
+        #viewerCanvas {
+            position: absolute;
+
+            inset: 0;
+
+            width: 100%;
+
+            height: 100%;
+
+            display: block;
+        }
+
+        .viewerLoader {
+            position: absolute;
+
+            inset: 0;
+
+            z-index: 10;
+
+            display: none;
+
+            align-items: center;
+
+            justify-content: center;
 
             background: #000;
+        }
 
-            border: 1px solid #333;
+        .viewerLoader.active {
+            display: flex;
+        }
+
+        .viewerLoaderText {
+            color: #555;
+
+            font-size: 10px;
+
+            letter-spacing: 2px;
+        }
+
+        .viewerHint {
+            position: absolute;
+
+            left: 15px;
+
+            bottom: 15px;
+
+            z-index: 20;
+
+            color: #444;
+
+            font-size: 9px;
+
+            letter-spacing: 1px;
+        }
+
+
+        /* =====================================================
+           GENERATION
+        ===================================================== */
+
+        #generationScreen {
+            flex-direction: column;
+        }
+
+        .generationBody {
+            flex: 1;
+
+            overflow-y: auto;
+
+            display: flex;
+
+            justify-content: center;
+
+            align-items: flex-start;
+
+            padding: 50px 20px;
+        }
+
+        .generationPanel {
+            width: min(380px, 100%);
+
+            border: 1px solid #222;
+
+            padding: 26px;
+        }
+
+        .generationTitle {
+            font-size: 12px;
+
+            letter-spacing: 3px;
+
+            margin-bottom: 12px;
+        }
+
+        .generationDescription {
+            color: #555;
+
+            font-size: 11px;
+
+            line-height: 1.7;
+
+            margin-bottom: 24px;
+        }
+
+        #generationCode {
+            width: 100%;
+
+            height: 56px;
+
+            border: 1px solid #2a2a2a;
+
+            outline: none;
+
+            background: #050505;
 
             color: #fff;
 
+            text-align: center;
+
+            font-size: 20px;
+
+            letter-spacing: 8px;
+        }
+
+        #generationCode:focus {
+            border-color: #555;
+        }
+
+        #generationCode::placeholder {
+            color: #333;
+        }
+
+        #generationSubmit {
+            width: 100%;
+
+            height: 54px;
+
+            margin-top: 10px;
+
+            border: 1px solid #fff;
+
+            background: #fff;
+
+            color: #000;
+
             font-size: 10px;
+
+            letter-spacing: 3px;
+        }
+
+        #generationSubmit:hover {
+            background: #ddd;
+        }
+
+        #generationSubmit:disabled {
+            opacity: 0.3;
+
+            cursor: not-allowed;
+        }
+
+        #generationStatus {
+            min-height: 22px;
+
+            margin-top: 15px;
+
+            color: #555;
+
+            font-size: 10px;
+
+            line-height: 1.5;
+
+            text-align: center;
+        }
+
+
+        /* =====================================================
+           BACK BUTTON
+        ===================================================== */
+
+        .backButton {
+            height: 34px;
+
+            padding: 0 13px;
+
+            background: #000;
+
+            border: 1px solid #252525;
+
+            color: #777;
+
+            font-size: 9px;
+
+            letter-spacing: 2px;
+        }
+
+        .backButton:hover {
+            color: #fff;
+
+            border-color: #444;
+        }
+
+
+        /* =====================================================
+           SCROLLBAR
+        ===================================================== */
+
+        * {
+            scrollbar-width: thin;
+
+            scrollbar-color:
+                #333
+                #000;
+        }
+
+        ::-webkit-scrollbar {
+            width: 4px;
+
+            height: 4px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #000;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #333;
         }
 
 
@@ -377,20 +627,41 @@
         @media (max-width: 600px) {
 
             .header {
-                height: 60px;
-                min-height: 60px;
+                height: 58px;
+
+                min-height: 58px;
+
+                padding: 0 14px;
             }
 
-            .gallery {
+            .headerWallet {
+                max-width: 145px;
+            }
+
+            .homeContent {
+                padding: 16px;
+            }
+
+            .homeMenu {
+                width: 100%;
+            }
+
+            .galleryBody {
+                padding: 10px;
+            }
+
+            .galleryGrid {
                 grid-template-columns:
                     repeat(2, 1fr);
+
+                gap: 8px;
             }
 
-            .generationContent {
-                padding: 25px 15px;
+            .generationBody {
+                padding: 30px 15px;
             }
 
-            .generationBox {
+            .generationPanel {
                 padding: 20px;
             }
 
@@ -408,43 +679,38 @@
 
 
     <!-- =====================================================
-         LOGIN
+         AUTH SCREEN
     ===================================================== -->
 
     <section
-        id="loginScreen"
+        id="authScreen"
         class="screen active"
     >
 
-        <div class="loginBox">
+        <div class="authPanel">
 
-            <div class="title">
+            <div class="brand">
                 AR GALLERY
             </div>
 
-            <div class="description">
+            <div class="authDescription">
 
                 Подключите TON-кошелёк.
-
-                <br><br>
-
-                После подключения будет
-                выполнена проверка NFT.
+                <br>
+                Доступ предоставляется владельцам
+                NFT необходимой коллекции.
 
             </div>
 
+            <div id="ton-connect"></div>
 
-            <div id="tonConnect"></div>
-
-
-            <div id="loginStatus">
-                Кошелёк не подключён
+            <div id="authStatus">
+                Подключите кошелёк
             </div>
 
         </div>
 
     </section>
-
 
 
     <!-- =====================================================
@@ -456,44 +722,47 @@
         class="screen"
     >
 
-        <div class="header">
+        <header class="header">
 
             <div class="headerTitle">
                 AR GALLERY
             </div>
 
-            <div id="walletDisplay">
+            <div
+                id="walletInfo"
+                class="headerWallet"
+            >
                 —
             </div>
 
-        </div>
+        </header>
 
 
-        <div class="homeContent">
+        <main class="homeContent">
 
-            <div class="menu">
+            <nav class="homeMenu">
 
                 <button
-                    id="galleryButton"
-                    class="mainButton"
+                    id="openGallery"
+                    class="menuButton"
+                    type="button"
                 >
                     ГАЛЕРЕЯ
                 </button>
 
-
                 <button
-                    id="generationButton"
-                    class="mainButton"
+                    id="openGeneration"
+                    class="menuButton"
+                    type="button"
                 >
                     ГЕНЕРАЦИЯ
                 </button>
 
-            </div>
+            </nav>
 
-        </div>
+        </main>
 
     </section>
-
 
 
     <!-- =====================================================
@@ -505,7 +774,7 @@
         class="screen"
     >
 
-        <div class="header">
+        <header class="header">
 
             <div class="headerTitle">
                 ГАЛЕРЕЯ
@@ -514,20 +783,84 @@
             <button
                 id="galleryBack"
                 class="backButton"
+                type="button"
             >
                 НАЗАД
             </button>
 
-        </div>
+        </header>
 
 
-        <div
-            id="gallery"
-            class="gallery"
-        ></div>
+        <main class="galleryBody">
+
+            <div
+                id="galleryGrid"
+                class="galleryGrid"
+            ></div>
+
+        </main>
 
     </section>
 
+
+    <!-- =====================================================
+         VIEWER
+    ===================================================== -->
+
+    <section
+        id="viewerScreen"
+        class="screen"
+    >
+
+        <header class="header">
+
+            <div
+                id="viewerTitle"
+                class="headerTitle"
+            >
+                3D MODEL
+            </div>
+
+            <button
+                id="viewerBack"
+                class="backButton"
+                type="button"
+            >
+                НАЗАД
+            </button>
+
+        </header>
+
+
+        <div id="viewerContainer">
+
+            <canvas
+                id="viewerCanvas"
+            ></canvas>
+
+
+            <div
+                id="viewerLoader"
+                class="viewerLoader"
+            >
+
+                <div
+                    id="viewerLoaderText"
+                    class="viewerLoaderText"
+                >
+                    ЗАГРУЗКА
+                </div>
+
+            </div>
+
+
+            <div class="viewerHint">
+                ВРАЩЕНИЕ · МАСШТАБ
+            </div>
+
+        </div>
+
+    </section>
 
 
     <!-- =====================================================
@@ -539,7 +872,7 @@
         class="screen"
     >
 
-        <div class="header">
+        <header class="header">
 
             <div class="headerTitle">
                 ГЕНЕРАЦИЯ
@@ -548,16 +881,17 @@
             <button
                 id="generationBack"
                 class="backButton"
+                type="button"
             >
                 НАЗАД
             </button>
 
-        </div>
+        </header>
 
 
-        <div class="generationContent">
+        <main class="generationBody">
 
-            <div class="generationBox">
+            <div class="generationPanel">
 
                 <div class="generationTitle">
                     НОМЕР
@@ -566,13 +900,11 @@
 
                 <div class="generationDescription">
 
-                    Введите номер из пяти цифр.
-
-                    <br><br>
-
-                    Номер будет отправлен вместе
-                    с адресом подключённого
-                    TON-кошелька.
+                    Введите пятизначный номер.
+                    <br>
+                    После отправки номер и адрес
+                    подключённого кошелька будут
+                    переданы на сервер.
 
                 </div>
 
@@ -584,11 +916,9 @@
 
                     inputmode="numeric"
 
-                    pattern="[0-9]*"
+                    autocomplete="off"
 
                     maxlength="5"
-
-                    autocomplete="off"
 
                     placeholder="00000"
                 >
@@ -596,6 +926,9 @@
 
                 <button
                     id="generationSubmit"
+
+                    type="button"
+
                     disabled
                 >
                     ОТПРАВИТЬ
@@ -610,7 +943,7 @@
 
             </div>
 
-        </div>
+        </main>
 
     </section>
 
@@ -618,31 +951,65 @@
 </div>
 
 
-
 <!-- =========================================================
-     TON CONNECT
+     LOADING
 ========================================================= -->
 
-<script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
+<div
+    id="loadingOverlay"
+>
+
+    <div
+        id="loadingText"
+        class="loadingText"
+    >
+        ПРОВЕРКА
+    </div>
+
+</div>
 
 
-<script>
+<!-- =========================================================
+     MAIN JAVASCRIPT
+========================================================= -->
+
+<script type="module">
 
 
 /* ============================================================
-   CONFIG
+   THREE.JS
+============================================================ */
+
+import * as THREE from
+    "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
+
+import {
+    GLTFLoader
+}
+from
+    "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/GLTFLoader.js";
+
+import {
+    OrbitControls
+}
+from
+    "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/controls/OrbitControls.js";
+
+
+/* ============================================================
+   CONFIGURATION
 ============================================================ */
 
 const TON_MANIFEST =
     "https://roman22022000.github.io/Ton_site/tonconnect-manifest.json";
 
 
-const API_URL =
+const GENERATION_API =
     "https://api.araicameragame.party/api/generation";
 
 
 /*
-    КОЛЛЕКЦИЯ GETGEMS
+    Getgems collection:
 
     EQD9mm3hx-QvHyNG18gDaaJtSTTQTVVYVj6zhonXocj2eyI
 */
@@ -652,11 +1019,17 @@ const REQUIRED_COLLECTION =
 
 
 /*
-    Канонический raw-адрес этой коллекции.
+    Raw address:
+
+    0:fd9a6de1c7e42f1d8346d7c80369a26d4934d04d5558563eb38689d7a1c8f6
 */
 
 const REQUIRED_COLLECTION_RAW =
     "0:fd9a6de1c7e42f1d8346d7c80369a26d4934d04d5558563eb38689d7a1c8f6";
+
+
+const MODEL_BASE =
+    "https://raw.githubusercontent.com/Roman22022000/ArGameCam/main/models/";
 
 
 /* ============================================================
@@ -667,28 +1040,32 @@ let currentWallet = null;
 
 let accessGranted = false;
 
+let checkingWallet = false;
+
 
 /* ============================================================
    DOM
 ============================================================ */
 
-const loginScreen =
+const authScreen =
     document.getElementById(
-        "loginScreen"
+        "authScreen"
     );
-
 
 const homeScreen =
     document.getElementById(
         "homeScreen"
     );
 
-
 const galleryScreen =
     document.getElementById(
         "galleryScreen"
     );
 
+const viewerScreen =
+    document.getElementById(
+        "viewerScreen"
+    );
 
 const generationScreen =
     document.getElementById(
@@ -696,15 +1073,25 @@ const generationScreen =
     );
 
 
-const loginStatus =
+const authStatus =
     document.getElementById(
-        "loginStatus"
+        "authStatus"
+    );
+
+const walletInfo =
+    document.getElementById(
+        "walletInfo"
     );
 
 
-const walletDisplay =
+const loadingOverlay =
     document.getElementById(
-        "walletDisplay"
+        "loadingOverlay"
+    );
+
+const loadingText =
+    document.getElementById(
+        "loadingText"
     );
 
 
@@ -713,12 +1100,10 @@ const generationCode =
         "generationCode"
     );
 
-
 const generationSubmit =
     document.getElementById(
         "generationSubmit"
     );
-
 
 const generationStatus =
     document.getElementById(
@@ -726,9 +1111,35 @@ const generationStatus =
     );
 
 
-const gallery =
+const galleryGrid =
     document.getElementById(
-        "gallery"
+        "galleryGrid"
+    );
+
+
+const viewerTitle =
+    document.getElementById(
+        "viewerTitle"
+    );
+
+const viewerCanvas =
+    document.getElementById(
+        "viewerCanvas"
+    );
+
+const viewerContainer =
+    document.getElementById(
+        "viewerContainer"
+    );
+
+const viewerLoader =
+    document.getElementById(
+        "viewerLoader"
+    );
+
+const viewerLoaderText =
+    document.getElementById(
+        "viewerLoaderText"
     );
 
 
@@ -750,7 +1161,6 @@ function showScreen(screen) {
             }
         );
 
-
     screen.classList.add(
         "active"
     );
@@ -758,21 +1168,45 @@ function showScreen(screen) {
 
 
 /* ============================================================
+   ACCESS
+============================================================ */
+
+function requireAccess() {
+
+    if (!accessGranted) {
+
+        showScreen(
+            authScreen
+        );
+
+        authStatus.textContent =
+            "Сначала подключите кошелёк";
+
+        return false;
+    }
+
+    return true;
+}
+
+
+/* ============================================================
    WALLET DISPLAY
 ============================================================ */
 
-function shortWallet(address) {
+function shortenWallet(address) {
 
     if (!address) {
         return "—";
     }
 
+    if (address.length <= 18) {
+        return address;
+    }
+
     return (
-        address.substring(0, 8) +
+        address.slice(0, 9) +
         "..." +
-        address.substring(
-            address.length - 8
-        )
+        address.slice(-9)
     );
 }
 
@@ -782,79 +1216,126 @@ function shortWallet(address) {
 ============================================================ */
 
 /*
-    ВАЖНО:
+    TON Connect:
 
-    wallet.account.address от TON Connect уже является
-    raw-адресом вида:
+        wallet.account.address
 
-        0:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    already returns:
 
-    Поэтому для кошелька НИКАКОЙ decode не нужен.
+        <workchain>:<hex>
 
-    Для friendly-адресов коллекции используем полноценный
-    Base64URL decode + CRC и правильный workchain byte.
+    raw format.
+
+    We therefore only decode friendly addresses when
+    processing the collection returned by TonAPI.
 */
 
-function friendlyToRaw(address) {
+
+function base64UrlToBytes(value) {
+
+    let normalized =
+        String(value)
+            .replace(/-/g, "+")
+            .replace(/_/g, "/");
+
+
+    while (
+        normalized.length % 4 !== 0
+    ) {
+
+        normalized += "=";
+    }
+
+
+    const binary =
+        atob(normalized);
+
+
+    const bytes =
+        new Uint8Array(
+            binary.length
+        );
+
+
+    for (
+        let i = 0;
+        i < binary.length;
+        i++
+    ) {
+
+        bytes[i] =
+            binary.charCodeAt(i);
+    }
+
+
+    return bytes;
+}
+
+
+function normalizeTonAddress(address) {
+
+    if (!address) {
+        return "";
+    }
+
+
+    address =
+        String(address).trim();
+
+
+    /*
+        RAW:
+
+        0:64hex
+        -1:64hex
+    */
+
+    if (
+        /^-?\d+:[0-9a-fA-F]{64}$/
+            .test(address)
+    ) {
+
+        const parts =
+            address.split(":");
+
+
+        return (
+            parts[0] +
+            ":" +
+            parts[1].toLowerCase()
+        );
+    }
+
+
+    /*
+        FRIENDLY:
+
+        EQ...
+        UQ...
+    */
 
     try {
 
-        let value =
-            address
-                .replace(
-                    /-/g,
-                    "+"
-                )
-                .replace(
-                    /_/g,
-                    "/"
-                );
-
-
-        while (
-            value.length % 4 !== 0
-        ) {
-
-            value += "=";
-
-        }
-
-
-        const binary =
-            atob(value);
-
-
         const bytes =
-            new Uint8Array(
-                binary.length
+            base64UrlToBytes(
+                address
             );
-
-
-        for (
-            let i = 0;
-            i < binary.length;
-            i++
-        ) {
-
-            bytes[i] =
-                binary.charCodeAt(i);
-
-        }
 
 
         if (
             bytes.length !== 36
         ) {
 
-            return null;
-
+            return address.toLowerCase();
         }
 
 
         /*
+            TON friendly address:
+
             byte 0 = tag
-            byte 1 = signed workchain
-            bytes 2..33 = 32-byte hash
+            byte 1 = workchain
+            bytes 2..33 = account hash
             bytes 34..35 = CRC16
         */
 
@@ -867,7 +1348,6 @@ function friendlyToRaw(address) {
         ) {
 
             workchain -= 256;
-
         }
 
 
@@ -887,75 +1367,352 @@ function friendlyToRaw(address) {
                         2,
                         "0"
                     );
-
         }
 
 
         return (
             workchain +
             ":" +
-            hash
-        ).toLowerCase();
-
-    } catch (error) {
-
-        console.error(
-            "Friendly address decode error:",
-            error
+            hash.toLowerCase()
         );
 
-        return null;
+    } catch {
+
+        return address.toLowerCase();
     }
 }
 
 
-function normalizeAddress(address) {
+/* ============================================================
+   COLLECTION
+============================================================ */
 
-    if (!address) {
-        return "";
-    }
+const normalizedRequiredCollection =
+    normalizeTonAddress(
+        REQUIRED_COLLECTION
+    );
 
 
-    address =
-        String(
-            address
-        ).trim();
+console.log(
+    "Required collection:",
+    REQUIRED_COLLECTION
+);
 
+
+console.log(
+    "Required collection raw:",
+    REQUIRED_COLLECTION_RAW
+);
+
+
+console.log(
+    "Normalized collection:",
+    normalizedRequiredCollection
+);
+
+
+/* ============================================================
+   NFT CHECK
+============================================================ */
+
+async function checkCollectionNFT(
+    walletAddress
+) {
 
     /*
-        Raw TON address.
+        walletAddress from TON Connect
+        is already raw.
     */
 
-    if (
-        /^-?\d+:[0-9a-fA-F]{64}$/
-            .test(address)
-    ) {
-
-        return address
-            .toLowerCase();
-
-    }
-
-
-    /*
-        Friendly TON address.
-    */
-
-    const raw =
-        friendlyToRaw(
-            address
+    const normalizedWallet =
+        normalizeTonAddress(
+            walletAddress
         );
 
 
-    if (raw) {
+    console.log(
+        "Checking wallet:",
+        normalizedWallet
+    );
 
-        return raw;
 
+    const url =
+        "https://tonapi.io/v2/accounts/" +
+        encodeURIComponent(
+            normalizedWallet
+        ) +
+        "/nfts?limit=1000";
+
+
+    const response =
+        await fetch(
+            url,
+            {
+                method: "GET",
+
+                headers: {
+                    "Accept":
+                        "application/json"
+                }
+            }
+        );
+
+
+    if (!response.ok) {
+
+        throw new Error(
+            "TonAPI HTTP " +
+            response.status
+        );
     }
 
 
-    return address
-        .toLowerCase();
+    const data =
+        await response.json();
+
+
+    const nftItems =
+        Array.isArray(
+            data.nft_items
+        )
+            ? data.nft_items
+            : [];
+
+
+    console.log(
+        "NFT count:",
+        nftItems.length
+    );
+
+
+    /*
+        Проверяем каждый NFT.
+    */
+
+    for (
+        const nft of nftItems
+    ) {
+
+        const collectionAddress =
+            nft.collection?.address ||
+            nft.collection_address ||
+            "";
+
+
+        if (!collectionAddress) {
+            continue;
+        }
+
+
+        const normalizedNFTCollection =
+            normalizeTonAddress(
+                collectionAddress
+            );
+
+
+        console.log(
+            "NFT collection:",
+            normalizedNFTCollection
+        );
+
+
+        /*
+            Сравнение с обоими известными
+            представлениями адреса.
+        */
+
+        if (
+            normalizedNFTCollection ===
+                normalizedRequiredCollection ||
+
+            normalizedNFTCollection ===
+                REQUIRED_COLLECTION_RAW.toLowerCase()
+        ) {
+
+            console.log(
+                "NFT FROM REQUIRED COLLECTION FOUND"
+            );
+
+
+            return {
+                found: true,
+                nft: nft
+            };
+        }
+    }
+
+
+    return {
+        found: false,
+        nft: null
+    };
+}
+
+
+/* ============================================================
+   PROCESS WALLET
+============================================================ */
+
+async function processWallet(
+    wallet
+) {
+
+    /*
+        DISCONNECTED
+    */
+
+    if (!wallet) {
+
+        currentWallet = null;
+
+        accessGranted = false;
+
+        walletInfo.textContent =
+            "—";
+
+        authStatus.textContent =
+            "Подключите кошелёк";
+
+        showScreen(
+            authScreen
+        );
+
+        return;
+    }
+
+
+    /*
+        Prevent duplicate checks.
+    */
+
+    if (checkingWallet) {
+        return;
+    }
+
+
+    /*
+        RAW WALLET ADDRESS
+    */
+
+    currentWallet =
+        wallet.account.address;
+
+
+    walletInfo.textContent =
+        shortenWallet(
+            currentWallet
+        );
+
+
+    console.log(
+        "Connected wallet:",
+        currentWallet
+    );
+
+
+    checkingWallet = true;
+
+    accessGranted = false;
+
+
+    loadingOverlay.classList.add(
+        "active"
+    );
+
+    loadingText.textContent =
+        "ПРОВЕРКА NFT";
+
+
+    authStatus.textContent =
+        "Проверка NFT...";
+
+
+    try {
+
+        const result =
+            await checkCollectionNFT(
+                currentWallet
+            );
+
+
+        if (!result.found) {
+
+            accessGranted = false;
+
+
+            loadingOverlay.classList.remove(
+                "active"
+            );
+
+
+            authStatus.textContent =
+                "NFT нужной коллекции не найден";
+
+
+            showScreen(
+                authScreen
+            );
+
+
+            return;
+        }
+
+
+        /*
+            NFT FOUND
+        */
+
+        accessGranted = true;
+
+
+        loadingOverlay.classList.remove(
+            "active"
+        );
+
+
+        authStatus.textContent =
+            "Доступ разрешён";
+
+
+        showScreen(
+            homeScreen
+        );
+
+
+        console.log(
+            "ACCESS GRANTED"
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "NFT check error:",
+            error
+        );
+
+
+        accessGranted = false;
+
+
+        loadingOverlay.classList.remove(
+            "active"
+        );
+
+
+        authStatus.textContent =
+            "Ошибка проверки NFT";
+
+
+        showScreen(
+            authScreen
+        );
+
+    } finally {
+
+        checkingWallet = false;
+
+    }
 }
 
 
@@ -970,130 +1727,26 @@ const tonConnectUI =
             TON_MANIFEST,
 
         buttonRootId:
-            "tonConnect"
+            "ton-connect",
+
+        uiPreferences: {
+            theme: "DARK"
+        }
 
     });
 
 
 /*
-    Важно:
-
-    Не делаем принудительный disconnect,
-    если NFT не найден.
-
-    Сначала показываем причину.
+    TON Connect officially calls this callback
+    after connection, disconnection and session restore.
 */
 
 tonConnectUI.onStatusChange(
 
     async wallet => {
 
-        console.log(
-            "TON CONNECT WALLET:",
+        await processWallet(
             wallet
-        );
-
-
-        if (!wallet) {
-
-            currentWallet = null;
-
-            accessGranted = false;
-
-            walletDisplay.textContent =
-                "—";
-
-            loginStatus.textContent =
-                "Кошелёк не подключён";
-
-            updateSendButton();
-
-            showScreen(
-                loginScreen
-            );
-
-            return;
-        }
-
-
-        /*
-            TON Connect отдаёт raw address.
-
-            Пример:
-
-            0:xxxxxxxxxxxxxxxx...
-        */
-
-        currentWallet =
-            wallet.account.address;
-
-
-        console.log(
-            "RAW WALLET:",
-            currentWallet
-        );
-
-
-        walletDisplay.textContent =
-            shortWallet(
-                currentWallet
-            );
-
-
-        loginStatus.textContent =
-            "Кошелёк подключён. Проверка NFT...";
-
-
-        /*
-            Проверяем NFT.
-        */
-
-        const result =
-            await checkCollectionNFT(
-                currentWallet
-            );
-
-
-        console.log(
-            "NFT RESULT:",
-            result
-        );
-
-
-        if (!result.success) {
-
-            accessGranted = false;
-
-            loginStatus.innerHTML =
-                result.message;
-
-            updateSendButton();
-
-            /*
-                НЕ отключаем кошелёк.
-                Это позволит увидеть адрес и причину ошибки.
-            */
-
-            return;
-        }
-
-
-        /*
-            NFT найден.
-        */
-
-        accessGranted = true;
-
-
-        loginStatus.textContent =
-            "NFT найден. Доступ разрешён";
-
-
-        updateSendButton();
-
-
-        showScreen(
-            homeScreen
         );
 
     },
@@ -1101,387 +1754,36 @@ tonConnectUI.onStatusChange(
     error => {
 
         console.error(
-            "TON CONNECT ERROR:",
+            "TON Connect error:",
             error
         );
 
 
-        loginStatus.textContent =
-            "Ошибка TON Connect: " +
-            (
-                error?.message ||
-                "неизвестная ошибка"
-            );
+        authStatus.textContent =
+            "Ошибка подключения кошелька";
+
     }
 
 );
 
 
 /* ============================================================
-   NFT CHECK
-============================================================ */
-
-async function checkCollectionNFT(
-    walletAddress
-) {
-
-    try {
-
-        /*
-            Получаем raw-адрес кошелька.
-        */
-
-        const walletRaw =
-            normalizeAddress(
-                walletAddress
-            );
-
-
-        /*
-            Получаем raw-адрес коллекции.
-        */
-
-        const collectionRaw =
-            normalizeAddress(
-                REQUIRED_COLLECTION
-            );
-
-
-        console.log(
-            "WALLET RAW:",
-            walletRaw
-        );
-
-
-        console.log(
-            "COLLECTION RAW:",
-            collectionRaw
-        );
-
-
-        /*
-            Основной запрос TonAPI.
-
-            Получаем NFT владельца.
-        */
-
-        const url =
-            "https://tonapi.io/v2/accounts/" +
-            encodeURIComponent(
-                walletRaw
-            ) +
-            "/nfts?limit=1000";
-
-
-        console.log(
-            "NFT API:",
-            url
-        );
-
-
-        const response =
-            await fetch(
-                url,
-                {
-                    method: "GET",
-
-                    headers: {
-                        "Accept":
-                            "application/json"
-                    }
-                }
-            );
-
-
-        console.log(
-            "TONAPI STATUS:",
-            response.status
-        );
-
-
-        const responseText =
-            await response.text();
-
-
-        if (!response.ok) {
-
-            console.error(
-                "TONAPI ERROR:",
-                responseText
-            );
-
-
-            return {
-
-                success: false,
-
-                message:
-                    "Ошибка TonAPI: HTTP " +
-                    response.status
-
-            };
-        }
-
-
-        let data;
-
-
-        try {
-
-            data =
-                JSON.parse(
-                    responseText
-                );
-
-        } catch {
-
-            return {
-
-                success: false,
-
-                message:
-                    "TonAPI вернул некорректный JSON"
-
-            };
-        }
-
-
-        const nfts =
-            Array.isArray(
-                data.nft_items
-            )
-                ? data.nft_items
-                : [];
-
-
-        console.log(
-            "NFT COUNT:",
-            nfts.length
-        );
-
-
-        if (nfts.length === 0) {
-
-            return {
-
-                success: false,
-
-                message:
-                    "NFT у этого кошелька не найдены"
-
-            };
-        }
-
-
-        /*
-            Проверяем каждый NFT.
-        */
-
-        for (
-            const nft of nfts
-        ) {
-
-            console.log(
-                "NFT:",
-                nft
-            );
-
-
-            let collectionAddress = "";
-
-
-            /*
-                Вариант TonAPI:
-                nft.collection.address
-            */
-
-            if (
-                nft.collection &&
-                nft.collection.address
-            ) {
-
-                collectionAddress =
-                    nft.collection.address;
-
-            }
-
-
-            /*
-                Альтернативное поле.
-            */
-
-            if (
-                !collectionAddress &&
-                nft.collection_address
-            ) {
-
-                collectionAddress =
-                    nft.collection_address;
-
-            }
-
-
-            if (!collectionAddress) {
-
-                continue;
-
-            }
-
-
-            const nftCollectionRaw =
-                normalizeAddress(
-                    collectionAddress
-                );
-
-
-            console.log(
-                "NFT COLLECTION:",
-                collectionAddress
-            );
-
-
-            console.log(
-                "NFT COLLECTION RAW:",
-                nftCollectionRaw
-            );
-
-
-            /*
-                СРАВНЕНИЕ
-            */
-
-            if (
-                nftCollectionRaw ===
-                collectionRaw
-            ) {
-
-                console.log(
-                    "================================"
-                );
-
-                console.log(
-                    "REQUIRED NFT FOUND"
-                );
-
-                console.log(
-                    "WALLET:",
-                    walletRaw
-                );
-
-                console.log(
-                    "COLLECTION:",
-                    nftCollectionRaw
-                );
-
-                console.log(
-                    "================================"
-                );
-
-
-                return {
-
-                    success: true,
-
-                    message:
-                        "NFT найден"
-
-                };
-            }
-
-        }
-
-
-        /*
-            NFT есть, но другой коллекции.
-        */
-
-        return {
-
-            success: false,
-
-            message:
-                "NFT найдены, но NFT из нужной коллекции не найден"
-
-        };
-
-
-    } catch (error) {
-
-        console.error(
-            "NFT CHECK ERROR:",
-            error
-        );
-
-
-        return {
-
-            success: false,
-
-            message:
-                "Ошибка проверки NFT: " +
-                error.message
-
-        };
-
-    }
-
-}
-
-
-/* ============================================================
-   HOME
+   HOME → GALLERY
 ============================================================ */
 
 document
     .getElementById(
-        "generationButton"
+        "openGallery"
     )
     .addEventListener(
         "click",
         () => {
 
-            if (!accessGranted) {
-
-                generationStatus.textContent =
-                    "Нет доступа";
-
+            if (
+                !requireAccess()
+            ) {
                 return;
             }
-
-
-            generationCode.value =
-                "";
-
-
-            generationStatus.textContent =
-                "Введите 5 цифр";
-
-
-            updateSendButton();
-
-
-            showScreen(
-                generationScreen
-            );
-
-        }
-    );
-
-
-document
-    .getElementById(
-        "galleryButton"
-    )
-    .addEventListener(
-        "click",
-        () => {
-
-            if (!accessGranted) {
-                return;
-            }
-
-
-            loadGallery();
 
 
             showScreen(
@@ -1493,24 +1795,143 @@ document
 
 
 /* ============================================================
-   BACK
+   HOME → GENERATION
 ============================================================ */
 
 document
     .getElementById(
-        "generationBack"
+        "openGeneration"
     )
     .addEventListener(
         "click",
         () => {
 
+            if (
+                !requireAccess()
+            ) {
+                return;
+            }
+
+
+            generationCode.value =
+                "";
+
+            generationStatus.textContent =
+                "Введите 5 цифр";
+
+
+            updateGenerationButton();
+
+
             showScreen(
-                homeScreen
+                generationScreen
+            );
+
+
+            setTimeout(
+                () => {
+
+                    generationCode.focus();
+
+                },
+                100
             );
 
         }
     );
 
+
+/* ============================================================
+   GALLERY DATA
+============================================================ */
+
+const galleryItems = [
+
+    {
+        number: 1,
+        filename: "creature.glb"
+    },
+
+    {
+        number: 2,
+        filename: "creature.glb"
+    },
+
+    {
+        number: 3,
+        filename: "creature.glb"
+    }
+
+];
+
+
+/* ============================================================
+   BUILD GALLERY
+============================================================ */
+
+function buildGallery() {
+
+    galleryGrid.innerHTML =
+        "";
+
+
+    galleryItems.forEach(
+        (item, index) => {
+
+            const button =
+                document.createElement(
+                    "button"
+                );
+
+
+            button.type =
+                "button";
+
+
+            button.className =
+                "galleryItem";
+
+
+            button.innerHTML = `
+
+                <span class="galleryNumber">
+                    ${String(item.number).padStart(2, "0")}
+                </span>
+
+                <span class="galleryPlaceholder">
+                    ${String(item.number)}
+                </span>
+
+            `;
+
+
+            button.addEventListener(
+                "click",
+                () => {
+
+                    openViewer(
+                        index
+                    );
+
+                }
+            );
+
+
+            galleryGrid.appendChild(
+                button
+            );
+
+        }
+    );
+}
+
+
+buildGallery();
+
+
+/* ============================================================
+   GALLERY BACK
+============================================================ */
 
 document
     .getElementById(
@@ -1529,7 +1950,7 @@ document
 
 
 /* ============================================================
-   INPUT
+   GENERATION INPUT
 ============================================================ */
 
 generationCode.addEventListener(
@@ -1542,23 +1963,34 @@ generationCode.addEventListener(
                     /\D/g,
                     ""
                 )
-                .substring(
+                .slice(
                     0,
                     5
                 );
 
 
-        updateSendButton();
+        if (
+            generationCode.value.length <
+            5
+        ) {
+
+            generationStatus.textContent =
+                "";
+
+        }
+
+
+        updateGenerationButton();
 
     }
 );
 
 
 /* ============================================================
-   SEND BUTTON
+   GENERATION BUTTON
 ============================================================ */
 
-function updateSendButton() {
+function updateGenerationButton() {
 
     const validCode =
         /^\d{5}$/.test(
@@ -1574,12 +2006,19 @@ function updateSendButton() {
 
 
 /* ============================================================
-   SEND TO YOUR PC
+   SEND GENERATION DATA
 ============================================================ */
 
 generationSubmit.addEventListener(
     "click",
     async () => {
+
+        if (
+            !requireAccess()
+        ) {
+            return;
+        }
+
 
         const code =
             generationCode.value.trim();
@@ -1607,6 +2046,10 @@ generationSubmit.addEventListener(
         }
 
 
+        /*
+            EXACT DATA SENT TO PC
+        */
+
         const payload = {
 
             code:
@@ -1619,7 +2062,7 @@ generationSubmit.addEventListener(
 
 
         console.log(
-            "SEND:",
+            "GENERATION REQUEST:",
             payload
         );
 
@@ -1636,17 +2079,15 @@ generationSubmit.addEventListener(
 
             const response =
                 await fetch(
-                    API_URL,
+                    GENERATION_API,
                     {
 
                         method:
                             "POST",
 
                         headers: {
-
                             "Content-Type":
                                 "application/json"
-
                         },
 
                         body:
@@ -1663,7 +2104,7 @@ generationSubmit.addEventListener(
 
 
             console.log(
-                "SERVER:",
+                "GENERATION RESPONSE:",
                 text
             );
 
@@ -1681,30 +2122,20 @@ generationSubmit.addEventListener(
             } catch {
 
                 throw new Error(
-                    "Сервер вернул не JSON"
-                );
-
-            }
-
-
-            if (!response.ok) {
-
-                throw new Error(
-                    data.error ||
-                    "HTTP " +
-                    response.status
+                    "Сервер вернул некорректный ответ"
                 );
 
             }
 
 
             if (
+                !response.ok ||
                 data.success !== true
             ) {
 
                 throw new Error(
                     data.error ||
-                    "Сервер отклонил запрос"
+                    "Ошибка сервера"
                 );
 
             }
@@ -1721,69 +2152,697 @@ generationSubmit.addEventListener(
         } catch (error) {
 
             console.error(
-                "SEND ERROR:",
+                "Generation error:",
                 error
             );
 
 
             generationStatus.textContent =
-                "Ошибка: " +
-                error.message;
+                "Ошибка отправки";
+
+        } finally {
+
+            updateGenerationButton();
 
         }
-
-
-        updateSendButton();
 
     }
 );
 
 
 /* ============================================================
-   GALLERY
+   GENERATION BACK
 ============================================================ */
 
-function loadGallery() {
+document
+    .getElementById(
+        "generationBack"
+    )
+    .addEventListener(
+        "click",
+        () => {
 
-    gallery.innerHTML = "";
+            generationCode.value =
+                "";
+
+            generationStatus.textContent =
+                "";
+
+            updateGenerationButton();
 
 
-    for (
-        let i = 1;
-        i <= 12;
-        i++
-    ) {
-
-        const item =
-            document.createElement(
-                "div"
+            showScreen(
+                homeScreen
             );
 
-
-        item.className =
-            "galleryItem";
-
-
-        item.textContent =
-            String(i);
+        }
+    );
 
 
-        gallery.appendChild(
-            item
+/* ============================================================
+   THREE.JS
+============================================================ */
+
+let scene = null;
+
+let camera = null;
+
+let renderer = null;
+
+let controls = null;
+
+let model = null;
+
+let animationFrame = null;
+
+
+const loader =
+    new GLTFLoader();
+
+
+/* ============================================================
+   VIEWER INIT
+============================================================ */
+
+function initViewer() {
+
+    if (renderer) {
+        return;
+    }
+
+
+    scene =
+        new THREE.Scene();
+
+
+    scene.background =
+        new THREE.Color(
+            0x000000
         );
 
-    }
+
+    camera =
+        new THREE.PerspectiveCamera(
+
+            45,
+
+            viewerContainer.clientWidth /
+                viewerContainer.clientHeight,
+
+            0.01,
+
+            1000
+
+        );
+
+
+    camera.position.set(
+        0,
+        0.35,
+        3
+    );
+
+
+    renderer =
+        new THREE.WebGLRenderer({
+
+            canvas:
+                viewerCanvas,
+
+            antialias:
+                true,
+
+            alpha:
+                false
+
+        });
+
+
+    renderer.setPixelRatio(
+
+        Math.min(
+            window.devicePixelRatio,
+            2
+        )
+
+    );
+
+
+    renderer.setSize(
+
+        viewerContainer.clientWidth,
+
+        viewerContainer.clientHeight
+
+    );
+
+
+    renderer.outputColorSpace =
+        THREE.SRGBColorSpace;
+
+
+    controls =
+        new OrbitControls(
+
+            camera,
+
+            renderer.domElement
+
+        );
+
+
+    controls.enableDamping =
+        true;
+
+
+    controls.dampingFactor =
+        0.05;
+
+
+    controls.minDistance =
+        0.3;
+
+
+    controls.maxDistance =
+        20;
+
+
+    controls.target.set(
+        0,
+        0,
+        0
+    );
+
+
+    /*
+        LIGHT
+    */
+
+    const ambient =
+        new THREE.AmbientLight(
+            0xffffff,
+            2
+        );
+
+
+    scene.add(
+        ambient
+    );
+
+
+    const light1 =
+        new THREE.DirectionalLight(
+            0xffffff,
+            3
+        );
+
+
+    light1.position.set(
+        4,
+        6,
+        5
+    );
+
+
+    scene.add(
+        light1
+    );
+
+
+    const light2 =
+        new THREE.DirectionalLight(
+            0xffffff,
+            1.5
+        );
+
+
+    light2.position.set(
+        -4,
+        2,
+        -4
+    );
+
+
+    scene.add(
+        light2
+    );
+
+
+    animateViewer();
 }
 
 
 /* ============================================================
-   INIT
+   OPEN VIEWER
 ============================================================ */
 
-updateSendButton();
+function openViewer(index) {
+
+    if (
+        !requireAccess()
+    ) {
+        return;
+    }
+
+
+    const item =
+        galleryItems[index];
+
+
+    viewerTitle.textContent =
+        "MODEL " +
+        String(
+            item.number
+        ).padStart(
+            2,
+            "0"
+        );
+
+
+    showScreen(
+        viewerScreen
+    );
+
+
+    initViewer();
+
+
+    loadModel(
+        item.filename
+    );
+}
+
+
+/* ============================================================
+   LOAD MODEL
+============================================================ */
+
+function loadModel(filename) {
+
+    viewerLoader.classList.add(
+        "active"
+    );
+
+
+    viewerLoaderText.textContent =
+        "ЗАГРУЗКА МОДЕЛИ";
+
+
+    /*
+        REMOVE OLD MODEL
+    */
+
+    if (model) {
+
+        scene.remove(
+            model
+        );
+
+
+        model.traverse(
+            object => {
+
+                if (
+                    object.isMesh
+                ) {
+
+                    if (
+                        object.geometry
+                    ) {
+
+                        object.geometry.dispose();
+
+                    }
+
+
+                    if (
+                        Array.isArray(
+                            object.material
+                        )
+                    ) {
+
+                        object.material
+                            .forEach(
+                                material => {
+
+                                    material.dispose();
+
+                                }
+                            );
+
+                    } else if (
+                        object.material
+                    ) {
+
+                        object.material.dispose();
+
+                    }
+
+                }
+
+            }
+        );
+
+
+        model =
+            null;
+    }
+
+
+    const url =
+        MODEL_BASE +
+        filename;
+
+
+    loader.load(
+
+        url,
+
+        gltf => {
+
+            model =
+                gltf.scene;
+
+
+            /*
+                FIND BOUNDS
+            */
+
+            const box =
+                new THREE.Box3()
+                    .setFromObject(
+                        model
+                    );
+
+
+            const center =
+                box.getCenter(
+                    new THREE.Vector3()
+                );
+
+
+            const size =
+                box.getSize(
+                    new THREE.Vector3()
+                );
+
+
+            /*
+                CENTER
+            */
+
+            model.position.sub(
+                center
+            );
+
+
+            /*
+                SCALE
+            */
+
+            const maxSize =
+                Math.max(
+                    size.x,
+                    size.y,
+                    size.z
+                );
+
+
+            if (
+                maxSize > 0
+            ) {
+
+                model.scale.setScalar(
+                    2 / maxSize
+                );
+
+            }
+
+
+            /*
+                MATERIALS
+            */
+
+            model.traverse(
+                object => {
+
+                    if (
+                        object.isMesh
+                    ) {
+
+                        object.frustumCulled =
+                            false;
+
+                    }
+
+                }
+            );
+
+
+            scene.add(
+                model
+            );
+
+
+            /*
+                CAMERA
+            */
+
+            camera.position.set(
+                0,
+                0.35,
+                3
+            );
+
+
+            controls.target.set(
+                0,
+                0,
+                0
+            );
+
+
+            controls.update();
+
+
+            viewerLoader.classList.remove(
+                "active"
+            );
+
+        },
+
+        progress => {
+
+            if (
+                progress.total
+            ) {
+
+                const percent =
+                    Math.round(
+                        (
+                            progress.loaded /
+                            progress.total
+                        ) *
+                        100
+                    );
+
+
+                viewerLoaderText.textContent =
+                    "ЗАГРУЗКА " +
+                    percent +
+                    "%";
+
+            }
+
+        },
+
+        error => {
+
+            console.error(
+                "Model loading error:",
+                error
+            );
+
+
+            viewerLoaderText.textContent =
+                "ОШИБКА ЗАГРУЗКИ";
+
+
+        }
+
+    );
+}
+
+
+/* ============================================================
+   VIEWER BACK
+============================================================ */
+
+document
+    .getElementById(
+        "viewerBack"
+    )
+    .addEventListener(
+        "click",
+        () => {
+
+            showScreen(
+                galleryScreen
+            );
+
+        }
+    );
+
+
+/* ============================================================
+   ANIMATION
+============================================================ */
+
+function animateViewer() {
+
+    animationFrame =
+        requestAnimationFrame(
+            animateViewer
+        );
+
+
+    if (controls) {
+
+        controls.update();
+
+    }
+
+
+    if (
+        renderer &&
+        scene &&
+        camera
+    ) {
+
+        renderer.render(
+            scene,
+            camera
+        );
+
+    }
+
+}
+
+
+/* ============================================================
+   RESIZE
+============================================================ */
+
+window.addEventListener(
+    "resize",
+    () => {
+
+        if (
+            !camera ||
+            !renderer
+        ) {
+
+            return;
+        }
+
+
+        const width =
+            viewerContainer.clientWidth;
+
+
+        const height =
+            viewerContainer.clientHeight;
+
+
+        if (
+            width <= 0 ||
+            height <= 0
+        ) {
+
+            return;
+        }
+
+
+        camera.aspect =
+            width / height;
+
+
+        camera.updateProjectionMatrix();
+
+
+        renderer.setSize(
+            width,
+            height
+        );
+
+    }
+);
+
+
+/* ============================================================
+   TELEGRAM MINI APP
+============================================================ */
+
+const tg =
+    window.Telegram?.WebApp ||
+    null;
+
+
+if (tg) {
+
+    tg.ready();
+
+    tg.expand();
+
+
+    if (
+        tg.setHeaderColor
+    ) {
+
+        tg.setHeaderColor(
+            "#000000"
+        );
+
+    }
+
+
+    if (
+        tg.setBackgroundColor
+    ) {
+
+        tg.setBackgroundColor(
+            "#000000"
+        );
+
+    }
+
+}
+
+
+/* ============================================================
+   INITIAL STATE
+============================================================ */
+
+updateGenerationButton();
+
+
+console.log(
+    "AR Gallery initialized"
+);
+
+console.log(
+    "Generation API:",
+    GENERATION_API
+);
+
+console.log(
+    "Required collection:",
+    REQUIRED_COLLECTION
+);
 
 
 </script>
 
 </body>
+
 </html>
