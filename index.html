@@ -163,25 +163,6 @@
             font-weight: 500;
         }
 
-        .walletInfo {
-            width: 100%;
-
-            margin-bottom: 20px;
-
-            padding-bottom: 14px;
-
-            border-bottom: 1px solid #181818;
-
-            color: #555;
-
-            font-size: 11px;
-            line-height: 1.4;
-
-            text-align: center;
-
-            word-break: break-all;
-        }
-
         .menu {
             width: 100%;
         }
@@ -441,6 +422,83 @@
 
 
         /* =========================================================
+           USER
+        ========================================================= */
+
+        .userPage {
+            width: 320px;
+            max-width: 100%;
+            margin: auto;
+
+            display: flex;
+            flex-direction: column;
+        }
+
+        .userBlock {
+            width: 100%;
+
+            padding: 18px;
+
+            background: #080808;
+
+            border: 1px solid #242424;
+        }
+
+        .userLabel {
+            margin-bottom: 10px;
+
+            color: #666;
+
+            font-size: 11px;
+            letter-spacing: .4px;
+        }
+
+        .userAddress {
+            color: #fff;
+
+            font-size: 12px;
+            line-height: 1.5;
+
+            word-break: break-all;
+        }
+
+        .disconnectButton {
+            width: 100%;
+            height: 52px;
+
+            margin-top: 10px;
+
+            background: #080808;
+            color: #fff;
+
+            border: 1px solid #242424;
+
+            font-size: 13px;
+            font-weight: 400;
+        }
+
+        .disconnectButton:hover {
+            background: #111;
+        }
+
+        .disconnectButton:active {
+            background: #181818;
+        }
+
+        .userStatus {
+            min-height: 18px;
+
+            margin-top: 14px;
+
+            color: #666;
+
+            font-size: 12px;
+
+            text-align: center;
+        }
+
+
+        /* =========================================================
            LOADING
         ========================================================= */
 
@@ -546,11 +604,6 @@
             AR Gallery
         </div>
 
-        <div
-            id="walletInfo"
-            class="walletInfo"
-        ></div>
-
         <div class="menu">
 
             <button
@@ -567,6 +620,14 @@
                 type="button"
             >
                 ГЕНЕРАЦИЯ
+            </button>
+
+            <button
+                id="openUser"
+                class="menuButton"
+                type="button"
+            >
+                ПОЛЬЗОВАТЕЛЬ
             </button>
 
         </div>
@@ -689,6 +750,64 @@
 
 
 <!-- =============================================================
+     USER
+============================================================= -->
+
+<section
+    id="userScreen"
+    class="screen page"
+>
+
+    <div class="header">
+
+        <button
+            id="userBack"
+            class="backButton"
+            type="button"
+        >
+            ←
+        </button>
+
+        <div class="pageTitle">
+            ПОЛЬЗОВАТЕЛЬ
+        </div>
+
+    </div>
+
+    <div class="userPage">
+
+        <div class="userBlock">
+
+            <div class="userLabel">
+                TON-КОШЕЛЁК
+            </div>
+
+            <div
+                id="userWalletAddress"
+                class="userAddress"
+            ></div>
+
+        </div>
+
+        <button
+            id="disconnectWallet"
+            class="disconnectButton"
+            type="button"
+        >
+            ВЫЙТИ ИЗ КОШЕЛЬКА
+        </button>
+
+        <div
+            id="userStatus"
+            class="userStatus"
+        ></div>
+
+    </div>
+
+</section>
+
+
+<!-- =============================================================
      LOADING
 ============================================================= -->
 
@@ -776,6 +895,9 @@ const viewerScreen =
 const generationScreen =
     document.getElementById("generationScreen");
 
+const userScreen =
+    document.getElementById("userScreen");
+
 
 const connectWallet =
     document.getElementById("connectWallet");
@@ -783,8 +905,14 @@ const connectWallet =
 const authStatus =
     document.getElementById("authStatus");
 
-const walletInfo =
-    document.getElementById("walletInfo");
+const userWalletAddress =
+    document.getElementById("userWalletAddress");
+
+const disconnectWallet =
+    document.getElementById("disconnectWallet");
+
+const userStatus =
+    document.getElementById("userStatus");
 
 
 const galleryGrid =
@@ -1187,7 +1315,10 @@ async function processWallet(
         accessGranted =
             false;
 
-        walletInfo.textContent =
+        userWalletAddress.textContent =
+            "";
+
+        userStatus.textContent =
             "";
 
         authStatus.textContent =
@@ -1273,7 +1404,7 @@ async function processWallet(
             true;
 
 
-        walletInfo.textContent =
+        userWalletAddress.textContent =
             currentWallet;
 
 
@@ -1444,6 +1575,120 @@ document
 
         }
     );
+
+
+/* =============================================================
+   USER
+============================================================= */
+
+document
+    .getElementById("openUser")
+    .addEventListener(
+        "click",
+        () => {
+
+            if (
+                !requireAccess()
+            ) {
+                return;
+            }
+
+            userStatus.textContent =
+                "";
+
+            userWalletAddress.textContent =
+                currentWallet || "";
+
+            showScreen(
+                userScreen
+            );
+
+        }
+    );
+
+
+document
+    .getElementById("userBack")
+    .addEventListener(
+        "click",
+        () => {
+
+            userStatus.textContent =
+                "";
+
+            showScreen(
+                homeScreen
+            );
+
+        }
+    );
+
+
+disconnectWallet.addEventListener(
+    "click",
+    async () => {
+
+        if (
+            !currentWallet
+        ) {
+
+            showScreen(
+                authScreen
+            );
+
+            return;
+        }
+
+
+        disconnectWallet.disabled =
+            true;
+
+        userStatus.textContent =
+            "Выход из кошелька...";
+
+
+        try {
+
+            await tonConnectUI.disconnect();
+
+            currentWallet =
+                null;
+
+            accessGranted =
+                false;
+
+            userWalletAddress.textContent =
+                "";
+
+            userStatus.textContent =
+                "";
+
+            authStatus.textContent =
+                "Кошелёк отключён";
+
+            showScreen(
+                authScreen
+            );
+
+        } catch (error) {
+
+            console.error(
+                "TON DISCONNECT ERROR:",
+                error
+            );
+
+            userStatus.textContent =
+                "Ошибка выхода из кошелька";
+
+        } finally {
+
+            disconnectWallet.disabled =
+                false;
+
+        }
+
+    }
+);
 
 
 /* =============================================================
@@ -2184,4 +2429,4 @@ tonConnectUI.connectionRestored
 
 
 </body>
-</html>
+</html>м
