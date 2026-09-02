@@ -250,6 +250,91 @@
 
 
         /* =========================================================
+           ARCHIVE
+        ========================================================= */
+
+        .archiveGrid {
+            width: 100%;
+            max-width: 1100px;
+            margin: auto;
+            display: grid;
+            grid-template-columns: repeat(
+                auto-fill,
+                minmax(180px, 1fr)
+            );
+            gap: 10px;
+            overflow-y: auto;
+            padding-bottom: 10px;
+        }
+
+        .archiveItem {
+            aspect-ratio: 1;
+            background: #080808;
+            color: #fff;
+            border: 1px solid #202020;
+            overflow: hidden;
+            position: relative;
+            text-align: left;
+        }
+
+        .archiveItem:hover {
+            background: #111;
+            border-color: #444;
+        }
+
+        .archivePreview {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .archivePlaceholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #444;
+            font-size: 28px;
+        }
+
+        .archiveInfo {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            padding: 35px 12px 12px 12px;
+            background: linear-gradient(
+                transparent,
+                rgba(0,0,0,.92)
+            );
+        }
+
+        .archiveName {
+            font-size: 11px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .archiveFolder {
+            margin-top: 5px;
+            color: #777;
+            font-size: 8px;
+            letter-spacing: .5px;
+        }
+
+        .archiveStatus {
+            width: 100%;
+            max-width: 1100px;
+            margin: 0 auto 10px auto;
+            color: #666;
+            font-size: 10px;
+        }
+
+
+        /* =========================================================
            GALLERY
         ========================================================= */
 
@@ -615,6 +700,14 @@
             </button>
 
             <button
+                id="openArchive"
+                class="menuButton"
+                type="button"
+            >
+                АРХИВ
+            </button>
+
+            <button
                 id="openGeneration"
                 class="menuButton"
                 type="button"
@@ -633,6 +726,46 @@
         </div>
 
     </div>
+
+</section>
+
+
+<!-- =============================================================
+     ARCHIVE
+============================================================= -->
+
+<section
+    id="archiveScreen"
+    class="screen page"
+>
+
+    <div class="header">
+
+        <button
+            id="archiveBack"
+            class="backButton"
+            type="button"
+        >
+            ←
+        </button>
+
+        <div class="pageTitle">
+            АРХИВ
+        </div>
+
+    </div>
+
+    <div
+        id="archiveStatus"
+        class="archiveStatus"
+    >
+        Загрузка 3D моделей...
+    </div>
+
+    <div
+        id="archiveGrid"
+        class="archiveGrid"
+    ></div>
 
 </section>
 
@@ -871,6 +1004,9 @@ const REQUIRED_COLLECTION_RAW =
 const GENERATION_API =
     "https://api.araicameragame.party/api/generation";
 
+const ARCHIVE_API =
+    "https://api.araicameragame.party/api/models";
+
 
 const MODEL_BASE =
     "https://raw.githubusercontent.com/Roman22022000/ArGameCam/main/models/";
@@ -917,6 +1053,15 @@ const userStatus =
 
 const galleryGrid =
     document.getElementById("galleryGrid");
+
+const archiveScreen =
+    document.getElementById("archiveScreen");
+
+const archiveGrid =
+    document.getElementById("archiveGrid");
+
+const archiveStatus =
+    document.getElementById("archiveStatus");
 
 
 const viewerCanvas =
@@ -1537,6 +1682,26 @@ document
 
 
 document
+    .getElementById("openArchive")
+    .addEventListener(
+        "click",
+        async () => {
+
+            if (!requireAccess()) {
+                return;
+            }
+
+            showScreen(
+                archiveScreen
+            );
+
+            await loadArchiveModels();
+
+        }
+    );
+
+
+document
     .getElementById("openGeneration")
     .addEventListener(
         "click",
@@ -1858,14 +2023,38 @@ document
 
 
 document
+    .getElementById("archiveBack")
+    .addEventListener(
+        "click",
+        () => {
+            showScreen(
+                homeScreen
+            );
+        }
+    );
+
+
+document
     .getElementById("viewerBack")
     .addEventListener(
         "click",
         () => {
 
-            showScreen(
-                galleryScreen
-            );
+            if (
+                viewerOpenedFromArchive
+            ) {
+
+                showScreen(
+                    archiveScreen
+                );
+
+            } else {
+
+                showScreen(
+                    galleryScreen
+                );
+
+            }
 
         }
     );
@@ -1927,6 +2116,326 @@ generationBack.addEventListener(
 
     }
 );
+
+
+/* =============================================================
+   ARCHIVE 3D MODELS
+============================================================= */
+
+let archiveModels = [];
+
+async function loadArchiveModels() {
+
+    archiveStatus.textContent =
+        "Загрузка 3D моделей...";
+
+    archiveGrid.innerHTML =
+        "";
+
+    try {
+
+        const response =
+            await fetch(
+                ARCHIVE_API,
+                {
+                    method: "GET",
+                    cache: "no-store"
+                }
+            );
+
+        if (!response.ok) {
+            throw new Error(
+                "HTTP " + response.status
+            );
+        }
+
+        const data =
+            await response.json();
+
+        archiveModels =
+            Array.isArray(data.items)
+                ? data.items
+                : [];
+
+        if (!archiveModels.length) {
+
+            archiveStatus.textContent =
+                "В архиве пока нет 3D моделей.";
+
+            return;
+        }
+
+        archiveStatus.textContent =
+            "Моделей: " +
+            archiveModels.length;
+
+        archiveModels.forEach(
+            (item, index) => {
+
+                const button =
+                    document.createElement(
+                        "button"
+                    );
+
+                button.type =
+                    "button";
+
+                button.className =
+                    "archiveItem";
+
+                const preview =
+                    document.createElement(
+                        "div"
+                    );
+
+                preview.className =
+                    "archivePlaceholder";
+
+                preview.textContent =
+                    "3D";
+
+                button.appendChild(
+                    preview
+                );
+
+                const info =
+                    document.createElement(
+                        "div"
+                    );
+
+                info.className =
+                    "archiveInfo";
+
+                const name =
+                    document.createElement(
+                        "div"
+                    );
+
+                name.className =
+                    "archiveName";
+
+                name.textContent =
+                    item.filename || "model";
+
+                const folder =
+                    document.createElement(
+                        "div"
+                    );
+
+                folder.className =
+                    "archiveFolder";
+
+                folder.textContent =
+                    (
+                        item.folder || ""
+                    ).toUpperCase();
+
+                info.appendChild(
+                    name
+                );
+
+                info.appendChild(
+                    folder
+                );
+
+                button.appendChild(
+                    info
+                );
+
+                button.addEventListener(
+                    "click",
+                    () => {
+                        openArchiveViewer(
+                            index
+                        );
+                    }
+                );
+
+                archiveGrid.appendChild(
+                    button
+                );
+
+            }
+        );
+
+    } catch (error) {
+
+        console.error(
+            "ARCHIVE ERROR:",
+            error
+        );
+
+        archiveStatus.textContent =
+            "Не удалось получить архив.";
+
+    }
+
+}
+
+
+function openArchiveViewer(index) {
+
+    viewerOpenedFromArchive =
+        true;
+
+    if (!requireAccess()) {
+        return;
+    }
+
+    const item =
+        archiveModels[index];
+
+    if (!item) {
+        return;
+    }
+
+    viewerNumber.textContent =
+        item.filename || "3D";
+
+    showScreen(
+        viewerScreen
+    );
+
+    initViewer();
+
+    if (model) {
+
+        scene.remove(
+            model
+        );
+
+        model.traverse(
+            object => {
+
+                if (
+                    object.geometry
+                ) {
+                    object.geometry.dispose();
+                }
+
+                if (
+                    object.material
+                ) {
+
+                    if (
+                        Array.isArray(
+                            object.material
+                        )
+                    ) {
+
+                        object.material.forEach(
+                            material => {
+                                material.dispose();
+                            }
+                        );
+
+                    } else {
+
+                        object.material.dispose();
+
+                    }
+
+                }
+
+            }
+        );
+
+        model = null;
+
+    }
+
+    loader.load(
+
+        item.url,
+
+        gltf => {
+
+            model =
+                gltf.scene;
+
+            const box =
+                new THREE.Box3()
+                    .setFromObject(
+                        model
+                    );
+
+            const center =
+                box.getCenter(
+                    new THREE.Vector3()
+                );
+
+            const size =
+                box.getSize(
+                    new THREE.Vector3()
+                );
+
+            model.position.sub(
+                center
+            );
+
+            const maxSize =
+                Math.max(
+                    size.x,
+                    size.y,
+                    size.z
+                );
+
+            if (
+                maxSize > 0
+            ) {
+
+                model.scale.setScalar(
+                    2 / maxSize
+                );
+
+            }
+
+            model.traverse(
+                object => {
+
+                    if (
+                        object.isMesh
+                    ) {
+
+                        object.castShadow =
+                            true;
+
+                        object.receiveShadow =
+                            true;
+
+                    }
+
+                }
+            );
+
+            scene.add(
+                model
+            );
+
+            controls.target.set(
+                0,
+                0,
+                0
+            );
+
+            controls.update();
+
+        },
+
+        undefined,
+
+        error => {
+
+            console.error(
+                "ARCHIVE MODEL ERROR:",
+                error
+            );
+
+        }
+
+    );
+
+}
 
 
 /* =============================================================
@@ -2027,6 +2536,9 @@ let controls =
 
 let model =
     null;
+
+let viewerOpenedFromArchive =
+    false;
 
 
 const loader =
@@ -2221,6 +2733,9 @@ function animateViewer() {
 ============================================================= */
 
 function openViewer(index) {
+
+    viewerOpenedFromArchive =
+        false;
 
     if (
         !requireAccess()
