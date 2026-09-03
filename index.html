@@ -1,652 +1,488 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
 
-    <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
-    <title>AR Gallery</title>
-
-    <!-- TON CONNECT -->
-    <script src="https://unpkg.com/@tonconnect/ui@3.0.0/dist/tonconnect-ui.min.js"></script>
-
-    <style>
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        html,
-        body {
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-
-            background: #000;
-            color: #fff;
-
-            font-family:
-                Arial,
-                Helvetica,
-                sans-serif;
-        }
-
-        body {
-            -webkit-font-smoothing: antialiased;
-        }
-
-        button,
-        input {
-            font: inherit;
-        }
-
-        button {
-            cursor: pointer;
-            border: 0;
-        }
-
-        /* =========================================================
-           SCREENS
-        ========================================================= */
-
-        .screen {
-            position: fixed;
-            inset: 0;
-
-            display: none;
-
-            width: 100%;
-            height: 100%;
-
-            background: #000;
-        }
-
-        .screen.active {
-            display: flex;
-        }
-
-
-        /* =========================================================
-           AUTH
-        ========================================================= */
-
-        #authScreen {
-            align-items: center;
-            justify-content: center;
-
-            padding: 20px;
-        }
-
-        .auth {
-            width: 320px;
-            max-width: 100%;
-
-            text-align: center;
-        }
-
-        .authTitle {
-            margin-bottom: 30px;
-
-            font-size: 28px;
-            font-weight: 500;
-            letter-spacing: -0.5px;
-        }
-
-        /*
-            Собственная кнопка.
-            TON Connect modal открывается через openModal().
-        */
-
-        .connectButton {
-            width: 100%;
-            height: 52px;
-
-            background: #fff;
-            color: #000;
-
-            border: 1px solid #fff;
-
-            font-size: 14px;
-            font-weight: 500;
-
-            transition: opacity .15s ease;
-        }
-
-        .connectButton:hover {
-            opacity: .85;
-        }
-
-        .connectButton:active {
-            opacity: .65;
-        }
-
-        .authStatus {
-            min-height: 20px;
-
-            margin-top: 18px;
-
-            color: #666;
-
-            font-size: 12px;
-            line-height: 1.4;
-        }
-
-
-        /* =========================================================
-           HOME
-        ========================================================= */
-
-        #homeScreen {
-            align-items: center;
-            justify-content: center;
-
-            padding: 20px;
-        }
-
-        .home {
-            width: 320px;
-            max-width: 100%;
-        }
-
-        .homeTitle {
-            margin-bottom: 30px;
-
-            text-align: center;
-
-            font-size: 28px;
-            font-weight: 500;
-        }
-
-        .menu {
-            width: 100%;
-        }
-
-        .menuButton {
-            width: 100%;
-            height: 52px;
-
-            margin-bottom: 8px;
-
-            background: #080808;
-            color: #fff;
-
-            border: 1px solid #242424;
-
-            font-size: 13px;
-            font-weight: 400;
-
-            text-align: left;
-
-            padding: 0 16px;
-        }
-
-        .menuButton:hover {
-            background: #111;
-        }
-
-        .menuButton:active {
-            background: #181818;
-        }
-
-
-        /* =========================================================
-           PAGE HEADER
-        ========================================================= */
-
-        .page {
-            flex-direction: column;
-
-            padding:
-                14px
-                18px
-                18px
-                18px;
-        }
-
-        .header {
-            position: relative;
-
-            width: 100%;
-            height: 48px;
-
-            flex-shrink: 0;
-
-            display: flex;
-            align-items: center;
-        }
-
-        .backButton {
-            width: 40px;
-            height: 40px;
-
-            background: #080808;
-            color: #fff;
-
-            border: 1px solid #242424;
-
-            font-size: 22px;
-            line-height: 1;
-        }
-
-        .backButton:hover {
-            background: #111;
-        }
-
-        .pageTitle {
-            position: absolute;
-
-            left: 50%;
-            transform: translateX(-50%);
-
-            font-size: 14px;
-            font-weight: 400;
-        }
-
-
-        /* =========================================================
-           ARCHIVE
-        ========================================================= */
-
-        .archiveGrid {
-            width: 100%;
-            max-width: 1100px;
-            margin: auto;
-            display: grid;
-            grid-template-columns: repeat(
-                auto-fill,
-                minmax(180px, 1fr)
-            );
-            gap: 10px;
-            overflow-y: auto;
-            padding-bottom: 10px;
-        }
-
-        .archiveItem {
-            aspect-ratio: 1;
-            background: #080808;
-            color: #fff;
-            border: 1px solid #202020;
-            overflow: hidden;
-            position: relative;
-            text-align: left;
-        }
-
-        .archiveItem:hover {
-            background: #111;
-            border-color: #444;
-        }
-
-        .archivePreview {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
-
-        .archivePlaceholder {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #444;
-            font-size: 28px;
-        }
-
-        .archiveInfo {
-            position: absolute;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            padding: 35px 12px 12px 12px;
-            background: linear-gradient(
-                transparent,
-                rgba(0,0,0,.92)
-            );
-        }
-
-        .archiveName {
-            font-size: 11px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .archiveFolder {
-            margin-top: 5px;
-            color: #777;
-            font-size: 8px;
-            letter-spacing: .5px;
-        }
-
-        .archiveStatus {
-            width: 100%;
-            max-width: 1100px;
-            margin: 0 auto 10px auto;
-            color: #666;
-            font-size: 10px;
-        }
-
-
-        /* =========================================================
-           GALLERY
-        ========================================================= */
-
-        .galleryGrid {
-            width: 100%;
-            max-width: 900px;
-
-            margin: auto;
-
-            display: grid;
-
-            grid-template-columns:
-                repeat(
-                    auto-fill,
-                    minmax(140px, 1fr)
-                );
-
-            gap: 10px;
-
-            overflow-y: auto;
-        }
-
-        .galleryItem {
-            aspect-ratio: 1;
-
-            background: #080808;
-            color: #fff;
-
-            border: 1px solid #202020;
-
-            font-size: 18px;
-            font-weight: 400;
-        }
-
-        .galleryItem:hover {
-            background: #111;
-        }
-
-
-        /* =========================================================
-           VIEWER
-        ========================================================= */
-
-        #viewerScreen {
-            background: #000;
-        }
-
-        #viewerCanvas {
-            position: absolute;
-            inset: 0;
-
-            width: 100%;
-            height: 100%;
-        }
-
-        #viewerCanvas canvas {
-            display: block;
-
-            width: 100%;
-            height: 100%;
-        }
-
-        .viewerHeader {
-            position: absolute;
-
-            z-index: 10;
-
-            top: 14px;
-            left: 14px;
-            right: 14px;
-
-            height: 40px;
-
-            display: flex;
-            align-items: center;
-        }
-
-        .viewerNumber {
-            position: absolute;
-
-            left: 50%;
-            transform: translateX(-50%);
-
-            font-size: 14px;
-        }
-
-
-        /* =========================================================
-           GENERATION
-        ========================================================= */
-
-        #generationScreen {
-            align-items: center;
-            justify-content: center;
-
-            padding: 20px;
-        }
-
-        .generation {
-            width: 320px;
-            max-width: 100%;
-        }
-
-        .generationTitle {
-            margin-bottom: 24px;
-
-            font-size: 20px;
-            font-weight: 400;
-
-            text-align: center;
-        }
-
-        .codeInput {
-            width: 100%;
-            height: 58px;
-
-            background: #050505;
-            color: #fff;
-
-            border: 1px solid #292929;
-
-            outline: none;
-
-            padding: 0 16px;
-
-            font-size: 24px;
-            letter-spacing: 8px;
-
-            text-align: center;
-        }
-
-        .codeInput:focus {
-            border-color: #555;
-        }
-
-        .codeInput::placeholder {
-            color: #333;
-        }
-
-        .sendButton {
-            width: 100%;
-            height: 52px;
-
-            margin-top: 8px;
-
-            background: #fff;
-            color: #000;
-
-            border: 1px solid #fff;
-
-            font-size: 13px;
-        }
-
-        .sendButton:disabled {
-            opacity: .25;
-            cursor: default;
-        }
-
-        .generationStatus {
-            min-height: 18px;
-
-            margin-top: 14px;
-
-            color: #666;
-
-            font-size: 12px;
-
-            text-align: center;
-        }
-
-
-        /* =========================================================
-           USER
-        ========================================================= */
-
-        .userPage {
-            width: 320px;
-            max-width: 100%;
-            margin: auto;
-
-            display: flex;
-            flex-direction: column;
-        }
-
-        .userBlock {
-            width: 100%;
-
-            padding: 18px;
-
-            background: #080808;
-
-            border: 1px solid #242424;
-        }
-
-        .userLabel {
-            margin-bottom: 10px;
-
-            color: #666;
-
-            font-size: 11px;
-            letter-spacing: .4px;
-        }
-
-        .userAddress {
-            color: #fff;
-
-            font-size: 12px;
-            line-height: 1.5;
-
-            word-break: break-all;
-        }
-
-        .disconnectButton {
-            width: 100%;
-            height: 52px;
-
-            margin-top: 10px;
-
-            background: #080808;
-            color: #fff;
-
-            border: 1px solid #242424;
-
-            font-size: 13px;
-            font-weight: 400;
-        }
-
-        .disconnectButton:hover {
-            background: #111;
-        }
-
-        .disconnectButton:active {
-            background: #181818;
-        }
-
-        .userStatus {
-            min-height: 18px;
-
-            margin-top: 14px;
-
-            color: #666;
-
-            font-size: 12px;
-
-            text-align: center;
-        }
-
-
-        /* =========================================================
-           LOADING
-        ========================================================= */
-
-        #loading {
-            position: fixed;
-            inset: 0;
-
-            z-index: 1000;
-
-            display: none;
-
-            align-items: center;
-            justify-content: center;
-
-            background: #000;
-        }
-
-        #loading.active {
-            display: flex;
-        }
-
-        .loadingText {
-            color: #777;
-            font-size: 11px;
-        }
-
-
-        /* =========================================================
-           MOBILE
-        ========================================================= */
-
-        @media (max-width: 500px) {
-
-            .authTitle,
-            .homeTitle {
-                font-size: 24px;
-            }
-
-            .galleryGrid {
-                grid-template-columns:
-                    repeat(
-                        2,
-                        1fr
-                    );
-            }
-
-        }
-
-    </style>
+<meta charset="UTF-8">
+
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+>
+
+<title>AR Gallery</title>
+
+<script src="https://unpkg.com/@tonconnect/ui@3.0.0/dist/tonconnect-ui.min.js"></script>
+
+<style>
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html,
+body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #000;
+    color: #fff;
+    font-family: Arial, Helvetica, sans-serif;
+    touch-action: none;
+}
+
+body {
+    -webkit-font-smoothing: antialiased;
+}
+
+button,
+input {
+    font: inherit;
+}
+
+button {
+    cursor: pointer;
+    border: 0;
+}
+
+.screen {
+    position: fixed;
+    inset: 0;
+    display: none;
+    width: 100%;
+    height: 100%;
+    background: #000;
+}
+
+.screen.active {
+    display: flex;
+}
+
+/* AUTH */
+
+#authScreen {
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.auth {
+    width: 320px;
+    max-width: 100%;
+    text-align: center;
+}
+
+.authTitle {
+    margin-bottom: 30px;
+    font-size: 28px;
+    font-weight: 500;
+}
+
+.connectButton {
+    width: 100%;
+    height: 52px;
+    background: #fff;
+    color: #000;
+    border: 1px solid #fff;
+    font-size: 14px;
+}
+
+.connectButton:hover {
+    opacity: .85;
+}
+
+.authStatus {
+    min-height: 20px;
+    margin-top: 18px;
+    color: #666;
+    font-size: 12px;
+}
+
+/* HOME */
+
+#homeScreen {
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.home {
+    width: 320px;
+    max-width: 100%;
+}
+
+.homeTitle {
+    margin-bottom: 30px;
+    text-align: center;
+    font-size: 28px;
+    font-weight: 500;
+}
+
+.menu {
+    width: 100%;
+}
+
+.menuButton {
+    width: 100%;
+    height: 52px;
+    margin-bottom: 8px;
+    background: #080808;
+    color: #fff;
+    border: 1px solid #242424;
+    font-size: 13px;
+    text-align: left;
+    padding: 0 16px;
+}
+
+.menuButton:hover {
+    background: #111;
+}
+
+/* PAGE */
+
+.page {
+    flex-direction: column;
+    padding: 14px 18px 18px 18px;
+}
+
+.header {
+    position: relative;
+    width: 100%;
+    height: 48px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+}
+
+.backButton {
+    width: 40px;
+    height: 40px;
+    background: #080808;
+    color: #fff;
+    border: 1px solid #242424;
+    font-size: 22px;
+}
+
+.pageTitle {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 14px;
+}
+
+/* ARCHIVE */
+
+.archiveGrid {
+    width: 100%;
+    max-width: 1100px;
+    margin: auto;
+    display: grid;
+    grid-template-columns: repeat(
+        auto-fill,
+        minmax(180px, 1fr)
+    );
+    gap: 10px;
+    overflow-y: auto;
+    padding-bottom: 10px;
+    touch-action: pan-y;
+}
+
+.archiveItem {
+    aspect-ratio: 1;
+    background: #080808;
+    color: #fff;
+    border: 1px solid #202020;
+    overflow: hidden;
+    position: relative;
+    text-align: left;
+}
+
+.archiveItem:hover {
+    background: #111;
+    border-color: #444;
+}
+
+.archivePlaceholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #444;
+    font-size: 28px;
+}
+
+.archiveInfo {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 35px 12px 12px 12px;
+    background: linear-gradient(
+        transparent,
+        rgba(0,0,0,.92)
+    );
+}
+
+.archiveName {
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.archiveFolder {
+    margin-top: 5px;
+    color: #777;
+    font-size: 8px;
+}
+
+.archiveStatus {
+    width: 100%;
+    max-width: 1100px;
+    margin: 0 auto 10px auto;
+    color: #666;
+    font-size: 10px;
+}
+
+/* GALLERY */
+
+.galleryGrid {
+    width: 100%;
+    max-width: 900px;
+    margin: auto;
+    display: grid;
+    grid-template-columns: repeat(
+        auto-fill,
+        minmax(140px, 1fr)
+    );
+    gap: 10px;
+    overflow-y: auto;
+    touch-action: pan-y;
+}
+
+.galleryItem {
+    aspect-ratio: 1;
+    background: #080808;
+    color: #fff;
+    border: 1px solid #202020;
+    font-size: 18px;
+}
+
+/* VIEWER */
+
+#viewerScreen {
+    background: #000;
+    touch-action: none;
+}
+
+#viewerCanvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    touch-action: none;
+}
+
+#viewerCanvas canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.viewerHeader {
+    position: absolute;
+    z-index: 20;
+    top: 14px;
+    left: 14px;
+    right: 14px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    pointer-events: none;
+}
+
+.viewerHeader .backButton {
+    pointer-events: auto;
+}
+
+.viewerNumber {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 12px;
+    max-width: 60%;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+/* SCENE INFO */
+
+.sceneInfo {
+    position: absolute;
+    z-index: 20;
+    bottom: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #555;
+    font-size: 9px;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+/* GENERATION */
+
+#generationScreen {
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.generation {
+    width: 320px;
+    max-width: 100%;
+}
+
+.generationTitle {
+    margin-bottom: 24px;
+    font-size: 20px;
+    text-align: center;
+}
+
+.codeInput {
+    width: 100%;
+    height: 58px;
+    background: #050505;
+    color: #fff;
+    border: 1px solid #292929;
+    outline: none;
+    padding: 0 16px;
+    font-size: 24px;
+    letter-spacing: 8px;
+    text-align: center;
+}
+
+.sendButton {
+    width: 100%;
+    height: 52px;
+    margin-top: 8px;
+    background: #fff;
+    color: #000;
+    font-size: 13px;
+}
+
+.sendButton:disabled {
+    opacity: .25;
+}
+
+.generationStatus {
+    min-height: 18px;
+    margin-top: 14px;
+    color: #666;
+    font-size: 12px;
+    text-align: center;
+}
+
+/* USER */
+
+.userPage {
+    width: 320px;
+    max-width: 100%;
+    margin: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.userBlock {
+    width: 100%;
+    padding: 18px;
+    background: #080808;
+    border: 1px solid #242424;
+}
+
+.userLabel {
+    margin-bottom: 10px;
+    color: #666;
+    font-size: 11px;
+}
+
+.userAddress {
+    color: #fff;
+    font-size: 12px;
+    line-height: 1.5;
+    word-break: break-all;
+}
+
+.disconnectButton {
+    width: 100%;
+    height: 52px;
+    margin-top: 10px;
+    background: #080808;
+    color: #fff;
+    border: 1px solid #242424;
+    font-size: 13px;
+}
+
+.userStatus {
+    min-height: 18px;
+    margin-top: 14px;
+    color: #666;
+    font-size: 12px;
+    text-align: center;
+}
+
+/* LOADING */
+
+#loading {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+}
+
+#loading.active {
+    display: flex;
+}
+
+.loadingText {
+    color: #777;
+    font-size: 11px;
+}
+
+/* MOBILE */
+
+@media (max-width: 500px) {
+
+    .authTitle,
+    .homeTitle {
+        font-size: 24px;
+    }
+
+    .galleryGrid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .archiveGrid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+}
+
+</style>
 
 </head>
 
 <body>
 
+<!-- AUTH -->
 
-<!-- =============================================================
-     AUTH
-============================================================= -->
-
-<section
-    id="authScreen"
-    class="screen active"
->
+<section id="authScreen" class="screen active">
 
     <div class="auth">
 
@@ -674,14 +510,9 @@
 </section>
 
 
-<!-- =============================================================
-     HOME
-============================================================= -->
+<!-- HOME -->
 
-<section
-    id="homeScreen"
-    class="screen"
->
+<section id="homeScreen" class="screen">
 
     <div class="home">
 
@@ -730,9 +561,7 @@
 </section>
 
 
-<!-- =============================================================
-     ARCHIVE
-============================================================= -->
+<!-- ARCHIVE -->
 
 <section
     id="archiveScreen"
@@ -770,9 +599,7 @@
 </section>
 
 
-<!-- =============================================================
-     GALLERY
-============================================================= -->
+<!-- GALLERY -->
 
 <section
     id="galleryScreen"
@@ -803,18 +630,14 @@
 </section>
 
 
-<!-- =============================================================
-     VIEWER
-============================================================= -->
+<!-- VIEWER -->
 
 <section
     id="viewerScreen"
     class="screen"
 >
 
-    <div
-        id="viewerCanvas"
-    ></div>
+    <div id="viewerCanvas"></div>
 
     <div class="viewerHeader">
 
@@ -830,17 +653,19 @@
             id="viewerNumber"
             class="viewerNumber"
         >
-            1
+            3D
         </div>
 
+    </div>
+
+    <div class="sceneInfo">
+        4 × 7 × 4 м
     </div>
 
 </section>
 
 
-<!-- =============================================================
-     GENERATION
-============================================================= -->
+<!-- GENERATION -->
 
 <section
     id="generationScreen"
@@ -882,9 +707,7 @@
 </section>
 
 
-<!-- =============================================================
-     USER
-============================================================= -->
+<!-- USER -->
 
 <section
     id="userScreen"
@@ -940,9 +763,7 @@
 </section>
 
 
-<!-- =============================================================
-     LOADING
-============================================================= -->
+<!-- LOADING -->
 
 <div id="loading">
 
@@ -953,9 +774,7 @@
 </div>
 
 
-<!-- =============================================================
-     THREE.JS
-============================================================= -->
+<!-- THREE -->
 
 <script type="importmap">
 
@@ -980,26 +799,19 @@ import {
     GLTFLoader
 } from "three/addons/loaders/GLTFLoader.js";
 
-import {
-    OrbitControls
-} from "three/addons/controls/OrbitControls.js";
 
-
-/* =============================================================
+/* =========================================================
    CONFIG
-============================================================= */
+========================================================= */
 
 const TON_MANIFEST =
     "https://roman22022000.github.io/Ton_site/tonconnect-manifest.json";
 
-
 const REQUIRED_COLLECTION =
     "EQD9mm3hx-QvHyNG18gDaaJtSTTQTVVYVjJ6zhonXocj2eyI";
 
-
 const REQUIRED_COLLECTION_RAW =
     "0:fd9a6de1c7e42f1d8346d7c80369a26d4934d04d5558563eb38689d7a1c8f6";
-
 
 const GENERATION_API =
     "https://api.araicameragame.party/api/generation";
@@ -1007,14 +819,58 @@ const GENERATION_API =
 const ARCHIVE_API =
     "https://api.araicameragame.party/api/models";
 
-
 const MODEL_BASE =
     "https://raw.githubusercontent.com/Roman22022000/ArGameCam/main/models/";
 
 
-/* =============================================================
+/* =========================================================
+   SCENE SIZE
+========================================================= */
+
+const SCENE_WIDTH  = 4;
+const SCENE_LENGTH = 7;
+const SCENE_HEIGHT = 4;
+
+const HALF_WIDTH =
+    SCENE_WIDTH / 2;
+
+const HALF_LENGTH =
+    SCENE_LENGTH / 2;
+
+
+/*
+    Отступ камеры от стен.
+*/
+
+const CAMERA_MARGIN = 0.25;
+
+
+/*
+    Ограничение движения камеры.
+*/
+
+const MIN_CAMERA_X =
+    -HALF_WIDTH + CAMERA_MARGIN;
+
+const MAX_CAMERA_X =
+    HALF_WIDTH - CAMERA_MARGIN;
+
+const MIN_CAMERA_Z =
+    -HALF_LENGTH + CAMERA_MARGIN;
+
+const MAX_CAMERA_Z =
+    HALF_LENGTH - CAMERA_MARGIN;
+
+const MIN_CAMERA_Y =
+    0.35;
+
+const MAX_CAMERA_Y =
+    SCENE_HEIGHT - 0.35;
+
+
+/* =========================================================
    DOM
-============================================================= */
+========================================================= */
 
 const authScreen =
     document.getElementById("authScreen");
@@ -1034,6 +890,8 @@ const generationScreen =
 const userScreen =
     document.getElementById("userScreen");
 
+const archiveScreen =
+    document.getElementById("archiveScreen");
 
 const connectWallet =
     document.getElementById("connectWallet");
@@ -1050,12 +908,8 @@ const disconnectWallet =
 const userStatus =
     document.getElementById("userStatus");
 
-
 const galleryGrid =
     document.getElementById("galleryGrid");
-
-const archiveScreen =
-    document.getElementById("archiveScreen");
 
 const archiveGrid =
     document.getElementById("archiveGrid");
@@ -1063,13 +917,11 @@ const archiveGrid =
 const archiveStatus =
     document.getElementById("archiveStatus");
 
-
 const viewerCanvas =
     document.getElementById("viewerCanvas");
 
 const viewerNumber =
     document.getElementById("viewerNumber");
-
 
 const generationCode =
     document.getElementById("generationCode");
@@ -1080,14 +932,13 @@ const generationSubmit =
 const generationStatus =
     document.getElementById("generationStatus");
 
-
 const loading =
     document.getElementById("loading");
 
 
-/* =============================================================
+/* =========================================================
    SCREEN
-============================================================= */
+========================================================= */
 
 function showScreen(screen) {
 
@@ -1101,9 +952,9 @@ function showScreen(screen) {
 }
 
 
-/* =============================================================
+/* =========================================================
    TON CONNECT
-============================================================= */
+========================================================= */
 
 if (!window.TON_CONNECT_UI) {
 
@@ -1113,8 +964,8 @@ if (!window.TON_CONNECT_UI) {
     throw new Error(
         "TON_CONNECT_UI not loaded"
     );
-}
 
+}
 
 const tonConnectUI =
     new TON_CONNECT_UI.TonConnectUI({
@@ -1131,36 +982,23 @@ const tonConnectUI =
     });
 
 
-/*
-    Важно:
-
-    uiOptions является setter.
-    Поэтому присваиваем объект целиком.
-*/
-
 tonConnectUI.uiOptions = {
 
-    language: "ru",
+    language:
+        "ru",
 
     uiPreferences: {
+
         theme:
             "DARK",
 
         borderRadius:
             "none"
+
     }
 
 };
 
-
-/*
-    Наша кнопка открывает
-    официальное TON Connect окно.
-
-    Именно внутри этого окна
-    TON Connect показывает QR-код
-    на desktop.
-*/
 
 connectWallet.addEventListener(
     "click",
@@ -1186,9 +1024,9 @@ connectWallet.addEventListener(
 );
 
 
-/* =============================================================
+/* =========================================================
    TON ADDRESS
-============================================================= */
+========================================================= */
 
 function base64UrlToBytes(value) {
 
@@ -1197,25 +1035,19 @@ function base64UrlToBytes(value) {
             .replace(/-/g, "+")
             .replace(/_/g, "/");
 
-
     while (
         normalized.length % 4 !== 0
     ) {
-
         normalized += "=";
-
     }
-
 
     const binary =
         atob(normalized);
-
 
     const bytes =
         new Uint8Array(
             binary.length
         );
-
 
     for (
         let i = 0;
@@ -1228,9 +1060,7 @@ function base64UrlToBytes(value) {
 
     }
 
-
     return bytes;
-
 }
 
 
@@ -1240,15 +1070,8 @@ function normalizeTonAddress(address) {
         return "";
     }
 
-
     address =
         String(address).trim();
-
-
-    /*
-        Уже raw:
-        0:64hex
-    */
 
     if (
         /^-?\d+:[0-9a-fA-F]{64}$/
@@ -1258,7 +1081,6 @@ function normalizeTonAddress(address) {
         const parts =
             address.split(":");
 
-
         return (
             parts[0] +
             ":" +
@@ -1267,20 +1089,12 @@ function normalizeTonAddress(address) {
 
     }
 
-
-    /*
-        Friendly:
-        EQ...
-        UQ...
-    */
-
     try {
 
         const bytes =
             base64UrlToBytes(
                 address
             );
-
 
         if (
             bytes.length !== 36
@@ -1290,10 +1104,8 @@ function normalizeTonAddress(address) {
 
         }
 
-
         let workchain =
             bytes[1];
-
 
         if (
             workchain === 255
@@ -1303,9 +1115,7 @@ function normalizeTonAddress(address) {
 
         }
 
-
         let hash = "";
-
 
         for (
             let i = 2;
@@ -1319,7 +1129,6 @@ function normalizeTonAddress(address) {
                     .padStart(2, "0");
 
         }
-
 
         return (
             workchain +
@@ -1342,9 +1151,9 @@ const normalizedRequiredCollection =
     );
 
 
-/* =============================================================
-   NFT CHECK
-============================================================= */
+/* =========================================================
+   NFT
+========================================================= */
 
 async function checkCollectionNFT(
     walletAddress
@@ -1357,11 +1166,11 @@ async function checkCollectionNFT(
         ) +
         "/nfts?limit=1000";
 
-
     const response =
         await fetch(url, {
 
-            method: "GET",
+            method:
+                "GET",
 
             headers: {
                 "Accept":
@@ -1369,7 +1178,6 @@ async function checkCollectionNFT(
             }
 
         });
-
 
     if (!response.ok) {
 
@@ -1380,10 +1188,8 @@ async function checkCollectionNFT(
 
     }
 
-
     const data =
         await response.json();
-
 
     const nftItems =
         Array.isArray(
@@ -1391,7 +1197,6 @@ async function checkCollectionNFT(
         )
             ? data.nft_items
             : [];
-
 
     for (
         const nft of nftItems
@@ -1402,24 +1207,21 @@ async function checkCollectionNFT(
             nft.collection_address ||
             "";
 
-
         if (!collectionAddress) {
             continue;
         }
-
 
         const normalized =
             normalizeTonAddress(
                 collectionAddress
             );
 
-
         if (
             normalized ===
-                normalizedRequiredCollection
+            normalizedRequiredCollection
             ||
             normalized ===
-                REQUIRED_COLLECTION_RAW
+            REQUIRED_COLLECTION_RAW
         ) {
 
             return true;
@@ -1428,15 +1230,13 @@ async function checkCollectionNFT(
 
     }
 
-
     return false;
-
 }
 
 
-/* =============================================================
+/* =========================================================
    WALLET
-============================================================= */
+========================================================= */
 
 let currentWallet =
     null;
@@ -1477,29 +1277,19 @@ async function processWallet(
 
     }
 
-
-    if (
-        checkingNFT
-    ) {
-
+    if (checkingNFT) {
         return;
-
     }
-
 
     if (
         !wallet.account ||
         !wallet.account.address
     ) {
-
         return;
-
     }
-
 
     currentWallet =
         wallet.account.address;
-
 
     accessGranted =
         false;
@@ -1507,15 +1297,12 @@ async function processWallet(
     checkingNFT =
         true;
 
-
     authStatus.textContent =
         "Проверка NFT...";
-
 
     loading.classList.add(
         "active"
     );
-
 
     try {
 
@@ -1524,43 +1311,33 @@ async function processWallet(
                 currentWallet
             );
 
-
         if (!hasNFT) {
 
             accessGranted =
                 false;
 
-
             authStatus.textContent =
                 "NFT нужной коллекции не найден";
-
 
             showScreen(
                 authScreen
             );
 
-
             return;
-
         }
-
 
         accessGranted =
             true;
 
-
         userWalletAddress.textContent =
             currentWallet;
-
 
         authStatus.textContent =
             "Доступ разрешён";
 
-
         showScreen(
             homeScreen
         );
-
 
     } catch (error) {
 
@@ -1569,25 +1346,20 @@ async function processWallet(
             error
         );
 
-
         accessGranted =
             false;
 
-
         authStatus.textContent =
             "Ошибка проверки NFT";
-
 
         showScreen(
             authScreen
         );
 
-
     } finally {
 
         checkingNFT =
             false;
-
 
         loading.classList.remove(
             "active"
@@ -1597,14 +1369,6 @@ async function processWallet(
 
 }
 
-
-/*
-    Срабатывает после:
-
-    - подключения
-    - отключения
-    - восстановления сессии
-*/
 
 tonConnectUI.onStatusChange(
     async wallet => {
@@ -1628,9 +1392,9 @@ tonConnectUI.onStatusChange(
 );
 
 
-/* =============================================================
+/* =========================================================
    ACCESS
-============================================================= */
+========================================================= */
 
 function requireAccess() {
 
@@ -1650,15 +1414,13 @@ function requireAccess() {
 
     }
 
-
     return true;
-
 }
 
 
-/* =============================================================
+/* =========================================================
    MENU
-============================================================= */
+========================================================= */
 
 document
     .getElementById("openGallery")
@@ -1666,12 +1428,9 @@ document
         "click",
         () => {
 
-            if (
-                !requireAccess()
-            ) {
+            if (!requireAccess()) {
                 return;
             }
-
 
             showScreen(
                 galleryScreen
@@ -1707,12 +1466,9 @@ document
         "click",
         () => {
 
-            if (
-                !requireAccess()
-            ) {
+            if (!requireAccess()) {
                 return;
             }
-
 
             generationCode.value =
                 "";
@@ -1723,17 +1479,13 @@ document
             generationSubmit.disabled =
                 true;
 
-
             showScreen(
                 generationScreen
             );
 
-
             setTimeout(
                 () => {
-
                     generationCode.focus();
-
                 },
                 100
             );
@@ -1742,19 +1494,13 @@ document
     );
 
 
-/* =============================================================
-   USER
-============================================================= */
-
 document
     .getElementById("openUser")
     .addEventListener(
         "click",
         () => {
 
-            if (
-                !requireAccess()
-            ) {
+            if (!requireAccess()) {
                 return;
             }
 
@@ -1772,14 +1518,15 @@ document
     );
 
 
+/* =========================================================
+   USER
+========================================================= */
+
 document
     .getElementById("userBack")
     .addEventListener(
         "click",
         () => {
-
-            userStatus.textContent =
-                "";
 
             showScreen(
                 homeScreen
@@ -1793,9 +1540,7 @@ disconnectWallet.addEventListener(
     "click",
     async () => {
 
-        if (
-            !currentWallet
-        ) {
+        if (!currentWallet) {
 
             showScreen(
                 authScreen
@@ -1804,13 +1549,11 @@ disconnectWallet.addEventListener(
             return;
         }
 
-
         disconnectWallet.disabled =
             true;
 
         userStatus.textContent =
             "Выход из кошелька...";
-
 
         try {
 
@@ -1856,9 +1599,9 @@ disconnectWallet.addEventListener(
 );
 
 
-/* =============================================================
-   GENERATION INPUT
-============================================================= */
+/* =========================================================
+   GENERATION
+========================================================= */
 
 generationCode.addEventListener(
     "input",
@@ -1869,7 +1612,6 @@ generationCode.addEventListener(
                 .replace(/\D/g, "")
                 .slice(0, 5);
 
-
         generationSubmit.disabled =
             generationCode.value.length !== 5;
 
@@ -1877,24 +1619,16 @@ generationCode.addEventListener(
 );
 
 
-/* =============================================================
-   GENERATION SEND
-============================================================= */
-
 generationSubmit.addEventListener(
     "click",
     async () => {
 
-        if (
-            !requireAccess()
-        ) {
+        if (!requireAccess()) {
             return;
         }
 
-
         const code =
             generationCode.value.trim();
-
 
         if (
             !/^\d{5}$/.test(code)
@@ -1904,9 +1638,7 @@ generationSubmit.addEventListener(
                 "Введите 5 цифр";
 
             return;
-
         }
-
 
         if (!currentWallet) {
 
@@ -1914,17 +1646,13 @@ generationSubmit.addEventListener(
                 "Кошелёк не подключён";
 
             return;
-
         }
-
 
         generationSubmit.disabled =
             true;
 
-
         generationStatus.textContent =
             "Отправка...";
-
 
         try {
 
@@ -1955,10 +1683,8 @@ generationSubmit.addEventListener(
                     }
                 );
 
-
             const data =
                 await response.json();
-
 
             if (
                 !response.ok ||
@@ -1972,14 +1698,11 @@ generationSubmit.addEventListener(
 
             }
 
-
             generationStatus.textContent =
                 "Данные отправлены";
 
-
             generationCode.value =
                 "";
-
 
         } catch (error) {
 
@@ -1988,10 +1711,8 @@ generationSubmit.addEventListener(
                 error
             );
 
-
             generationStatus.textContent =
                 "Ошибка отправки";
-
 
         } finally {
 
@@ -2004,20 +1725,16 @@ generationSubmit.addEventListener(
 );
 
 
-/* =============================================================
+/* =========================================================
    BACK
-============================================================= */
+========================================================= */
 
 document
     .getElementById("galleryBack")
     .addEventListener(
         "click",
         () => {
-
-            showScreen(
-                homeScreen
-            );
-
+            showScreen(homeScreen);
         }
     );
 
@@ -2027,9 +1744,7 @@ document
     .addEventListener(
         "click",
         () => {
-            showScreen(
-                homeScreen
-            );
+            showScreen(homeScreen);
         }
     );
 
@@ -2060,9 +1775,9 @@ document
     );
 
 
-/* =============================================================
+/* =========================================================
    GENERATION BACK
-============================================================= */
+========================================================= */
 
 const generationBack =
     document.createElement(
@@ -2071,6 +1786,12 @@ const generationBack =
 
 generationBack.type =
     "button";
+
+generationBack.className =
+    "backButton";
+
+generationBack.textContent =
+    "←";
 
 generationBack.style.position =
     "fixed";
@@ -2081,26 +1802,8 @@ generationBack.style.top =
 generationBack.style.left =
     "14px";
 
-generationBack.style.width =
-    "40px";
-
-generationBack.style.height =
-    "40px";
-
-generationBack.style.background =
-    "#080808";
-
-generationBack.style.color =
-    "#fff";
-
-generationBack.style.border =
-    "1px solid #242424";
-
-generationBack.style.fontSize =
-    "22px";
-
-generationBack.textContent =
-    "←";
+generationBack.style.zIndex =
+    "20";
 
 generationScreen.appendChild(
     generationBack
@@ -2109,20 +1812,17 @@ generationScreen.appendChild(
 generationBack.addEventListener(
     "click",
     () => {
-
-        showScreen(
-            homeScreen
-        );
-
+        showScreen(homeScreen);
     }
 );
 
 
-/* =============================================================
-   ARCHIVE 3D MODELS
-============================================================= */
+/* =========================================================
+   ARCHIVE
+========================================================= */
 
 let archiveModels = [];
+
 
 async function loadArchiveModels() {
 
@@ -2138,15 +1838,21 @@ async function loadArchiveModels() {
             await fetch(
                 ARCHIVE_API,
                 {
-                    method: "GET",
-                    cache: "no-store"
+                    method:
+                        "GET",
+
+                    cache:
+                        "no-store"
                 }
             );
 
         if (!response.ok) {
+
             throw new Error(
-                "HTTP " + response.status
+                "HTTP " +
+                response.status
             );
+
         }
 
         const data =
@@ -2215,7 +1921,8 @@ async function loadArchiveModels() {
                     "archiveName";
 
                 name.textContent =
-                    item.filename || "model";
+                    item.filename ||
+                    "model";
 
                 const folder =
                     document.createElement(
@@ -2227,7 +1934,8 @@ async function loadArchiveModels() {
 
                 folder.textContent =
                     (
-                        item.folder || ""
+                        item.folder ||
+                        ""
                     ).toUpperCase();
 
                 info.appendChild(
@@ -2242,12 +1950,20 @@ async function loadArchiveModels() {
                     info
                 );
 
+                /*
+                    ГЛАВНОЕ:
+                    любое нажатие открывает
+                    именно выбранный файл.
+                */
+
                 button.addEventListener(
                     "click",
                     () => {
+
                         openArchiveViewer(
                             index
                         );
+
                     }
                 );
 
@@ -2272,6 +1988,10 @@ async function loadArchiveModels() {
 
 }
 
+
+/* =========================================================
+   OPEN ARCHIVE MODEL
+========================================================= */
 
 function openArchiveViewer(index) {
 
@@ -2298,179 +2018,74 @@ function openArchiveViewer(index) {
 
     initViewer();
 
-    if (model) {
+    clearCurrentModel();
 
-        scene.remove(
-            model
-        );
+    /*
+        API может отдавать полный URL.
+        Если URL отсутствует —
+        строим URL из имени файла.
+    */
 
-        model.traverse(
-            object => {
+    let url =
+        item.url ||
+        item.model_url ||
+        item.path ||
+        "";
 
-                if (
-                    object.geometry
-                ) {
-                    object.geometry.dispose();
-                }
+    if (!url) {
 
-                if (
-                    object.material
-                ) {
-
-                    if (
-                        Array.isArray(
-                            object.material
-                        )
-                    ) {
-
-                        object.material.forEach(
-                            material => {
-                                material.dispose();
-                            }
-                        );
-
-                    } else {
-
-                        object.material.dispose();
-
-                    }
-
-                }
-
-            }
-        );
-
-        model = null;
+        url =
+            MODEL_BASE +
+            encodeURIComponent(
+                item.filename
+            );
 
     }
 
-    loader.load(
-
-        item.url,
-
-        gltf => {
-
-            model =
-                gltf.scene;
-
-            const box =
-                new THREE.Box3()
-                    .setFromObject(
-                        model
-                    );
-
-            const center =
-                box.getCenter(
-                    new THREE.Vector3()
-                );
-
-            const size =
-                box.getSize(
-                    new THREE.Vector3()
-                );
-
-            model.position.sub(
-                center
-            );
-
-            const maxSize =
-                Math.max(
-                    size.x,
-                    size.y,
-                    size.z
-                );
-
-            if (
-                maxSize > 0
-            ) {
-
-                model.scale.setScalar(
-                    2 / maxSize
-                );
-
-            }
-
-            model.traverse(
-                object => {
-
-                    if (
-                        object.isMesh
-                    ) {
-
-                        object.castShadow =
-                            true;
-
-                        object.receiveShadow =
-                            true;
-
-                    }
-
-                }
-            );
-
-            scene.add(
-                model
-            );
-
-            controls.target.set(
-                0,
-                0,
-                0
-            );
-
-            controls.update();
-
-        },
-
-        undefined,
-
-        error => {
-
-            console.error(
-                "ARCHIVE MODEL ERROR:",
-                error
-            );
-
-        }
-
+    loadModel(
+        url
     );
 
 }
 
 
-/* =============================================================
-   GALLERY DATA
-============================================================= */
+/* =========================================================
+   GALLERY
+========================================================= */
 
 const galleryItems = [
 
     {
-        number: 1,
-        filename: "creature.glb"
+        number:
+            1,
+
+        filename:
+            "creature.glb"
     },
 
     {
-        number: 2,
-        filename: "creature.glb"
+        number:
+            2,
+
+        filename:
+            "creature.glb"
     },
 
     {
-        number: 3,
-        filename: "creature.glb"
+        number:
+            3,
+
+        filename:
+            "creature.glb"
     }
 
 ];
 
 
-/* =============================================================
-   GALLERY
-============================================================= */
-
 function buildGallery() {
 
     galleryGrid.innerHTML =
         "";
-
 
     galleryItems.forEach(
         (item, index) => {
@@ -2480,18 +2095,14 @@ function buildGallery() {
                     "button"
                 );
 
-
             button.className =
                 "galleryItem";
-
 
             button.type =
                 "button";
 
-
             button.textContent =
                 item.number;
-
 
             button.addEventListener(
                 "click",
@@ -2503,7 +2114,6 @@ function buildGallery() {
 
                 }
             );
-
 
             galleryGrid.appendChild(
                 button
@@ -2518,9 +2128,9 @@ function buildGallery() {
 buildGallery();
 
 
-/* =============================================================
-   THREE.JS VIEWER
-============================================================= */
+/* =========================================================
+   THREE.JS
+========================================================= */
 
 let scene =
     null;
@@ -2531,19 +2141,306 @@ let camera =
 let renderer =
     null;
 
-let controls =
-    null;
-
 let model =
     null;
 
 let viewerOpenedFromArchive =
     false;
 
+let animationStarted =
+    false;
 
-const loader =
-    new GLTFLoader();
 
+/* =========================================================
+   TOUCH CONTROL
+========================================================= */
+
+let touchState = {
+
+    active:
+        false,
+
+    lastX:
+        0,
+
+    lastY:
+        0,
+
+    twoFinger:
+        false,
+
+    lastDistance:
+        0
+
+};
+
+
+/*
+    Скорость движения камеры.
+*/
+
+const TOUCH_MOVE_SPEED =
+    0.008;
+
+
+/*
+    Ограничиваем высоту
+    камеры внутри комнаты.
+*/
+
+function clampCamera() {
+
+    if (!camera) {
+        return;
+    }
+
+    camera.position.x =
+        THREE.MathUtils.clamp(
+            camera.position.x,
+            MIN_CAMERA_X,
+            MAX_CAMERA_X
+        );
+
+    camera.position.z =
+        THREE.MathUtils.clamp(
+            camera.position.z,
+            MIN_CAMERA_Z,
+            MAX_CAMERA_Z
+        );
+
+    camera.position.y =
+        THREE.MathUtils.clamp(
+            camera.position.y,
+            MIN_CAMERA_Y,
+            MAX_CAMERA_Y
+        );
+
+}
+
+
+/* =========================================================
+   ROOM
+========================================================= */
+
+function createRoom() {
+
+    /*
+        Пол
+    */
+
+    const floorGeometry =
+        new THREE.PlaneGeometry(
+            SCENE_WIDTH,
+            SCENE_LENGTH
+        );
+
+    const floorMaterial =
+        new THREE.MeshBasicMaterial({
+
+            color:
+                0x111111,
+
+            side:
+                THREE.DoubleSide
+
+        });
+
+    const floor =
+        new THREE.Mesh(
+            floorGeometry,
+            floorMaterial
+        );
+
+    floor.rotation.x =
+        -Math.PI / 2;
+
+    floor.position.y =
+        0;
+
+    scene.add(
+        floor
+    );
+
+
+    /*
+        Потолок
+    */
+
+    const ceiling =
+        floor.clone();
+
+    ceiling.position.y =
+        SCENE_HEIGHT;
+
+    scene.add(
+        ceiling
+    );
+
+
+    /*
+        Материал стен.
+    */
+
+    const wallMaterial =
+        new THREE.MeshBasicMaterial({
+
+            color:
+                0x181818,
+
+            side:
+                THREE.DoubleSide
+
+        });
+
+
+    /*
+        Левая / правая стены.
+    */
+
+    const sideGeometry =
+        new THREE.PlaneGeometry(
+            SCENE_LENGTH,
+            SCENE_HEIGHT
+        );
+
+    const leftWall =
+        new THREE.Mesh(
+            sideGeometry,
+            wallMaterial
+        );
+
+    leftWall.rotation.y =
+        Math.PI / 2;
+
+    leftWall.position.set(
+        -HALF_WIDTH,
+        SCENE_HEIGHT / 2,
+        0
+    );
+
+    scene.add(
+        leftWall
+    );
+
+
+    const rightWall =
+        leftWall.clone();
+
+    rightWall.position.x =
+        HALF_WIDTH;
+
+    scene.add(
+        rightWall
+    );
+
+
+    /*
+        Передняя / задняя стены.
+    */
+
+    const frontGeometry =
+        new THREE.PlaneGeometry(
+            SCENE_WIDTH,
+            SCENE_HEIGHT
+        );
+
+    const frontWall =
+        new THREE.Mesh(
+            frontGeometry,
+            wallMaterial
+        );
+
+    frontWall.position.set(
+        0,
+        SCENE_HEIGHT / 2,
+        -HALF_LENGTH
+    );
+
+    scene.add(
+        frontWall
+    );
+
+
+    const backWall =
+        frontWall.clone();
+
+    backWall.position.z =
+        HALF_LENGTH;
+
+    scene.add(
+        backWall
+    );
+
+
+    /*
+        Контур помещения.
+    */
+
+    const edgesMaterial =
+        new THREE.LineBasicMaterial({
+
+            color:
+                0x333333
+
+        });
+
+
+    const points = [
+
+        new THREE.Vector3(
+            -HALF_WIDTH,
+            0,
+            -HALF_LENGTH
+        ),
+
+        new THREE.Vector3(
+            HALF_WIDTH,
+            0,
+            -HALF_LENGTH
+        ),
+
+        new THREE.Vector3(
+            HALF_WIDTH,
+            0,
+            HALF_LENGTH
+        ),
+
+        new THREE.Vector3(
+            -HALF_WIDTH,
+            0,
+            HALF_LENGTH
+        ),
+
+        new THREE.Vector3(
+            -HALF_WIDTH,
+            0,
+            -HALF_LENGTH
+        )
+
+    ];
+
+    const lineGeometry =
+        new THREE.BufferGeometry()
+            .setFromPoints(
+                points
+            );
+
+    const line =
+        new THREE.Line(
+            lineGeometry,
+            edgesMaterial
+        );
+
+    scene.add(
+        line
+    );
+
+}
+
+
+/* =========================================================
+   VIEWER INIT
+========================================================= */
 
 function initViewer() {
 
@@ -2551,10 +2448,8 @@ function initViewer() {
         return;
     }
 
-
     scene =
         new THREE.Scene();
-
 
     scene.background =
         new THREE.Color(
@@ -2564,18 +2459,30 @@ function initViewer() {
 
     camera =
         new THREE.PerspectiveCamera(
-            45,
+            70,
             window.innerWidth /
-                window.innerHeight,
+            window.innerHeight,
             0.01,
-            1000
+            100
         );
 
 
+    /*
+        Начальная позиция камеры
+        строго внутри 4 × 7 × 4.
+    */
+
     camera.position.set(
         0,
-        0.3,
-        3
+        1.8,
+        2.6
+    );
+
+
+    camera.rotation.set(
+        0,
+        0,
+        0
     );
 
 
@@ -2598,7 +2505,6 @@ function initViewer() {
         )
     );
 
-
     renderer.setSize(
         window.innerWidth,
         window.innerHeight
@@ -2610,32 +2516,15 @@ function initViewer() {
     );
 
 
-    controls =
-        new OrbitControls(
-            camera,
-            renderer.domElement
-        );
-
-
-    controls.enableDamping =
-        true;
-
-    controls.enablePan =
-        true;
-
-    controls.minDistance =
-        0.5;
-
-    controls.maxDistance =
-        20;
-
+    /*
+        Свет.
+    */
 
     const ambient =
         new THREE.AmbientLight(
             0xffffff,
-            2
+            2.5
         );
-
 
     scene.add(
         ambient
@@ -2648,16 +2537,50 @@ function initViewer() {
             3
         );
 
-
     light.position.set(
+        2,
         4,
-        5,
-        4
+        2
     );
-
 
     scene.add(
         light
+    );
+
+
+    /*
+        Создаём помещение.
+    */
+
+    createRoom();
+
+
+    /*
+        Touch.
+    */
+
+    renderer.domElement.addEventListener(
+        "touchstart",
+        onTouchStart,
+        {
+            passive: false
+        }
+    );
+
+    renderer.domElement.addEventListener(
+        "touchmove",
+        onTouchMove,
+        {
+            passive: false
+        }
+    );
+
+    renderer.domElement.addEventListener(
+        "touchend",
+        onTouchEnd,
+        {
+            passive: false
+        }
     );
 
 
@@ -2667,10 +2590,269 @@ function initViewer() {
     );
 
 
-    animateViewer();
+    if (!animationStarted) {
+
+        animationStarted =
+            true;
+
+        animateViewer();
+
+    }
 
 }
 
+
+/* =========================================================
+   TOUCH START
+========================================================= */
+
+function onTouchStart(event) {
+
+    event.preventDefault();
+
+    if (!camera) {
+        return;
+    }
+
+    if (
+        event.touches.length === 1
+    ) {
+
+        const touch =
+            event.touches[0];
+
+        touchState.active =
+            true;
+
+        touchState.twoFinger =
+            false;
+
+        touchState.lastX =
+            touch.clientX;
+
+        touchState.lastY =
+            touch.clientY;
+
+    }
+
+
+    if (
+        event.touches.length >= 2
+    ) {
+
+        touchState.active =
+            false;
+
+        touchState.twoFinger =
+            true;
+
+        const a =
+            event.touches[0];
+
+        const b =
+            event.touches[1];
+
+        touchState.lastDistance =
+            Math.hypot(
+                a.clientX - b.clientX,
+                a.clientY - b.clientY
+            );
+
+    }
+
+}
+
+
+/* =========================================================
+   TOUCH MOVE
+========================================================= */
+
+function onTouchMove(event) {
+
+    event.preventDefault();
+
+    if (!camera) {
+        return;
+    }
+
+
+    /*
+        Два пальца:
+        zoom / движение вперёд-назад.
+    */
+
+    if (
+        event.touches.length >= 2
+    ) {
+
+        const a =
+            event.touches[0];
+
+        const b =
+            event.touches[1];
+
+        const distance =
+            Math.hypot(
+                a.clientX - b.clientX,
+                a.clientY - b.clientY
+            );
+
+        if (
+            touchState.lastDistance > 0
+        ) {
+
+            const delta =
+                distance -
+                touchState.lastDistance;
+
+            moveCameraForward(
+                delta * 0.01
+            );
+
+        }
+
+        touchState.lastDistance =
+            distance;
+
+        clampCamera();
+
+        return;
+
+    }
+
+
+    /*
+        Один палец:
+        свободное перемещение
+        по X/Z.
+    */
+
+    if (
+        event.touches.length === 1 &&
+        touchState.active
+    ) {
+
+        const touch =
+            event.touches[0];
+
+        const dx =
+            touch.clientX -
+            touchState.lastX;
+
+        const dy =
+            touch.clientY -
+            touchState.lastY;
+
+
+        /*
+            Влево / вправо:
+            движение по X.
+        */
+
+        camera.position.x -=
+            dx * TOUCH_MOVE_SPEED;
+
+
+        /*
+            Вверх / вниз:
+            движение по Z.
+        */
+
+        camera.position.z +=
+            dy * TOUCH_MOVE_SPEED;
+
+
+        clampCamera();
+
+
+        touchState.lastX =
+            touch.clientX;
+
+        touchState.lastY =
+            touch.clientY;
+
+    }
+
+}
+
+
+/* =========================================================
+   TOUCH END
+========================================================= */
+
+function onTouchEnd(event) {
+
+    event.preventDefault();
+
+    if (
+        event.touches.length === 0
+    ) {
+
+        touchState.active =
+            false;
+
+        touchState.twoFinger =
+            false;
+
+        touchState.lastDistance =
+            0;
+
+    }
+
+}
+
+
+/* =========================================================
+   CAMERA FORWARD
+========================================================= */
+
+function moveCameraForward(
+    amount
+) {
+
+    if (!camera) {
+        return;
+    }
+
+
+    /*
+        Направление взгляда камеры.
+    */
+
+    const direction =
+        new THREE.Vector3();
+
+    camera.getWorldDirection(
+        direction
+    );
+
+
+    /*
+        Не позволяем уходить
+        вверх/вниз через zoom.
+    */
+
+    direction.y =
+        0;
+
+    direction.normalize();
+
+
+    camera.position.add(
+        direction.multiplyScalar(
+            amount
+        )
+    );
+
+
+    clampCamera();
+
+}
+
+
+/* =========================================================
+   RESIZE
+========================================================= */
 
 function resizeViewer() {
 
@@ -2678,19 +2860,14 @@ function resizeViewer() {
         !camera ||
         !renderer
     ) {
-
         return;
-
     }
-
 
     camera.aspect =
         window.innerWidth /
         window.innerHeight;
 
-
     camera.updateProjectionMatrix();
-
 
     renderer.setSize(
         window.innerWidth,
@@ -2700,23 +2877,23 @@ function resizeViewer() {
 }
 
 
+/* =========================================================
+   ANIMATION
+========================================================= */
+
 function animateViewer() {
 
     requestAnimationFrame(
         animateViewer
     );
 
-
-    if (controls) {
-        controls.update();
-    }
-
-
     if (
         renderer &&
         scene &&
         camera
     ) {
+
+        clampCamera();
 
         renderer.render(
             scene,
@@ -2728,104 +2905,101 @@ function animateViewer() {
 }
 
 
-/* =============================================================
-   OPEN MODEL
-============================================================= */
+/* =========================================================
+   CLEAR MODEL
+========================================================= */
 
-function openViewer(index) {
-
-    viewerOpenedFromArchive =
-        false;
+function clearCurrentModel() {
 
     if (
-        !requireAccess()
+        !model ||
+        !scene
     ) {
         return;
     }
 
 
-    const item =
-        galleryItems[index];
-
-
-    if (!item) {
-        return;
-    }
-
-
-    viewerNumber.textContent =
-        item.number;
-
-
-    showScreen(
-        viewerScreen
+    scene.remove(
+        model
     );
 
 
-    initViewer();
+    model.traverse(
+        object => {
+
+            if (
+                object.geometry
+            ) {
+
+                object.geometry.dispose();
+
+            }
 
 
-    if (model) {
-
-        scene.remove(
-            model
-        );
-
-
-        model.traverse(
-            object => {
-
-                if (
-                    object.geometry
-                ) {
-
-                    object.geometry.dispose();
-
-                }
-
+            if (
+                object.material
+            ) {
 
                 if (
-                    object.material
+                    Array.isArray(
+                        object.material
+                    )
                 ) {
+
+                    object.material.forEach(
+                        material => {
+
+                            if (
+                                material.map
+                            ) {
+                                material.map.dispose();
+                            }
+
+                            material.dispose();
+
+                        }
+                    );
+
+                } else {
 
                     if (
-                        Array.isArray(
-                            object.material
-                        )
+                        object.material.map
                     ) {
-
-                        object.material
-                            .forEach(
-                                material => {
-
-                                    material.dispose();
-
-                                }
-                            );
-
-                    } else {
-
-                        object.material.dispose();
-
+                        object.material.map.dispose();
                     }
+
+                    object.material.dispose();
 
                 }
 
             }
-        );
+
+        }
+    );
 
 
-        model =
-            null;
+    model =
+        null;
 
-    }
+}
 
 
-    const url =
-        MODEL_BASE +
-        encodeURIComponent(
-            item.filename
-        );
+/* =========================================================
+   LOAD MODEL
+========================================================= */
+
+const loader =
+    new GLTFLoader();
+
+
+function loadModel(
+    url
+) {
+
+    console.log(
+        "Загрузка модели:",
+        url
+    );
 
 
     loader.load(
@@ -2838,18 +3012,20 @@ function openViewer(index) {
                 gltf.scene;
 
 
+            /*
+                Получаем размеры модели.
+            */
+
             const box =
                 new THREE.Box3()
                     .setFromObject(
                         model
                     );
 
-
             const center =
                 box.getCenter(
                     new THREE.Vector3()
                 );
-
 
             const size =
                 box.getSize(
@@ -2857,10 +3033,18 @@ function openViewer(index) {
                 );
 
 
+            /*
+                Центрируем модель.
+            */
+
             model.position.sub(
                 center
             );
 
+
+            /*
+                Максимальный размер.
+            */
 
             const maxSize =
                 Math.max(
@@ -2870,15 +3054,65 @@ function openViewer(index) {
                 );
 
 
+            /*
+                Модель занимает
+                максимум 2.2 м.
+            */
+
             if (
                 maxSize > 0
             ) {
 
                 model.scale.setScalar(
-                    2 / maxSize
+                    2.2 / maxSize
                 );
 
             }
+
+
+            /*
+                Поднимаем модель
+                немного над полом.
+            */
+
+            const modelBox =
+                new THREE.Box3()
+                    .setFromObject(
+                        model
+                    );
+
+
+            if (
+                modelBox.min.y < 0
+            ) {
+
+                model.position.y +=
+                    -modelBox.min.y;
+
+            }
+
+
+            /*
+                Материалы / тени.
+            */
+
+            model.traverse(
+                object => {
+
+                    if (
+                        object.isMesh
+                    ) {
+
+                        object.castShadow =
+                            true;
+
+                        object.receiveShadow =
+                            true;
+
+                    }
+
+                }
+            );
 
 
             scene.add(
@@ -2886,14 +3120,24 @@ function openViewer(index) {
             );
 
 
-            controls.target.set(
+            /*
+                Камера всегда стартует
+                внутри сцены.
+            */
+
+            camera.position.set(
                 0,
-                0,
-                0
+                1.8,
+                2.6
             );
 
+            clampCamera();
 
-            controls.update();
+
+            console.log(
+                "3D модель открыта:",
+                url
+            );
 
         },
 
@@ -2913,9 +3157,57 @@ function openViewer(index) {
 }
 
 
-/* =============================================================
+/* =========================================================
+   OPEN GALLERY MODEL
+========================================================= */
+
+function openViewer(
+    index
+) {
+
+    viewerOpenedFromArchive =
+        false;
+
+    if (!requireAccess()) {
+        return;
+    }
+
+    const item =
+        galleryItems[index];
+
+    if (!item) {
+        return;
+    }
+
+    viewerNumber.textContent =
+        item.number;
+
+    showScreen(
+        viewerScreen
+    );
+
+    initViewer();
+
+    clearCurrentModel();
+
+
+    const url =
+        MODEL_BASE +
+        encodeURIComponent(
+            item.filename
+        );
+
+
+    loadModel(
+        url
+    );
+
+}
+
+
+/* =========================================================
    RESTORE
-============================================================= */
+========================================================= */
 
 tonConnectUI.connectionRestored
     .then(
@@ -2939,9 +3231,7 @@ tonConnectUI.connectionRestored
         }
     );
 
-
 </script>
 
-
 </body>
-</html>м
+</html>
