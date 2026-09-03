@@ -989,10 +989,6 @@ import {
 } from "three/addons/loaders/OBJLoader.js";
 
 import {
-    MTLLoader
-} from "three/addons/loaders/MTLLoader.js";
-
-import {
     STLLoader
 } from "three/addons/loaders/STLLoader.js";
 
@@ -2136,14 +2132,414 @@ generationBack.addEventListener(
 
 /* =============================================================
    ARCHIVE 3D MODELS
+   Только загрузка и отображение 3D-модели.
+   Текстуры, MTL и изображения НЕ загружаются.
 ============================================================= */
 
 let archiveModels = [];
 
+const EMPTY_TEXTURE =
+    "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
+
+
+function getArchiveModelUrl(item) {
+
+    if (!item) {
+        return "";
+    }
+
+    if (item.id !== undefined && item.id !== null) {
+        return ARCHIVE_API +
+            "/file/" +
+            encodeURIComponent(item.id);
+    }
+
+    if (item.url) {
+        return new URL(
+            item.url,
+            ARCHIVE_API + "/"
+        ).href;
+    }
+
+    return "";
+}
+
+
+function getArchiveExtension(item) {
+
+    let extension =
+        String(item?.extension || "")
+            .toLowerCase()
+            .replace(".", "");
+
+    if (!extension && item?.filename) {
+        const parts =
+            String(item.filename).split(".");
+
+        extension =
+            parts.length > 1
+                ? parts.pop().toLowerCase()
+                : "";
+    }
+
+    return extension;
+}
+
+
+function createArchiveLoadingManager(item, modelUrl) {
+
+    const manager =
+        new THREE.LoadingManager();
+
+    manager.setURLModifier(
+        originalUrl => {
+
+            const url =
+                String(originalUrl || "");
+
+            // Сам файл модели не изменяем.
+            if (url === modelUrl) {
+                return url;
+            }
+
+            // Изображения и текстуры полностью блокируем.
+            if (/\.(png|jpe?g|webp|gif|bmp|tga|dds|ktx2?|avif|svg)(\?.*)?$/i.test(url)) {
+                return EMPTY_TEXTURE;
+            }
+
+            // Для .gltf/.glb разрешаем только служебные бинарные файлы.
+            // Они нужны для самой геометрии модели.
+            const clean =
+                url.split("?")[0].split("#")[0];
+
+            const filename =
+                clean.substring(
+                    clean.lastIndexOf("/") + 1
+                );
+
+            if (/\.(bin)(\?.*)?$/i.test(filename)) {
+
+                return ARCHIVE_API +
+                    "/resource/" +
+                    encodeURIComponent(item.id) +
+                    "/" +
+                    encodeURIComponent(filename);
+            }
+
+            // Любые остальные внешние ресурсы пробуем получить
+            // только из папки модели/разрешённых папок сервера.
+            return ARCHIVE_API +
+                "/resource/" +
+                encodeURIComponent(item.id) +
+                "/" +
+                encodeURIComponent(filename);
+        }
+    );
+
+    return manager;
+}
+
+
+function removeArchiveTextures(object) {
+
+    if (!object) {
+        return;
+    }
+
+    object.traverse(
+        child => {
+
+            if (!child.isMesh) {
+                return;
+            }
+
+            child.castShadow = true;
+            child.receiveShadow = true;
+
+            const materials =
+                Array.isArray(child.material)
+                    ? child.material
+                    : [child.material];
+
+            materials.forEach(
+                material => {
+
+                    if (!material) {
+                        return;
+                    }
+
+                    // Удаляем все карты текстур.
+                    const textureKeys = [
+                        "map",
+                        "alphaMap",
+                        "aoMap",
+                        "bumpMap",
+                        "displacementMap",
+                        "emissiveMap",
+                        "metalnessMap",
+                        "normalMap",
+                        "roughnessMap",
+                        "specularMap",
+                        "clearcoatMap",
+                        "clearcoatNormalMap",
+                        "clearcoatRoughnessMap",
+                        "iridescenceMap",
+                        "iridescenceThicknessMap",
+                        "sheenColorMap",
+                        "sheenRoughnessMap",
+                        "transmissionMap",
+                        "thicknessMap"
+                    ];
+
+                    textureKeys.forEach(
+                        key => {
+                            if (material[key]) {
+                                material[key] = null;
+                            }
+                        }
+                    );
+
+                    material.needsUpdate = true;
+                }
+            );
+        }
+    );
+}
+
+
+function clearArchiveModel() {
+
+    if (!model || !scene) {
+        return;
+    }
+
+    scene.remove(model);
+
+    model.traverse(
+        object => {
+
+            if (object.geometry) {
+                object.geometry.dispose();
+            }
+
+            if (object.material) {
+
+                const materials =
+                    Array.isArray(object.material)
+                        ? object.material
+                        : [object.material];
+
+                materials.forEach(
+                    material => {
+
+                        if (!material) {
+                            return;
+                        }
+
+                        Object.keys(material).forEach(
+                            key => {
+
+                                const value =
+                                    material[key];
+
+                                if (
+                                    value &&
+                                    value.isTexture
+                                ) {
+                                    value.dispose();
+                                }
+                            }
+                        );
+
+                        material.dispose();
+                    }
+                );
+            }
+        }
+    );
+
+    model = null;
+}
+
+
+function prepareArchiveModel(object) {
+
+    if (!object) {
+        throw new Error("Пустая 3D модель");
+    }
+
+    removeArchiveTextures(object);
+
+    const box =
+        new THREE.Box3()
+            .setFromObject(object);
+
+    if (box.isEmpty()) {
+        throw new Error("В модели нет геометрии");
+    }
+
+    const center =
+        box.getCenter(
+            new THREE.Vector3()
+        );
+
+    const size =
+        box.getSize(
+            new THREE.Vector3()
+        );
+
+    object.position.sub(center);
+
+    const maxSize =
+        Math.max(
+            size.x,
+            size.y,
+            size.z
+        );
+
+    if (
+        Number.isFinite(maxSize) &&
+        maxSize > 0
+    ) {
+        object.scale.setScalar(
+            2 / maxSize
+        );
+    }
+
+    return object;
+}
+
+
+function loadArchiveModel(item) {
+
+    return new Promise(
+        (resolve, reject) => {
+
+            const extension =
+                getArchiveExtension(item);
+
+            const modelUrl =
+                getArchiveModelUrl(item);
+
+            if (!modelUrl) {
+                reject(
+                    new Error("Нет URL модели")
+                );
+                return;
+            }
+
+            const manager =
+                createArchiveLoadingManager(
+                    item,
+                    modelUrl
+                );
+
+            let archiveLoader = null;
+
+            if (
+                extension === "glb" ||
+                extension === "gltf"
+            ) {
+
+                archiveLoader =
+                    new GLTFLoader(manager);
+
+                archiveLoader.load(
+                    modelUrl,
+                    result => {
+                        resolve(result.scene);
+                    },
+                    undefined,
+                    reject
+                );
+
+                return;
+            }
+
+            if (extension === "fbx") {
+
+                archiveLoader =
+                    new FBXLoader(manager);
+
+                archiveLoader.load(
+                    modelUrl,
+                    result => {
+                        resolve(result);
+                    },
+                    undefined,
+                    reject
+                );
+
+                return;
+            }
+
+            if (extension === "obj") {
+
+                // OBJ загружается БЕЗ MTL.
+                // Поэтому никаких материалов/текстур из архива
+                // для OBJ не требуется.
+                archiveLoader =
+                    new OBJLoader(manager);
+
+                archiveLoader.load(
+                    modelUrl,
+                    result => {
+                        resolve(result);
+                    },
+                    undefined,
+                    reject
+                );
+
+                return;
+            }
+
+            if (extension === "stl") {
+
+                archiveLoader =
+                    new STLLoader(manager);
+
+                archiveLoader.load(
+                    modelUrl,
+                    geometry => {
+
+                        const material =
+                            new THREE.MeshStandardMaterial({
+                                color: 0xffffff,
+                                roughness: 0.72,
+                                metalness: 0.08,
+                                side: THREE.DoubleSide
+                            });
+
+                        const mesh =
+                            new THREE.Mesh(
+                                geometry,
+                                material
+                            );
+
+                        resolve(mesh);
+                    },
+                    undefined,
+                    reject
+                );
+
+                return;
+            }
+
+            reject(
+                new Error(
+                    "Формат не поддерживается: " +
+                    (extension || "unknown")
+                )
+            );
+        }
+    );
+}
+
+
 async function loadArchiveModels() {
 
     archiveStatus.textContent =
-        "Загрузка 3D моделей...";
+        "Загрузка списка моделей...";
 
     archiveGrid.innerHTML =
         "";
@@ -2189,9 +2585,7 @@ async function loadArchiveModels() {
             (item, index) => {
 
                 const button =
-                    document.createElement(
-                        "button"
-                    );
+                    document.createElement("button");
 
                 button.type =
                     "button";
@@ -2200,32 +2594,29 @@ async function loadArchiveModels() {
                     "archiveItem";
 
                 const preview =
-                    document.createElement(
-                        "div"
-                    );
+                    document.createElement("div");
 
                 preview.className =
                     "archivePlaceholder";
 
                 preview.textContent =
-                    "3D";
+                    String(
+                        item.extension ||
+                        "3D"
+                    ).replace(".", "").toUpperCase();
 
                 button.appendChild(
                     preview
                 );
 
                 const info =
-                    document.createElement(
-                        "div"
-                    );
+                    document.createElement("div");
 
                 info.className =
                     "archiveInfo";
 
                 const name =
-                    document.createElement(
-                        "div"
-                    );
+                    document.createElement("div");
 
                 name.className =
                     "archiveName";
@@ -2234,9 +2625,7 @@ async function loadArchiveModels() {
                     item.filename || "model";
 
                 const folder =
-                    document.createElement(
-                        "div"
-                    );
+                    document.createElement("div");
 
                 folder.className =
                     "archiveFolder";
@@ -2246,31 +2635,20 @@ async function loadArchiveModels() {
                         item.folder || ""
                     ).toUpperCase();
 
-                info.appendChild(
-                    name
-                );
-
-                info.appendChild(
-                    folder
-                );
-
-                button.appendChild(
-                    info
-                );
+                info.appendChild(name);
+                info.appendChild(folder);
+                button.appendChild(info);
 
                 button.addEventListener(
                     "click",
                     () => {
-                        openArchiveViewer(
-                            index
-                        );
+                        openArchiveViewer(index);
                     }
                 );
 
                 archiveGrid.appendChild(
                     button
                 );
-
             }
         );
 
@@ -2282,16 +2660,16 @@ async function loadArchiveModels() {
         );
 
         archiveStatus.textContent =
-            "Не удалось получить архив.";
-
+            "Не удалось получить архив: " +
+            error.message;
     }
-
 }
 
 
 async function openArchiveViewer(index) {
 
-    viewerOpenedFromArchive = true;
+    viewerOpenedFromArchive =
+        true;
 
     if (!requireAccess()) {
         return;
@@ -2304,29 +2682,95 @@ async function openArchiveViewer(index) {
         return;
     }
 
-    currentModelItem = item;
-
     viewerNumber.textContent =
         item.filename || "3D";
 
-    showScreen(viewerScreen);
+    showScreen(
+        viewerScreen
+    );
+
     initViewer();
-    clearCurrentModel();
+
+    clearArchiveModel();
 
     archiveStatus.textContent =
         "Загрузка модели: " +
-        (item.filename || "model") + "...";
+        (item.filename || "3D");
 
     try {
 
         const loadedObject =
             await loadArchiveModel(item);
 
-        prepareModel(loadedObject);
+        model =
+            prepareArchiveModel(
+                loadedObject
+            );
+
+        scene.add(model);
+
+        controls.target.set(
+            0,
+            0,
+            0
+        );
+
+        controls.update();
+
+        // Автоматически подбираем камеру под размер модели.
+        const box =
+            new THREE.Box3()
+                .setFromObject(model);
+
+        const size =
+            box.getSize(
+                new THREE.Vector3()
+            );
+
+        const maxSize =
+            Math.max(
+                size.x,
+                size.y,
+                size.z
+            );
+
+        const distance =
+            Math.max(
+                3,
+                maxSize * 2.8
+            );
+
+        camera.position.set(
+            distance,
+            distance * 0.55,
+            distance
+        );
+
+        camera.near =
+            Math.max(
+                0.001,
+                distance / 1000
+            );
+
+        camera.far =
+            Math.max(
+                1000,
+                distance * 100
+            );
+
+        camera.updateProjectionMatrix();
+
+        controls.target.set(
+            0,
+            0,
+            0
+        );
+
+        controls.update();
 
         archiveStatus.textContent =
             "Модель загружена: " +
-            (item.filename || "model");
+            (item.filename || "3D");
 
     } catch (error) {
 
@@ -2335,13 +2779,14 @@ async function openArchiveViewer(index) {
             error
         );
 
-        archiveStatus.textContent =
-            "Ошибка модели/текстур: " +
-            (error.message || error);
+        clearArchiveModel();
 
-        clearCurrentModel();
+        archiveStatus.textContent =
+            "Ошибка загрузки модели: " +
+            (error?.message || error);
     }
 }
+
 
 /* =============================================================
    GALLERY DATA
@@ -2425,564 +2870,30 @@ buildGallery();
 
 /* =============================================================
    THREE.JS VIEWER
-   Загрузка моделей из GUI-сервера.
-   Поддержка GLB / GLTF / FBX / OBJ / STL.
-   Внешние BIN / MTL / PNG / JPG / WEBP ресурсы
-   запрашиваются через серверный resource endpoint.
 ============================================================= */
 
-let scene = null;
-let camera = null;
-let renderer = null;
-let controls = null;
-let model = null;
-let viewerOpenedFromArchive = false;
-let currentModelItem = null;
+let scene =
+    null;
 
-const gltfLoader = new GLTFLoader();
-const fbxLoader = new FBXLoader();
-const objLoader = new OBJLoader();
-const mtlLoader = new MTLLoader();
-const stlLoader = new STLLoader();
+let camera =
+    null;
 
-const ARCHIVE_API_ORIGIN =
-    new URL(ARCHIVE_API).origin;
+let renderer =
+    null;
 
+let controls =
+    null;
 
-/* =============================================================
-   URL RESOURCE RESOLVER
-============================================================= */
+let model =
+    null;
 
-function getAbsoluteModelUrl(item) {
+let viewerOpenedFromArchive =
+    false;
 
-    if (!item || !item.url) {
-        throw new Error("У модели отсутствует URL");
-    }
 
-    return new URL(
-        item.url,
-        ARCHIVE_API
-    ).href;
-}
+const loader =
+    new GLTFLoader();
 
-
-function encodeResourcePath(value) {
-
-    return String(value || "")
-        .split("/")
-        .filter(Boolean)
-        .map(part => encodeURIComponent(part))
-        .join("/");
-}
-
-
-function createResourceManager(item) {
-
-    const manager = new THREE.LoadingManager();
-
-    manager.setURLModifier(resourceUrl => {
-
-        if (
-            resourceUrl.startsWith("data:") ||
-            resourceUrl.startsWith("blob:")
-        ) {
-            return resourceUrl;
-        }
-
-        let path = resourceUrl;
-
-        try {
-
-            const parsed = new URL(
-                resourceUrl,
-                getAbsoluteModelUrl(item)
-            );
-
-            /* Сам файл модели нельзя перенаправлять
-               на resource endpoint. */
-            if (
-                parsed.href ===
-                getAbsoluteModelUrl(item)
-            ) {
-                return parsed.href;
-            }
-
-            path = parsed.pathname;
-
-            if (path.includes("/api/models/resource/")) {
-                return parsed.href;
-            }
-
-            if (parsed.origin !== ARCHIVE_API_ORIGIN) {
-                path = parsed.pathname;
-            }
-
-        } catch (error) {
-            console.warn("RESOURCE URL:", resourceUrl, error);
-        }
-
-        const cleanPath =
-            String(path)
-                .split("?")[0]
-                .split("#")[0]
-                .replace(/^\/+/, "");
-
-        const resourcePath =
-            encodeResourcePath(
-                cleanPath.split("/").pop() || cleanPath
-            );
-
-        return (
-            ARCHIVE_API_ORIGIN +
-            "/api/models/resource/" +
-            encodeURIComponent(String(item.id)) +
-            "/" +
-            resourcePath
-        );
-
-    });
-
-    return manager;
-}
-
-
-function createLoaderForItem(item) {
-
-    const manager =
-        createResourceManager(item);
-
-    const extension =
-        String(
-            item.extension ||
-            item.filename ||
-            ""
-        )
-        .toLowerCase()
-        .split("?")[0]
-        .split(".")
-        .pop();
-
-    if (extension === "glb" || extension === "gltf") {
-        return {
-            type: extension,
-            loader: new GLTFLoader(manager)
-        };
-    }
-
-    if (extension === "fbx") {
-        return {
-            type: "fbx",
-            loader: new FBXLoader(manager)
-        };
-    }
-
-    if (extension === "obj") {
-        return {
-            type: "obj",
-            loader: new OBJLoader(manager),
-            manager
-        };
-    }
-
-    if (extension === "stl") {
-        return {
-            type: "stl",
-            loader: new STLLoader(manager)
-        };
-    }
-
-    throw new Error(
-        "Формат не поддерживается: " +
-        extension
-    );
-}
-
-
-/* =============================================================
-   MODEL CLEANUP
-============================================================= */
-
-function disposeMaterial(material) {
-
-    if (!material) {
-        return;
-    }
-
-    const maps = [
-        "map",
-        "alphaMap",
-        "aoMap",
-        "bumpMap",
-        "clearcoatMap",
-        "clearcoatNormalMap",
-        "clearcoatRoughnessMap",
-        "displacementMap",
-        "emissiveMap",
-        "metalnessMap",
-        "normalMap",
-        "roughnessMap",
-        "sheenColorMap",
-        "sheenRoughnessMap",
-        "specularColorMap",
-        "specularIntensityMap",
-        "transmissionMap"
-    ];
-
-    maps.forEach(key => {
-        const texture = material[key];
-        if (texture && texture.isTexture) {
-            texture.dispose();
-        }
-    });
-
-    material.dispose();
-}
-
-
-function clearCurrentModel() {
-
-    if (!model || !scene) {
-        model = null;
-        return;
-    }
-
-    scene.remove(model);
-
-    model.traverse(object => {
-
-        if (object.geometry) {
-            object.geometry.dispose();
-        }
-
-        if (object.material) {
-
-            if (Array.isArray(object.material)) {
-                object.material.forEach(disposeMaterial);
-            } else {
-                disposeMaterial(object.material);
-            }
-
-        }
-
-    });
-
-    model = null;
-}
-
-
-/* =============================================================
-   MODEL NORMALIZATION
-============================================================= */
-
-function prepareModel(object) {
-
-    if (!object) {
-        throw new Error("Пустая 3D модель");
-    }
-
-    model = object;
-
-    const box =
-        new THREE.Box3().setFromObject(model);
-
-    if (box.isEmpty()) {
-        throw new Error("У модели нет видимой геометрии");
-    }
-
-    const center =
-        box.getCenter(new THREE.Vector3());
-
-    const size =
-        box.getSize(new THREE.Vector3());
-
-    model.position.sub(center);
-
-    const maxSize =
-        Math.max(size.x, size.y, size.z);
-
-    if (
-        Number.isFinite(maxSize) &&
-        maxSize > 0
-    ) {
-        model.scale.setScalar(2 / maxSize);
-    }
-
-    model.traverse(object3d => {
-
-        if (object3d.isMesh) {
-            object3d.castShadow = true;
-            object3d.receiveShadow = true;
-
-            if (object3d.material) {
-
-                const materials =
-                    Array.isArray(object3d.material)
-                        ? object3d.material
-                        : [object3d.material];
-
-                materials.forEach(material => {
-                    material.side = THREE.DoubleSide;
-                    material.needsUpdate = true;
-                });
-            }
-        }
-
-    });
-
-    scene.add(model);
-
-    controls.target.set(0, 0, 0);
-
-    const normalizedBox =
-        new THREE.Box3().setFromObject(model);
-
-    const normalizedSize =
-        normalizedBox.getSize(new THREE.Vector3());
-
-    const radius =
-        Math.max(
-            normalizedSize.x,
-            normalizedSize.y,
-            normalizedSize.z
-        ) * 0.5;
-
-    controls.minDistance =
-        Math.max(0.05, radius * 0.15);
-
-    controls.maxDistance =
-        Math.max(3, radius * 8);
-
-    camera.position.set(
-        0,
-        Math.max(0.2, radius * 0.4),
-        Math.max(2.5, radius * 2.5)
-    );
-
-    controls.update();
-}
-
-
-/* =============================================================
-   OBJECT LOADER HELPERS
-============================================================= */
-
-function loadGLTF(item, url) {
-
-    const result =
-        createLoaderForItem(item);
-
-    return new Promise((resolve, reject) => {
-
-        result.loader.load(
-
-            url,
-
-            gltf => {
-                resolve(gltf.scene);
-            },
-
-            progress => {
-                if (progress && progress.total) {
-                    const percent =
-                        Math.round(
-                            progress.loaded /
-                            progress.total * 100
-                        );
-
-                    archiveStatus.textContent =
-                        "Загрузка: " +
-                        percent + "%";
-                }
-            },
-
-            reject
-        );
-
-    });
-}
-
-
-function loadFBX(item, url) {
-
-    const result =
-        createLoaderForItem(item);
-
-    return new Promise((resolve, reject) => {
-
-        result.loader.load(
-            url,
-            resolve,
-            progress => {
-                if (progress && progress.total) {
-                    archiveStatus.textContent =
-                        "Загрузка: " +
-                        Math.round(
-                            progress.loaded /
-                            progress.total * 100
-                        ) + "%";
-                }
-            },
-            reject
-        );
-
-    });
-}
-
-
-async function loadOBJ(item, url) {
-
-    const manager =
-        createResourceManager(item);
-
-    const obj =
-        new OBJLoader(manager);
-
-    const mtl =
-        new MTLLoader(manager);
-
-    const filename =
-        String(item.filename || "model.obj");
-
-    const baseName =
-        filename.replace(/\.[^.]+$/, "");
-
-    const mtlUrl =
-        ARCHIVE_API_ORIGIN +
-        "/api/models/resource/" +
-        encodeURIComponent(String(item.id)) +
-        "/" +
-        encodeURIComponent(baseName + ".mtl");
-
-    let materials = null;
-
-    try {
-
-        materials = await new Promise(
-            (resolve, reject) => {
-
-                mtl.load(
-                    mtlUrl,
-                    resolve,
-                    undefined,
-                    reject
-                );
-
-            }
-        );
-
-        materials.preload();
-        obj.setMaterials(materials);
-
-    } catch (error) {
-        console.warn(
-            "MTL не найден, OBJ будет загружен без MTL:",
-            error
-        );
-    }
-
-    return await new Promise(
-        (resolve, reject) => {
-
-            obj.load(
-                url,
-                resolve,
-                progress => {
-                    if (progress && progress.total) {
-                        archiveStatus.textContent =
-                            "Загрузка: " +
-                            Math.round(
-                                progress.loaded /
-                                progress.total * 100
-                            ) + "%";
-                    }
-                },
-                reject
-            );
-
-        }
-    );
-}
-
-
-async function loadSTL(item, url) {
-
-    const result =
-        createLoaderForItem(item);
-
-    return await new Promise(
-        (resolve, reject) => {
-
-            result.loader.load(
-                url,
-                geometry => {
-
-                    const material =
-                        new THREE.MeshStandardMaterial({
-                            color: 0xffffff,
-                            roughness: 0.7,
-                            metalness: 0.05
-                        });
-
-                    resolve(
-                        new THREE.Mesh(
-                            geometry,
-                            material
-                        )
-                    );
-                },
-                undefined,
-                reject
-            );
-
-        }
-    );
-}
-
-
-async function loadArchiveModel(item) {
-
-    const url =
-        getAbsoluteModelUrl(item);
-
-    const extension =
-        String(
-            item.extension ||
-            item.filename ||
-            ""
-        )
-        .toLowerCase()
-        .split(".")
-        .pop();
-
-    if (
-        extension === "glb" ||
-        extension === "gltf"
-    ) {
-        return await loadGLTF(item, url);
-    }
-
-    if (extension === "fbx") {
-        return await loadFBX(item, url);
-    }
-
-    if (extension === "obj") {
-        return await loadOBJ(item, url);
-    }
-
-    if (extension === "stl") {
-        return await loadSTL(item, url);
-    }
-
-    throw new Error(
-        "Неизвестный формат модели: " +
-        extension
-    );
-}
-
-
-/* =============================================================
-   VIEWER INIT
-============================================================= */
 
 function initViewer() {
 
@@ -2990,11 +2901,16 @@ function initViewer() {
         return;
     }
 
+
     scene =
         new THREE.Scene();
 
+
     scene.background =
-        new THREE.Color(0x000000);
+        new THREE.Color(
+            0x000000
+        );
+
 
     camera =
         new THREE.PerspectiveCamera(
@@ -3005,30 +2921,44 @@ function initViewer() {
             1000
         );
 
-    camera.position.set(0, 0.3, 3);
+
+    camera.position.set(
+        0,
+        0.3,
+        3
+    );
+
 
     renderer =
         new THREE.WebGLRenderer({
-            antialias: true,
-            alpha: false,
-            powerPreference: "high-performance"
+
+            antialias:
+                true,
+
+            alpha:
+                false
+
         });
 
+
     renderer.setPixelRatio(
-        Math.min(window.devicePixelRatio, 2)
+        Math.min(
+            window.devicePixelRatio,
+            2
+        )
     );
+
 
     renderer.setSize(
         window.innerWidth,
         window.innerHeight
     );
 
-    renderer.outputColorSpace =
-        THREE.SRGBColorSpace;
 
     viewerCanvas.appendChild(
         renderer.domElement
     );
+
 
     controls =
         new OrbitControls(
@@ -3036,11 +2966,19 @@ function initViewer() {
             renderer.domElement
         );
 
-    controls.enableDamping = true;
-    controls.enablePan = true;
-    controls.minDistance = 0.05;
-    controls.maxDistance = 100;
-    controls.screenSpacePanning = true;
+
+    controls.enableDamping =
+        true;
+
+    controls.enablePan =
+        true;
+
+    controls.minDistance =
+        0.5;
+
+    controls.maxDistance =
+        20;
+
 
     const ambient =
         new THREE.AmbientLight(
@@ -3048,7 +2986,11 @@ function initViewer() {
             2
         );
 
-    scene.add(ambient);
+
+    scene.add(
+        ambient
+    );
+
 
     const light =
         new THREE.DirectionalLight(
@@ -3056,43 +2998,55 @@ function initViewer() {
             3
         );
 
-    light.position.set(4, 5, 4);
-    scene.add(light);
 
-    const fill =
-        new THREE.DirectionalLight(
-            0xffffff,
-            1.5
-        );
+    light.position.set(
+        4,
+        5,
+        4
+    );
 
-    fill.position.set(-4, 2, -4);
-    scene.add(fill);
+
+    scene.add(
+        light
+    );
+
 
     window.addEventListener(
         "resize",
         resizeViewer
     );
 
+
     animateViewer();
+
 }
 
 
 function resizeViewer() {
 
-    if (!camera || !renderer) {
+    if (
+        !camera ||
+        !renderer
+    ) {
+
         return;
+
     }
+
 
     camera.aspect =
         window.innerWidth /
         window.innerHeight;
 
+
     camera.updateProjectionMatrix();
+
 
     renderer.setSize(
         window.innerWidth,
         window.innerHeight
     );
+
 }
 
 
@@ -3102,80 +3056,210 @@ function animateViewer() {
         animateViewer
     );
 
+
     if (controls) {
         controls.update();
     }
 
-    if (renderer && scene && camera) {
+
+    if (
+        renderer &&
+        scene &&
+        camera
+    ) {
+
         renderer.render(
             scene,
             camera
         );
+
     }
+
 }
 
 
 /* =============================================================
-   OPEN GALLERY MODEL
+   OPEN MODEL
 ============================================================= */
 
-async function openViewer(index) {
+function openViewer(index) {
 
-    viewerOpenedFromArchive = false;
+    viewerOpenedFromArchive =
+        false;
 
-    if (!requireAccess()) {
+    if (
+        !requireAccess()
+    ) {
         return;
     }
 
+
     const item =
         galleryItems[index];
+
 
     if (!item) {
         return;
     }
 
+
     viewerNumber.textContent =
         item.number;
 
-    showScreen(viewerScreen);
+
+    showScreen(
+        viewerScreen
+    );
+
+
     initViewer();
-    clearCurrentModel();
 
-    try {
 
-        const url =
-            MODEL_BASE +
-            encodeURIComponent(
-                item.filename
-            );
+    if (model) {
 
-        gltfLoader.load(
-            url,
-            gltf => {
-                try {
-                    prepareModel(gltf.scene);
-                } catch (error) {
-                    console.error(
-                        "GALLERY PREPARE ERROR:",
-                        error
-                    );
+        scene.remove(
+            model
+        );
+
+
+        model.traverse(
+            object => {
+
+                if (
+                    object.geometry
+                ) {
+
+                    object.geometry.dispose();
+
                 }
-            },
-            undefined,
-            error => {
-                console.error(
-                    "GALLERY MODEL ERROR:",
-                    error
-                );
+
+
+                if (
+                    object.material
+                ) {
+
+                    if (
+                        Array.isArray(
+                            object.material
+                        )
+                    ) {
+
+                        object.material
+                            .forEach(
+                                material => {
+
+                                    material.dispose();
+
+                                }
+                            );
+
+                    } else {
+
+                        object.material.dispose();
+
+                    }
+
+                }
+
             }
         );
 
-    } catch (error) {
-        console.error(
-            "GALLERY ERROR:",
-            error
-        );
+
+        model =
+            null;
+
     }
+
+
+    const url =
+        MODEL_BASE +
+        encodeURIComponent(
+            item.filename
+        );
+
+
+    loader.load(
+
+        url,
+
+        gltf => {
+
+            model =
+                gltf.scene;
+
+
+            const box =
+                new THREE.Box3()
+                    .setFromObject(
+                        model
+                    );
+
+
+            const center =
+                box.getCenter(
+                    new THREE.Vector3()
+                );
+
+
+            const size =
+                box.getSize(
+                    new THREE.Vector3()
+                );
+
+
+            model.position.sub(
+                center
+            );
+
+
+            const maxSize =
+                Math.max(
+                    size.x,
+                    size.y,
+                    size.z
+                );
+
+
+            if (
+                maxSize > 0
+            ) {
+
+                model.scale.setScalar(
+                    2 / maxSize
+                );
+
+            }
+
+
+            scene.add(
+                model
+            );
+
+
+            controls.target.set(
+                0,
+                0,
+                0
+            );
+
+
+            controls.update();
+
+        },
+
+        undefined,
+
+        error => {
+
+            console.error(
+                "MODEL ERROR:",
+                error
+            );
+
+        }
+
+    );
+
 }
 
 
