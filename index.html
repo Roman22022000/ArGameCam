@@ -1,1253 +1,647 @@
 <!DOCTYPE html>
 <html lang="ru">
-
 <head>
 
-<meta charset="UTF-8">
+    <meta charset="UTF-8">
 
-<meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
->
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
-<title>AR Gallery</title>
+    <title>AR Gallery</title>
 
+    <!-- TON CONNECT -->
+    <script src="https://unpkg.com/@tonconnect/ui@3.0.0/dist/tonconnect-ui.min.js"></script>
 
-<!-- =========================================================
-     TON CONNECT
-========================================================= -->
+    <style>
 
-<script src="https://unpkg.com/@tonconnect/ui@3.0.0/dist/tonconnect-ui.min.js"></script>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
 
-<style>
+            background: #000;
+            color: #fff;
 
-/* =========================================================
-   RESET
-========================================================= */
+            font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
+        }
 
-* {
+        body {
+            -webkit-font-smoothing: antialiased;
+        }
 
-    box-sizing:
-        border-box;
+        button,
+        input {
+            font: inherit;
+        }
 
-    margin:
-        0;
+        button {
+            cursor: pointer;
+            border: 0;
+        }
 
-    padding:
-        0;
+        /* =========================================================
+           SCREENS
+        ========================================================= */
 
-}
+        .screen {
+            position: fixed;
+            inset: 0;
 
+            display: none;
 
-html,
-body {
+            width: 100%;
+            height: 100%;
 
-    width:
-        100%;
+            background: #000;
+        }
 
-    height:
-        100%;
+        .screen.active {
+            display: flex;
+        }
 
-    overflow:
-        hidden;
 
-    background:
-        #000;
+        /* =========================================================
+           AUTH
+        ========================================================= */
 
-    color:
-        #fff;
+        #authScreen {
+            align-items: center;
+            justify-content: center;
 
-    font-family:
-        Arial,
-        Helvetica,
-        sans-serif;
+            padding: 20px;
+        }
 
-}
+        .auth {
+            width: 320px;
+            max-width: 100%;
 
+            text-align: center;
+        }
 
-body {
+        .authTitle {
+            margin-bottom: 30px;
 
-    -webkit-font-smoothing:
-        antialiased;
+            font-size: 28px;
+            font-weight: 500;
+            letter-spacing: -0.5px;
+        }
 
-    touch-action:
-        none;
+        /*
+            Собственная кнопка.
+            TON Connect modal открывается через openModal().
+        */
 
-}
+        .connectButton {
+            width: 100%;
+            height: 52px;
 
+            background: #fff;
+            color: #000;
 
-button,
-input {
+            border: 1px solid #fff;
 
-    font:
-        inherit;
+            font-size: 14px;
+            font-weight: 500;
 
-}
+            transition: opacity .15s ease;
+        }
 
+        .connectButton:hover {
+            opacity: .85;
+        }
 
-button {
+        .connectButton:active {
+            opacity: .65;
+        }
 
-    cursor:
-        pointer;
+        .authStatus {
+            min-height: 20px;
 
-    border:
-        0;
+            margin-top: 18px;
 
-}
+            color: #666;
 
+            font-size: 12px;
+            line-height: 1.4;
+        }
 
-/* =========================================================
-   SCREENS
-========================================================= */
 
-.screen {
+        /* =========================================================
+           HOME
+        ========================================================= */
 
-    position:
-        fixed;
+        #homeScreen {
+            align-items: center;
+            justify-content: center;
 
-    inset:
-        0;
+            padding: 20px;
+        }
 
-    display:
-        none;
+        .home {
+            width: 320px;
+            max-width: 100%;
+        }
 
-    width:
-        100%;
+        .homeTitle {
+            margin-bottom: 30px;
 
-    height:
-        100%;
+            text-align: center;
 
-    background:
-        #000;
+            font-size: 28px;
+            font-weight: 500;
+        }
 
-}
+        .menu {
+            width: 100%;
+        }
 
+        .menuButton {
+            width: 100%;
+            height: 52px;
 
-.screen.active {
+            margin-bottom: 8px;
 
-    display:
-        flex;
+            background: #080808;
+            color: #fff;
 
-}
+            border: 1px solid #242424;
 
+            font-size: 13px;
+            font-weight: 400;
 
-/* =========================================================
-   AUTH
-========================================================= */
+            text-align: left;
 
-#authScreen {
+            padding: 0 16px;
+        }
 
-    align-items:
-        center;
+        .menuButton:hover {
+            background: #111;
+        }
 
-    justify-content:
-        center;
+        .menuButton:active {
+            background: #181818;
+        }
 
-    padding:
-        20px;
 
-}
+        /* =========================================================
+           PAGE HEADER
+        ========================================================= */
 
+        .page {
+            flex-direction: column;
 
-.auth {
+            padding:
+                14px
+                18px
+                18px
+                18px;
+        }
 
-    width:
-        320px;
+        .header {
+            position: relative;
 
-    max-width:
-        100%;
+            width: 100%;
+            height: 48px;
 
-    text-align:
-        center;
+            flex-shrink: 0;
 
-}
+            display: flex;
+            align-items: center;
+        }
 
+        .backButton {
+            width: 40px;
+            height: 40px;
 
-.authTitle {
+            background: #080808;
+            color: #fff;
 
-    margin-bottom:
-        30px;
+            border: 1px solid #242424;
 
-    font-size:
-        28px;
+            font-size: 22px;
+            line-height: 1;
+        }
 
-    font-weight:
-        500;
+        .backButton:hover {
+            background: #111;
+        }
 
-    letter-spacing:
-        -0.5px;
+        .pageTitle {
+            position: absolute;
 
-}
+            left: 50%;
+            transform: translateX(-50%);
 
+            font-size: 14px;
+            font-weight: 400;
+        }
 
-.connectButton {
 
-    width:
-        100%;
+        /* =========================================================
+           ARCHIVE
+        ========================================================= */
 
-    height:
-        52px;
-
-    background:
-        #fff;
-
-    color:
-        #000;
-
-    border:
-        1px solid #fff;
-
-    font-size:
-        14px;
-
-    font-weight:
-        500;
-
-}
-
-
-.connectButton:hover {
-
-    opacity:
-        .85;
-
-}
-
-
-.connectButton:active {
-
-    opacity:
-        .65;
-
-}
-
-
-.authStatus {
-
-    min-height:
-        20px;
-
-    margin-top:
-        18px;
-
-    color:
-        #666;
-
-    font-size:
-        12px;
-
-    line-height:
-        1.4;
-
-}
-
-
-/* =========================================================
-   HOME
-========================================================= */
-
-#homeScreen {
-
-    align-items:
-        center;
-
-    justify-content:
-        center;
-
-    padding:
-        20px;
-
-}
-
-
-.home {
-
-    width:
-        320px;
-
-    max-width:
-        100%;
-
-}
-
-
-.homeTitle {
-
-    margin-bottom:
-        30px;
-
-    text-align:
-        center;
-
-    font-size:
-        28px;
-
-    font-weight:
-        500;
-
-}
-
-
-.menu {
-
-    width:
-        100%;
-
-}
-
-
-.menuButton {
-
-    width:
-        100%;
-
-    height:
-        52px;
-
-    margin-bottom:
-        8px;
-
-    background:
-        #080808;
-
-    color:
-        #fff;
-
-    border:
-        1px solid #242424;
-
-    font-size:
-        13px;
-
-    font-weight:
-        400;
-
-    text-align:
-        left;
-
-    padding:
-        0 16px;
-
-}
-
-
-.menuButton:hover {
-
-    background:
-        #111;
-
-}
-
-
-.menuButton:active {
-
-    background:
-        #181818;
-
-}
-
-
-/* =========================================================
-   PAGE
-========================================================= */
-
-.page {
-
-    flex-direction:
-        column;
-
-    padding:
-        14px
-        18px
-        18px
-        18px;
-
-}
-
-
-.header {
-
-    position:
-        relative;
-
-    width:
-        100%;
-
-    height:
-        48px;
-
-    flex-shrink:
-        0;
-
-    display:
-        flex;
-
-    align-items:
-        center;
-
-}
-
-
-.backButton {
-
-    width:
-        40px;
-
-    height:
-        40px;
-
-    background:
-        #080808;
-
-    color:
-        #fff;
-
-    border:
-        1px solid #242424;
-
-    font-size:
-        22px;
-
-    line-height:
-        1;
-
-}
-
-
-.backButton:hover {
-
-    background:
-        #111;
-
-}
-
-
-.pageTitle {
-
-    position:
-        absolute;
-
-    left:
-        50%;
-
-    transform:
-        translateX(-50%);
-
-    font-size:
-        14px;
-
-    font-weight:
-        400;
-
-}
-
-
-/* =========================================================
-   ARCHIVE
-========================================================= */
-
-.archiveGrid {
-
-    width:
-        100%;
-
-    max-width:
-        1100px;
-
-    margin:
-        auto;
-
-    display:
-        grid;
-
-    grid-template-columns:
-        repeat(
-            auto-fill,
-            minmax(180px, 1fr)
-        );
-
-    gap:
-        10px;
-
-    overflow-y:
-        auto;
-
-    padding-bottom:
-        10px;
-
-    touch-action:
-        pan-y;
-
-}
-
-
-.archiveItem {
-
-    aspect-ratio:
-        1;
-
-    background:
-        #080808;
-
-    color:
-        #fff;
-
-    border:
-        1px solid #202020;
-
-    overflow:
-        hidden;
-
-    position:
-        relative;
-
-    text-align:
-        left;
-
-}
-
-
-.archiveItem:hover {
-
-    background:
-        #111;
-
-    border-color:
-        #444;
-
-}
-
-
-.archivePreview {
-
-    width:
-        100%;
-
-    height:
-        100%;
-
-    object-fit:
-        cover;
-
-    display:
-        block;
-
-}
-
-
-.archivePlaceholder {
-
-    width:
-        100%;
-
-    height:
-        100%;
-
-    display:
-        flex;
-
-    align-items:
-        center;
-
-    justify-content:
-        center;
-
-    color:
-        #444;
-
-    font-size:
-        28px;
-
-}
-
-
-.archiveInfo {
-
-    position:
-        absolute;
-
-    left:
-        0;
-
-    right:
-        0;
-
-    bottom:
-        0;
-
-    padding:
-        35px
-        12px
-        12px
-        12px;
-
-    background:
-        linear-gradient(
-            transparent,
-            rgba(0,0,0,.92)
-        );
-
-}
-
-
-.archiveName {
-
-    font-size:
-        11px;
-
-    white-space:
-        nowrap;
-
-    overflow:
-        hidden;
-
-    text-overflow:
-        ellipsis;
-
-}
-
-
-.archiveFolder {
-
-    margin-top:
-        5px;
-
-    color:
-        #777;
-
-    font-size:
-        8px;
-
-    letter-spacing:
-        .5px;
-
-}
-
-
-.archiveStatus {
-
-    width:
-        100%;
-
-    max-width:
-        1100px;
-
-    margin:
-        0 auto 10px auto;
-
-    color:
-        #666;
-
-    font-size:
-        10px;
-
-}
-
-
-/* =========================================================
-   GALLERY
-========================================================= */
-
-.galleryGrid {
-
-    width:
-        100%;
-
-    max-width:
-        900px;
-
-    margin:
-        auto;
-
-    display:
-        grid;
-
-    grid-template-columns:
-        repeat(
-            auto-fill,
-            minmax(140px, 1fr)
-        );
-
-    gap:
-        10px;
-
-    overflow-y:
-        auto;
-
-}
-
-
-.galleryItem {
-
-    aspect-ratio:
-        1;
-
-    background:
-        #080808;
-
-    color:
-        #fff;
-
-    border:
-        1px solid #202020;
-
-    font-size:
-        18px;
-
-    font-weight:
-        400;
-
-}
-
-
-.galleryItem:hover {
-
-    background:
-        #111;
-
-}
-
-
-/* =========================================================
-   VIEWER
-========================================================= */
-
-#viewerScreen {
-
-    background:
-        #000;
-
-    touch-action:
-        none;
-
-}
-
-
-#viewerCanvas {
-
-    position:
-        absolute;
-
-    inset:
-        0;
-
-    width:
-        100%;
-
-    height:
-        100%;
-
-    touch-action:
-        none;
-
-}
-
-
-#viewerCanvas canvas {
-
-    display:
-        block;
-
-    width:
-        100%;
-
-    height:
-        100%;
-
-}
-
-
-.viewerHeader {
-
-    position:
-        absolute;
-
-    z-index:
-        10;
-
-    top:
-        14px;
-
-    left:
-        14px;
-
-    right:
-        14px;
-
-    height:
-        40px;
-
-    display:
-        flex;
-
-    align-items:
-        center;
-
-    pointer-events:
-        none;
-
-}
-
-
-.viewerHeader .backButton {
-
-    pointer-events:
-        auto;
-
-}
-
-
-.viewerNumber {
-
-    position:
-        absolute;
-
-    left:
-        50%;
-
-    transform:
-        translateX(-50%);
-
-    font-size:
-        14px;
-
-    max-width:
-        65%;
-
-    overflow:
-        hidden;
-
-    white-space:
-        nowrap;
-
-    text-overflow:
-        ellipsis;
-
-}
-
-
-.sceneInfo {
-
-    position:
-        absolute;
-
-    z-index:
-        10;
-
-    left:
-        50%;
-
-    bottom:
-        14px;
-
-    transform:
-        translateX(-50%);
-
-    color:
-        #555;
-
-    font-size:
-        9px;
-
-    pointer-events:
-        none;
-
-    white-space:
-        nowrap;
-
-}
-
-
-/* =========================================================
-   GENERATION
-========================================================= */
-
-#generationScreen {
-
-    align-items:
-        center;
-
-    justify-content:
-        center;
-
-    padding:
-        20px;
-
-}
-
-
-.generation {
-
-    width:
-        320px;
-
-    max-width:
-        100%;
-
-}
-
-
-.generationTitle {
-
-    margin-bottom:
-        24px;
-
-    font-size:
-        20px;
-
-    font-weight:
-        400;
-
-    text-align:
-        center;
-
-}
-
-
-.codeInput {
-
-    width:
-        100%;
-
-    height:
-        58px;
-
-    background:
-        #050505;
-
-    color:
-        #fff;
-
-    border:
-        1px solid #292929;
-
-    outline:
-        none;
-
-    padding:
-        0 16px;
-
-    font-size:
-        24px;
-
-    letter-spacing:
-        8px;
-
-    text-align:
-        center;
-
-}
-
-
-.codeInput:focus {
-
-    border-color:
-        #555;
-
-}
-
-
-.codeInput::placeholder {
-
-    color:
-        #333;
-
-}
-
-
-.sendButton {
-
-    width:
-        100%;
-
-    height:
-        52px;
-
-    margin-top:
-        8px;
-
-    background:
-        #fff;
-
-    color:
-        #000;
-
-    border:
-        1px solid #fff;
-
-    font-size:
-        13px;
-
-}
-
-
-.sendButton:disabled {
-
-    opacity:
-        .25;
-
-    cursor:
-        default;
-
-}
-
-
-.generationStatus {
-
-    min-height:
-        18px;
-
-    margin-top:
-        14px;
-
-    color:
-        #666;
-
-    font-size:
-        12px;
-
-    text-align:
-        center;
-
-}
-
-
-/* =========================================================
-   USER
-========================================================= */
-
-.userPage {
-
-    width:
-        320px;
-
-    max-width:
-        100%;
-
-    margin:
-        auto;
-
-    display:
-        flex;
-
-    flex-direction:
-        column;
-
-}
-
-
-.userBlock {
-
-    width:
-        100%;
-
-    padding:
-        18px;
-
-    background:
-        #080808;
-
-    border:
-        1px solid #242424;
-
-}
-
-
-.userLabel {
-
-    margin-bottom:
-        10px;
-
-    color:
-        #666;
-
-    font-size:
-        11px;
-
-    letter-spacing:
-        .4px;
-
-}
-
-
-.userAddress {
-
-    color:
-        #fff;
-
-    font-size:
-        12px;
-
-    line-height:
-        1.5;
-
-    word-break:
-        break-all;
-
-}
-
-
-.disconnectButton {
-
-    width:
-        100%;
-
-    height:
-        52px;
-
-    margin-top:
-        10px;
-
-    background:
-        #080808;
-
-    color:
-        #fff;
-
-    border:
-        1px solid #242424;
-
-    font-size:
-        13px;
-
-}
-
-
-.disconnectButton:hover {
-
-    background:
-        #111;
-
-}
-
-
-.disconnectButton:active {
-
-    background:
-        #181818;
-
-}
-
-
-.userStatus {
-
-    min-height:
-        18px;
-
-    margin-top:
-        14px;
-
-    color:
-        #666;
-
-    font-size:
-        12px;
-
-    text-align:
-        center;
-
-}
-
-
-/* =========================================================
-   LOADING
-========================================================= */
-
-#loading {
-
-    position:
-        fixed;
-
-    inset:
-        0;
-
-    z-index:
-        1000;
-
-    display:
-        none;
-
-    align-items:
-        center;
-
-    justify-content:
-        center;
-
-    background:
-        #000;
-
-}
-
-
-#loading.active {
-
-    display:
-        flex;
-
-}
-
-
-.loadingText {
-
-    color:
-        #777;
-
-    font-size:
-        11px;
-
-}
-
-
-/* =========================================================
-   MOBILE
-========================================================= */
-
-@media (max-width: 500px) {
-
-    .authTitle,
-    .homeTitle {
-
-        font-size:
-            24px;
-
-    }
-
-
-    .galleryGrid {
-
-        grid-template-columns:
-            repeat(
-                2,
-                1fr
+        .archiveGrid {
+            width: 100%;
+            max-width: 1100px;
+            margin: auto;
+            display: grid;
+            grid-template-columns: repeat(
+                auto-fill,
+                minmax(180px, 1fr)
             );
+            gap: 10px;
+            overflow-y: auto;
+            padding-bottom: 10px;
+        }
 
-    }
+        .archiveItem {
+            aspect-ratio: 1;
+            background: #080808;
+            color: #fff;
+            border: 1px solid #202020;
+            overflow: hidden;
+            position: relative;
+            text-align: left;
+        }
 
+        .archiveItem:hover {
+            background: #111;
+            border-color: #444;
+        }
 
-    .archiveGrid {
+        .archivePreview {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
 
-        grid-template-columns:
-            repeat(
-                2,
-                1fr
+        .archivePlaceholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #444;
+            font-size: 28px;
+        }
+
+        .archiveInfo {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            padding: 35px 12px 12px 12px;
+            background: linear-gradient(
+                transparent,
+                rgba(0,0,0,.92)
             );
+        }
 
-    }
+        .archiveName {
+            font-size: 11px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
 
-}
+        .archiveFolder {
+            margin-top: 5px;
+            color: #777;
+            font-size: 8px;
+            letter-spacing: .5px;
+        }
 
-</style>
+        .archiveStatus {
+            width: 100%;
+            max-width: 1100px;
+            margin: 0 auto 10px auto;
+            color: #666;
+            font-size: 10px;
+        }
+
+
+        /* =========================================================
+           GALLERY
+        ========================================================= */
+
+        .galleryGrid {
+            width: 100%;
+            max-width: 900px;
+
+            margin: auto;
+
+            display: grid;
+
+            grid-template-columns:
+                repeat(
+                    auto-fill,
+                    minmax(140px, 1fr)
+                );
+
+            gap: 10px;
+
+            overflow-y: auto;
+        }
+
+        .galleryItem {
+            aspect-ratio: 1;
+
+            background: #080808;
+            color: #fff;
+
+            border: 1px solid #202020;
+
+            font-size: 18px;
+            font-weight: 400;
+        }
+
+        .galleryItem:hover {
+            background: #111;
+        }
+
+
+        /* =========================================================
+           VIEWER
+        ========================================================= */
+
+        #viewerScreen {
+            background: #000;
+        }
+
+        #viewerCanvas {
+            position: absolute;
+            inset: 0;
+
+            width: 100%;
+            height: 100%;
+        }
+
+        #viewerCanvas canvas {
+            display: block;
+
+            width: 100%;
+            height: 100%;
+        }
+
+        .viewerHeader {
+            position: absolute;
+
+            z-index: 10;
+
+            top: 14px;
+            left: 14px;
+            right: 14px;
+
+            height: 40px;
+
+            display: flex;
+            align-items: center;
+        }
+
+        .viewerNumber {
+            position: absolute;
+
+            left: 50%;
+            transform: translateX(-50%);
+
+            font-size: 14px;
+        }
+
+
+        /* =========================================================
+           GENERATION
+        ========================================================= */
+
+        #generationScreen {
+            align-items: center;
+            justify-content: center;
+
+            padding: 20px;
+        }
+
+        .generation {
+            width: 320px;
+            max-width: 100%;
+        }
+
+        .generationTitle {
+            margin-bottom: 24px;
+
+            font-size: 20px;
+            font-weight: 400;
+
+            text-align: center;
+        }
+
+        .codeInput {
+            width: 100%;
+            height: 58px;
+
+            background: #050505;
+            color: #fff;
+
+            border: 1px solid #292929;
+
+            outline: none;
+
+            padding: 0 16px;
+
+            font-size: 24px;
+            letter-spacing: 8px;
+
+            text-align: center;
+        }
+
+        .codeInput:focus {
+            border-color: #555;
+        }
+
+        .codeInput::placeholder {
+            color: #333;
+        }
+
+        .sendButton {
+            width: 100%;
+            height: 52px;
+
+            margin-top: 8px;
+
+            background: #fff;
+            color: #000;
+
+            border: 1px solid #fff;
+
+            font-size: 13px;
+        }
+
+        .sendButton:disabled {
+            opacity: .25;
+            cursor: default;
+        }
+
+        .generationStatus {
+            min-height: 18px;
+
+            margin-top: 14px;
+
+            color: #666;
+
+            font-size: 12px;
+
+            text-align: center;
+        }
+
+
+        /* =========================================================
+           USER
+        ========================================================= */
+
+        .userPage {
+            width: 320px;
+            max-width: 100%;
+            margin: auto;
+
+            display: flex;
+            flex-direction: column;
+        }
+
+        .userBlock {
+            width: 100%;
+
+            padding: 18px;
+
+            background: #080808;
+
+            border: 1px solid #242424;
+        }
+
+        .userLabel {
+            margin-bottom: 10px;
+
+            color: #666;
+
+            font-size: 11px;
+            letter-spacing: .4px;
+        }
+
+        .userAddress {
+            color: #fff;
+
+            font-size: 12px;
+            line-height: 1.5;
+
+            word-break: break-all;
+        }
+
+        .disconnectButton {
+            width: 100%;
+            height: 52px;
+
+            margin-top: 10px;
+
+            background: #080808;
+            color: #fff;
+
+            border: 1px solid #242424;
+
+            font-size: 13px;
+            font-weight: 400;
+        }
+
+        .disconnectButton:hover {
+            background: #111;
+        }
+
+        .disconnectButton:active {
+            background: #181818;
+        }
+
+        .userStatus {
+            min-height: 18px;
+
+            margin-top: 14px;
+
+            color: #666;
+
+            font-size: 12px;
+
+            text-align: center;
+        }
+
+
+        /* =========================================================
+           LOADING
+        ========================================================= */
+
+        #loading {
+            position: fixed;
+            inset: 0;
+
+            z-index: 1000;
+
+            display: none;
+
+            align-items: center;
+            justify-content: center;
+
+            background: #000;
+        }
+
+        #loading.active {
+            display: flex;
+        }
+
+        .loadingText {
+            color: #777;
+            font-size: 11px;
+        }
+
+
+        /* =========================================================
+           MOBILE
+        ========================================================= */
+
+        @media (max-width: 500px) {
+
+            .authTitle,
+            .homeTitle {
+                font-size: 24px;
+            }
+
+            .galleryGrid {
+                grid-template-columns:
+                    repeat(
+                        2,
+                        1fr
+                    );
+            }
+
+        }
+
+    </style>
 
 </head>
-
 
 <body>
 
 
-<!-- =========================================================
+<!-- =============================================================
      AUTH
-========================================================= -->
+============================================================= -->
 
 <section
     id="authScreen"
@@ -1260,7 +654,6 @@ button {
             AR Gallery
         </div>
 
-
         <button
             id="connectWallet"
             class="connectButton"
@@ -1268,7 +661,6 @@ button {
         >
             ПОДКЛЮЧИТЬ КОШЕЛЁК
         </button>
-
 
         <div
             id="authStatus"
@@ -1282,9 +674,9 @@ button {
 </section>
 
 
-<!-- =========================================================
+<!-- =============================================================
      HOME
-========================================================= -->
+============================================================= -->
 
 <section
     id="homeScreen"
@@ -1297,7 +689,6 @@ button {
             AR Gallery
         </div>
 
-
         <div class="menu">
 
             <button
@@ -1308,7 +699,6 @@ button {
                 ГАЛЕРЕЯ
             </button>
 
-
             <button
                 id="openArchive"
                 class="menuButton"
@@ -1317,7 +707,6 @@ button {
                 АРХИВ
             </button>
 
-
             <button
                 id="openGeneration"
                 class="menuButton"
@@ -1325,7 +714,6 @@ button {
             >
                 ГЕНЕРАЦИЯ
             </button>
-
 
             <button
                 id="openUser"
@@ -1342,9 +730,9 @@ button {
 </section>
 
 
-<!-- =========================================================
+<!-- =============================================================
      ARCHIVE
-========================================================= -->
+============================================================= -->
 
 <section
     id="archiveScreen"
@@ -1361,13 +749,11 @@ button {
             ←
         </button>
 
-
         <div class="pageTitle">
             АРХИВ
         </div>
 
     </div>
-
 
     <div
         id="archiveStatus"
@@ -1375,7 +761,6 @@ button {
     >
         Загрузка 3D моделей...
     </div>
-
 
     <div
         id="archiveGrid"
@@ -1385,9 +770,9 @@ button {
 </section>
 
 
-<!-- =========================================================
+<!-- =============================================================
      GALLERY
-========================================================= -->
+============================================================= -->
 
 <section
     id="galleryScreen"
@@ -1404,13 +789,11 @@ button {
             ←
         </button>
 
-
         <div class="pageTitle">
             ГАЛЕРЕЯ
         </div>
 
     </div>
-
 
     <div
         id="galleryGrid"
@@ -1420,9 +803,9 @@ button {
 </section>
 
 
-<!-- =========================================================
+<!-- =============================================================
      VIEWER
-========================================================= -->
+============================================================= -->
 
 <section
     id="viewerScreen"
@@ -1432,7 +815,6 @@ button {
     <div
         id="viewerCanvas"
     ></div>
-
 
     <div class="viewerHeader">
 
@@ -1444,27 +826,21 @@ button {
             ←
         </button>
 
-
         <div
             id="viewerNumber"
             class="viewerNumber"
         >
-            3D
+            1
         </div>
 
-    </div>
-
-
-    <div class="sceneInfo">
-        СЦЕНА 4 × 7 × 4 М
     </div>
 
 </section>
 
 
-<!-- =========================================================
+<!-- =============================================================
      GENERATION
-========================================================= -->
+============================================================= -->
 
 <section
     id="generationScreen"
@@ -1477,7 +853,6 @@ button {
             ГЕНЕРАЦИЯ
         </div>
 
-
         <input
             id="generationCode"
             class="codeInput"
@@ -1488,7 +863,6 @@ button {
             placeholder="00000"
         >
 
-
         <button
             id="generationSubmit"
             class="sendButton"
@@ -1497,7 +871,6 @@ button {
         >
             ОТПРАВИТЬ
         </button>
-
 
         <div
             id="generationStatus"
@@ -1509,9 +882,9 @@ button {
 </section>
 
 
-<!-- =========================================================
+<!-- =============================================================
      USER
-========================================================= -->
+============================================================= -->
 
 <section
     id="userScreen"
@@ -1528,13 +901,11 @@ button {
             ←
         </button>
 
-
         <div class="pageTitle">
             ПОЛЬЗОВАТЕЛЬ
         </div>
 
     </div>
-
 
     <div class="userPage">
 
@@ -1544,14 +915,12 @@ button {
                 TON-КОШЕЛЁК
             </div>
 
-
             <div
                 id="userWalletAddress"
                 class="userAddress"
             ></div>
 
         </div>
-
 
         <button
             id="disconnectWallet"
@@ -1560,7 +929,6 @@ button {
         >
             ВЫЙТИ ИЗ КОШЕЛЬКА
         </button>
-
 
         <div
             id="userStatus"
@@ -1572,9 +940,9 @@ button {
 </section>
 
 
-<!-- =========================================================
+<!-- =============================================================
      LOADING
-========================================================= -->
+============================================================= -->
 
 <div id="loading">
 
@@ -1585,47 +953,37 @@ button {
 </div>
 
 
-<!-- =========================================================
-     THREE.JS IMPORTMAP
-========================================================= -->
+<!-- =============================================================
+     THREE.JS
+============================================================= -->
 
 <script type="importmap">
 
 {
     "imports": {
-
         "three":
             "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
 
         "three/addons/":
             "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
-
     }
 }
 
 </script>
 
 
-<!-- =========================================================
-     MAIN SCRIPT
-========================================================= -->
-
 <script type="module">
 
-
-import * as THREE
-    from "three";
-
+import * as THREE from "three";
 
 import {
     GLTFLoader
-}
-from "three/addons/loaders/GLTFLoader.js";
+} from "three/addons/loaders/GLTFLoader.js";
 
 
-/* =========================================================
+/* =============================================================
    CONFIG
-========================================================= */
+============================================================= */
 
 const TON_MANIFEST =
     "https://roman22022000.github.io/Ton_site/tonconnect-manifest.json";
@@ -1642,7 +1000,6 @@ const REQUIRED_COLLECTION_RAW =
 const GENERATION_API =
     "https://api.araicameragame.party/api/generation";
 
-
 const ARCHIVE_API =
     "https://api.araicameragame.party/api/models";
 
@@ -1651,183 +1008,107 @@ const MODEL_BASE =
     "https://raw.githubusercontent.com/Roman22022000/ArGameCam/main/models/";
 
 
-/* =========================================================
+/* =============================================================
    DOM
-========================================================= */
+============================================================= */
 
 const authScreen =
-    document.getElementById(
-        "authScreen"
-    );
-
+    document.getElementById("authScreen");
 
 const homeScreen =
-    document.getElementById(
-        "homeScreen"
-    );
-
+    document.getElementById("homeScreen");
 
 const galleryScreen =
-    document.getElementById(
-        "galleryScreen"
-    );
-
+    document.getElementById("galleryScreen");
 
 const viewerScreen =
-    document.getElementById(
-        "viewerScreen"
-    );
-
+    document.getElementById("viewerScreen");
 
 const generationScreen =
-    document.getElementById(
-        "generationScreen"
-    );
-
+    document.getElementById("generationScreen");
 
 const userScreen =
-    document.getElementById(
-        "userScreen"
-    );
-
-
-const archiveScreen =
-    document.getElementById(
-        "archiveScreen"
-    );
+    document.getElementById("userScreen");
 
 
 const connectWallet =
-    document.getElementById(
-        "connectWallet"
-    );
-
+    document.getElementById("connectWallet");
 
 const authStatus =
-    document.getElementById(
-        "authStatus"
-    );
-
+    document.getElementById("authStatus");
 
 const userWalletAddress =
-    document.getElementById(
-        "userWalletAddress"
-    );
-
+    document.getElementById("userWalletAddress");
 
 const disconnectWallet =
-    document.getElementById(
-        "disconnectWallet"
-    );
-
+    document.getElementById("disconnectWallet");
 
 const userStatus =
-    document.getElementById(
-        "userStatus"
-    );
+    document.getElementById("userStatus");
 
 
 const galleryGrid =
-    document.getElementById(
-        "galleryGrid"
-    );
+    document.getElementById("galleryGrid");
 
+const archiveScreen =
+    document.getElementById("archiveScreen");
 
 const archiveGrid =
-    document.getElementById(
-        "archiveGrid"
-    );
-
+    document.getElementById("archiveGrid");
 
 const archiveStatus =
-    document.getElementById(
-        "archiveStatus"
-    );
+    document.getElementById("archiveStatus");
 
 
 const viewerCanvas =
-    document.getElementById(
-        "viewerCanvas"
-    );
-
+    document.getElementById("viewerCanvas");
 
 const viewerNumber =
-    document.getElementById(
-        "viewerNumber"
-    );
+    document.getElementById("viewerNumber");
 
 
 const generationCode =
-    document.getElementById(
-        "generationCode"
-    );
-
+    document.getElementById("generationCode");
 
 const generationSubmit =
-    document.getElementById(
-        "generationSubmit"
-    );
-
+    document.getElementById("generationSubmit");
 
 const generationStatus =
-    document.getElementById(
-        "generationStatus"
-    );
+    document.getElementById("generationStatus");
 
 
 const loading =
-    document.getElementById(
-        "loading"
-    );
+    document.getElementById("loading");
 
 
-/* =========================================================
+/* =============================================================
    SCREEN
-========================================================= */
+============================================================= */
 
-function showScreen(
-    screen
-) {
+function showScreen(screen) {
 
     document
-        .querySelectorAll(
-            ".screen"
-        )
-        .forEach(
-            element => {
+        .querySelectorAll(".screen")
+        .forEach(element => {
+            element.classList.remove("active");
+        });
 
-                element.classList
-                    .remove(
-                        "active"
-                    );
-
-            }
-        );
-
-
-    screen.classList.add(
-        "active"
-    );
-
+    screen.classList.add("active");
 }
 
 
-/* =========================================================
+/* =============================================================
    TON CONNECT
-========================================================= */
+============================================================= */
 
-if (
-    !window.TON_CONNECT_UI
-) {
+if (!window.TON_CONNECT_UI) {
 
     authStatus.textContent =
         "TON Connect не загрузился";
 
-
     throw new Error(
         "TON_CONNECT_UI not loaded"
     );
-
 }
 
 
@@ -1846,23 +1127,36 @@ const tonConnectUI =
     });
 
 
+/*
+    Важно:
+
+    uiOptions является setter.
+    Поэтому присваиваем объект целиком.
+*/
+
 tonConnectUI.uiOptions = {
 
-    language:
-        "ru",
+    language: "ru",
 
     uiPreferences: {
-
         theme:
             "DARK",
 
         borderRadius:
             "none"
-
     }
 
 };
 
+
+/*
+    Наша кнопка открывает
+    официальное TON Connect окно.
+
+    Именно внутри этого окна
+    TON Connect показывает QR-код
+    на desktop.
+*/
 
 connectWallet.addEventListener(
     "click",
@@ -1872,8 +1166,7 @@ connectWallet.addEventListener(
 
             await tonConnectUI.openModal();
 
-        }
-        catch (error) {
+        } catch (error) {
 
             console.error(
                 "TON Connect:",
@@ -1889,24 +1182,16 @@ connectWallet.addEventListener(
 );
 
 
-/* =========================================================
+/* =============================================================
    TON ADDRESS
-========================================================= */
+============================================================= */
 
-function base64UrlToBytes(
-    value
-) {
+function base64UrlToBytes(value) {
 
     let normalized =
         String(value)
-            .replace(
-                /-/g,
-                "+"
-            )
-            .replace(
-                /_/g,
-                "/"
-            );
+            .replace(/-/g, "+")
+            .replace(/_/g, "/");
 
 
     while (
@@ -1919,9 +1204,7 @@ function base64UrlToBytes(
 
 
     const binary =
-        atob(
-            normalized
-        );
+        atob(normalized);
 
 
     const bytes =
@@ -1937,9 +1220,7 @@ function base64UrlToBytes(
     ) {
 
         bytes[i] =
-            binary.charCodeAt(
-                i
-            );
+            binary.charCodeAt(i);
 
     }
 
@@ -1949,46 +1230,45 @@ function base64UrlToBytes(
 }
 
 
-function normalizeTonAddress(
-    address
-) {
+function normalizeTonAddress(address) {
 
     if (!address) {
-
         return "";
-
     }
 
 
     address =
-        String(
-            address
-        ).trim();
+        String(address).trim();
 
+
+    /*
+        Уже raw:
+        0:64hex
+    */
 
     if (
         /^-?\d+:[0-9a-fA-F]{64}$/
-            .test(
-                address
-            )
+            .test(address)
     ) {
 
         const parts =
-            address.split(
-                ":"
-            );
+            address.split(":");
 
 
         return (
-
             parts[0] +
             ":" +
             parts[1].toLowerCase()
-
         );
 
     }
 
+
+    /*
+        Friendly:
+        EQ...
+        UQ...
+    */
 
     try {
 
@@ -2015,14 +1295,12 @@ function normalizeTonAddress(
             workchain === 255
         ) {
 
-            workchain =
-                -1;
+            workchain = -1;
 
         }
 
 
-        let hash =
-            "";
+        let hash = "";
 
 
         for (
@@ -2032,27 +1310,20 @@ function normalizeTonAddress(
         ) {
 
             hash +=
-
                 bytes[i]
                     .toString(16)
-                    .padStart(
-                        2,
-                        "0"
-                    );
+                    .padStart(2, "0");
 
         }
 
 
         return (
-
             workchain +
             ":" +
             hash.toLowerCase()
-
         );
 
-    }
-    catch {
+    } catch {
 
         return address.toLowerCase();
 
@@ -2067,47 +1338,36 @@ const normalizedRequiredCollection =
     );
 
 
-/* =========================================================
+/* =============================================================
    NFT CHECK
-========================================================= */
+============================================================= */
 
 async function checkCollectionNFT(
     walletAddress
 ) {
 
     const url =
-
         "https://tonapi.io/v2/accounts/" +
-
         encodeURIComponent(
             walletAddress
         ) +
-
         "/nfts?limit=1000";
 
 
     const response =
-        await fetch(
-            url,
-            {
+        await fetch(url, {
 
-                method:
-                    "GET",
+            method: "GET",
 
-                headers: {
-
-                    "Accept":
-                        "application/json"
-
-                }
-
+            headers: {
+                "Accept":
+                    "application/json"
             }
-        );
+
+        });
 
 
-    if (
-        !response.ok
-    ) {
+    if (!response.ok) {
 
         throw new Error(
             "TonAPI HTTP " +
@@ -2122,13 +1382,10 @@ async function checkCollectionNFT(
 
 
     const nftItems =
-
         Array.isArray(
             data.nft_items
         )
-
             ? data.nft_items
-
             : [];
 
 
@@ -2137,20 +1394,13 @@ async function checkCollectionNFT(
     ) {
 
         const collectionAddress =
-
             nft.collection?.address ||
-
             nft.collection_address ||
-
             "";
 
 
-        if (
-            !collectionAddress
-        ) {
-
+        if (!collectionAddress) {
             continue;
-
         }
 
 
@@ -2161,15 +1411,11 @@ async function checkCollectionNFT(
 
 
         if (
-
             normalized ===
-            normalizedRequiredCollection
-
+                normalizedRequiredCollection
             ||
-
             normalized ===
-            REQUIRED_COLLECTION_RAW
-
+                REQUIRED_COLLECTION_RAW
         ) {
 
             return true;
@@ -2184,17 +1430,15 @@ async function checkCollectionNFT(
 }
 
 
-/* =========================================================
+/* =============================================================
    WALLET
-========================================================= */
+============================================================= */
 
 let currentWallet =
     null;
 
-
 let accessGranted =
     false;
-
 
 let checkingNFT =
     false;
@@ -2240,11 +1484,8 @@ async function processWallet(
 
 
     if (
-
         !wallet.account ||
-
         !wallet.account.address
-
     ) {
 
         return;
@@ -2258,7 +1499,6 @@ async function processWallet(
 
     accessGranted =
         false;
-
 
     checkingNFT =
         true;
@@ -2281,9 +1521,7 @@ async function processWallet(
             );
 
 
-        if (
-            !hasNFT
-        ) {
+        if (!hasNFT) {
 
             accessGranted =
                 false;
@@ -2319,8 +1557,8 @@ async function processWallet(
             homeScreen
         );
 
-    }
-    catch (error) {
+
+    } catch (error) {
 
         console.error(
             "NFT CHECK ERROR:",
@@ -2340,8 +1578,8 @@ async function processWallet(
             authScreen
         );
 
-    }
-    finally {
+
+    } finally {
 
         checkingNFT =
             false;
@@ -2356,6 +1594,14 @@ async function processWallet(
 }
 
 
+/*
+    Срабатывает после:
+
+    - подключения
+    - отключения
+    - восстановления сессии
+*/
+
 tonConnectUI.onStatusChange(
     async wallet => {
 
@@ -2364,7 +1610,6 @@ tonConnectUI.onStatusChange(
         );
 
     },
-
     error => {
 
         console.error(
@@ -2372,37 +1617,30 @@ tonConnectUI.onStatusChange(
             error
         );
 
-
         authStatus.textContent =
             "Ошибка TON Connect";
 
     }
-
 );
 
 
-/* =========================================================
+/* =============================================================
    ACCESS
-========================================================= */
+============================================================= */
 
 function requireAccess() {
 
     if (
-
         !accessGranted ||
-
         !currentWallet
-
     ) {
 
         showScreen(
             authScreen
         );
 
-
         authStatus.textContent =
             "Доступ закрыт";
-
 
         return false;
 
@@ -2414,14 +1652,12 @@ function requireAccess() {
 }
 
 
-/* =========================================================
+/* =============================================================
    MENU
-========================================================= */
+============================================================= */
 
 document
-    .getElementById(
-        "openGallery"
-    )
+    .getElementById("openGallery")
     .addEventListener(
         "click",
         () => {
@@ -2429,9 +1665,7 @@ document
             if (
                 !requireAccess()
             ) {
-
                 return;
-
             }
 
 
@@ -2444,26 +1678,18 @@ document
 
 
 document
-    .getElementById(
-        "openArchive"
-    )
+    .getElementById("openArchive")
     .addEventListener(
         "click",
         async () => {
 
-            if (
-                !requireAccess()
-            ) {
-
+            if (!requireAccess()) {
                 return;
-
             }
-
 
             showScreen(
                 archiveScreen
             );
-
 
             await loadArchiveModels();
 
@@ -2472,9 +1698,7 @@ document
 
 
 document
-    .getElementById(
-        "openGeneration"
-    )
+    .getElementById("openGeneration")
     .addEventListener(
         "click",
         () => {
@@ -2482,19 +1706,15 @@ document
             if (
                 !requireAccess()
             ) {
-
                 return;
-
             }
 
 
             generationCode.value =
                 "";
 
-
             generationStatus.textContent =
                 "";
-
 
             generationSubmit.disabled =
                 true;
@@ -2518,10 +1738,12 @@ document
     );
 
 
+/* =============================================================
+   USER
+============================================================= */
+
 document
-    .getElementById(
-        "openUser"
-    )
+    .getElementById("openUser")
     .addEventListener(
         "click",
         () => {
@@ -2529,19 +1751,14 @@ document
             if (
                 !requireAccess()
             ) {
-
                 return;
-
             }
-
 
             userStatus.textContent =
                 "";
 
-
             userWalletAddress.textContent =
                 currentWallet || "";
-
 
             showScreen(
                 userScreen
@@ -2551,17 +1768,14 @@ document
     );
 
 
-/* =========================================================
-   USER
-========================================================= */
-
 document
-    .getElementById(
-        "userBack"
-    )
+    .getElementById("userBack")
     .addEventListener(
         "click",
         () => {
+
+            userStatus.textContent =
+                "";
 
             showScreen(
                 homeScreen
@@ -2584,13 +1798,11 @@ disconnectWallet.addEventListener(
             );
 
             return;
-
         }
 
 
         disconnectWallet.disabled =
             true;
-
 
         userStatus.textContent =
             "Выход из кошелька...";
@@ -2600,45 +1812,36 @@ disconnectWallet.addEventListener(
 
             await tonConnectUI.disconnect();
 
-
             currentWallet =
                 null;
-
 
             accessGranted =
                 false;
 
-
             userWalletAddress.textContent =
                 "";
-
 
             userStatus.textContent =
                 "";
 
-
             authStatus.textContent =
                 "Кошелёк отключён";
-
 
             showScreen(
                 authScreen
             );
 
-        }
-        catch (error) {
+        } catch (error) {
 
             console.error(
                 "TON DISCONNECT ERROR:",
                 error
             );
 
-
             userStatus.textContent =
                 "Ошибка выхода из кошелька";
 
-        }
-        finally {
+        } finally {
 
             disconnectWallet.disabled =
                 false;
@@ -2649,40 +1852,30 @@ disconnectWallet.addEventListener(
 );
 
 
-/* =========================================================
+/* =============================================================
    GENERATION INPUT
-========================================================= */
+============================================================= */
 
 generationCode.addEventListener(
     "input",
     () => {
 
         generationCode.value =
-
             generationCode.value
-
-                .replace(
-                    /\D/g,
-                    ""
-                )
-
-                .slice(
-                    0,
-                    5
-                );
+                .replace(/\D/g, "")
+                .slice(0, 5);
 
 
         generationSubmit.disabled =
-
             generationCode.value.length !== 5;
 
     }
 );
 
 
-/* =========================================================
+/* =============================================================
    GENERATION SEND
-========================================================= */
+============================================================= */
 
 generationSubmit.addEventListener(
     "click",
@@ -2691,9 +1884,7 @@ generationSubmit.addEventListener(
         if (
             !requireAccess()
         ) {
-
             return;
-
         }
 
 
@@ -2702,27 +1893,21 @@ generationSubmit.addEventListener(
 
 
         if (
-            !/^\d{5}$/.test(
-                code
-            )
+            !/^\d{5}$/.test(code)
         ) {
 
             generationStatus.textContent =
                 "Введите 5 цифр";
-
 
             return;
 
         }
 
 
-        if (
-            !currentWallet
-        ) {
+        if (!currentWallet) {
 
             generationStatus.textContent =
                 "Кошелёк не подключён";
-
 
             return;
 
@@ -2748,14 +1933,11 @@ generationSubmit.addEventListener(
                             "POST",
 
                         headers: {
-
                             "Content-Type":
                                 "application/json"
-
                         },
 
                         body:
-
                             JSON.stringify({
 
                                 code:
@@ -2775,19 +1957,13 @@ generationSubmit.addEventListener(
 
 
             if (
-
                 !response.ok ||
-
                 data.success !== true
-
             ) {
 
                 throw new Error(
-
                     data.error ||
-
                     "Ошибка сервера"
-
                 );
 
             }
@@ -2800,8 +1976,8 @@ generationSubmit.addEventListener(
             generationCode.value =
                 "";
 
-        }
-        catch (error) {
+
+        } catch (error) {
 
             console.error(
                 "GENERATION ERROR:",
@@ -2812,8 +1988,8 @@ generationSubmit.addEventListener(
             generationStatus.textContent =
                 "Ошибка отправки";
 
-        }
-        finally {
+
+        } finally {
 
             generationSubmit.disabled =
                 true;
@@ -2824,14 +2000,12 @@ generationSubmit.addEventListener(
 );
 
 
-/* =========================================================
-   BACK BUTTONS
-========================================================= */
+/* =============================================================
+   BACK
+============================================================= */
 
 document
-    .getElementById(
-        "galleryBack"
-    )
+    .getElementById("galleryBack")
     .addEventListener(
         "click",
         () => {
@@ -2845,25 +2019,19 @@ document
 
 
 document
-    .getElementById(
-        "archiveBack"
-    )
+    .getElementById("archiveBack")
     .addEventListener(
         "click",
         () => {
-
             showScreen(
                 homeScreen
             );
-
         }
     );
 
 
 document
-    .getElementById(
-        "viewerBack"
-    )
+    .getElementById("viewerBack")
     .addEventListener(
         "click",
         () => {
@@ -2876,8 +2044,7 @@ document
                     archiveScreen
                 );
 
-            }
-            else {
+            } else {
 
                 showScreen(
                     galleryScreen
@@ -2889,68 +2056,51 @@ document
     );
 
 
-/* =========================================================
+/* =============================================================
    GENERATION BACK
-========================================================= */
+============================================================= */
 
 const generationBack =
     document.createElement(
         "button"
     );
 
-
 generationBack.type =
     "button";
-
 
 generationBack.style.position =
     "fixed";
 
-
 generationBack.style.top =
     "14px";
-
 
 generationBack.style.left =
     "14px";
 
-
 generationBack.style.width =
     "40px";
-
 
 generationBack.style.height =
     "40px";
 
-
 generationBack.style.background =
     "#080808";
-
 
 generationBack.style.color =
     "#fff";
 
-
 generationBack.style.border =
     "1px solid #242424";
-
 
 generationBack.style.fontSize =
     "22px";
 
-
-generationBack.style.zIndex =
-    "20";
-
-
 generationBack.textContent =
     "←";
-
 
 generationScreen.appendChild(
     generationBack
 );
-
 
 generationBack.addEventListener(
     "click",
@@ -2964,23 +2114,19 @@ generationBack.addEventListener(
 );
 
 
-/* =========================================================
+/* =============================================================
    ARCHIVE 3D MODELS
-========================================================= */
+============================================================= */
 
-let archiveModels =
-    [];
-
+let archiveModels = [];
 
 async function loadArchiveModels() {
 
     archiveStatus.textContent =
         "Загрузка 3D моделей...";
 
-
     archiveGrid.innerHTML =
         "";
-
 
     try {
 
@@ -2988,61 +2134,36 @@ async function loadArchiveModels() {
             await fetch(
                 ARCHIVE_API,
                 {
-
-                    method:
-                        "GET",
-
-                    cache:
-                        "no-store"
-
+                    method: "GET",
+                    cache: "no-store"
                 }
             );
 
-
-        if (
-            !response.ok
-        ) {
-
+        if (!response.ok) {
             throw new Error(
-                "HTTP " +
-                response.status
+                "HTTP " + response.status
             );
-
         }
-
 
         const data =
             await response.json();
 
-
         archiveModels =
-
-            Array.isArray(
-                data.items
-            )
-
+            Array.isArray(data.items)
                 ? data.items
-
                 : [];
 
-
-        if (
-            !archiveModels.length
-        ) {
+        if (!archiveModels.length) {
 
             archiveStatus.textContent =
                 "В архиве пока нет 3D моделей.";
 
             return;
-
         }
 
-
         archiveStatus.textContent =
-
             "Моделей: " +
             archiveModels.length;
-
 
         archiveModels.forEach(
             (item, index) => {
@@ -3052,109 +2173,79 @@ async function loadArchiveModels() {
                         "button"
                     );
 
-
                 button.type =
                     "button";
 
-
                 button.className =
                     "archiveItem";
-
 
                 const preview =
                     document.createElement(
                         "div"
                     );
 
-
                 preview.className =
                     "archivePlaceholder";
-
 
                 preview.textContent =
                     "3D";
 
-
                 button.appendChild(
                     preview
                 );
-
 
                 const info =
                     document.createElement(
                         "div"
                     );
 
-
                 info.className =
                     "archiveInfo";
-
 
                 const name =
                     document.createElement(
                         "div"
                     );
 
-
                 name.className =
                     "archiveName";
 
-
                 name.textContent =
-
-                    item.filename ||
-                    "model";
-
+                    item.filename || "model";
 
                 const folder =
                     document.createElement(
                         "div"
                     );
 
-
                 folder.className =
                     "archiveFolder";
 
-
                 folder.textContent =
-
                     (
-                        item.folder ||
-                        ""
+                        item.folder || ""
                     ).toUpperCase();
-
 
                 info.appendChild(
                     name
                 );
 
-
                 info.appendChild(
                     folder
                 );
-
 
                 button.appendChild(
                     info
                 );
 
-
-                /*
-                    При нажатии открывается
-                    ИМЕННО выбранная модель.
-                */
-
                 button.addEventListener(
                     "click",
                     () => {
-
                         openArchiveViewer(
                             index
                         );
-
                     }
                 );
-
 
                 archiveGrid.appendChild(
                     button
@@ -3163,14 +2254,12 @@ async function loadArchiveModels() {
             }
         );
 
-    }
-    catch (error) {
+    } catch (error) {
 
         console.error(
             "ARCHIVE ERROR:",
             error
         );
-
 
         archiveStatus.textContent =
             "Не удалось получить архив.";
@@ -3180,248 +2269,198 @@ async function loadArchiveModels() {
 }
 
 
-/* =========================================================
-   ARCHIVE MODEL URL
-========================================================= */
-
-function getArchiveModelURL(
-    item
-) {
-
-    /*
-        В первую очередь используем
-        URL, который прислал ваш сервер.
-    */
-
-    if (
-        item &&
-        item.url
-    ) {
-
-        return item.url;
-
-    }
-
-
-    /*
-        Дополнительные варианты,
-        если ваш API использует
-        другое имя поля.
-    */
-
-    if (
-        item &&
-        item.model_url
-    ) {
-
-        return item.model_url;
-
-    }
-
-
-    if (
-        item &&
-        item.path
-    ) {
-
-        return item.path;
-
-    }
-
-
-    /*
-        Если сервер прислал только
-        filename, используем
-        существующий адрес API.
-    */
-
-    if (
-        item &&
-        item.filename
-    ) {
-
-        try {
-
-            const api =
-                new URL(
-                    ARCHIVE_API
-                );
-
-
-            return (
-
-                api.origin +
-
-                "/models/" +
-
-                encodeURIComponent(
-                    item.filename
-                )
-
-            );
-
-        }
-        catch {
-
-            return "";
-
-        }
-
-    }
-
-
-    return "";
-
-}
-
-
-/* =========================================================
-   OPEN ARCHIVE VIEWER
-========================================================= */
-
-function openArchiveViewer(
-    index
-) {
+function openArchiveViewer(index) {
 
     viewerOpenedFromArchive =
         true;
 
-
-    if (
-        !requireAccess()
-    ) {
-
+    if (!requireAccess()) {
         return;
-
     }
-
 
     const item =
         archiveModels[index];
 
-
-    if (
-        !item
-    ) {
-
-        console.error(
-            "Архивная модель не найдена"
-        );
-
+    if (!item) {
         return;
-
     }
 
-
     viewerNumber.textContent =
-
-        item.filename ||
-        "3D";
-
+        item.filename || "3D";
 
     showScreen(
         viewerScreen
     );
 
-
-    /*
-        Создаём Three.js
-        только один раз.
-    */
-
     initViewer();
 
+    if (model) {
 
-    /*
-        Удаляем предыдущую
-        модель.
-    */
-
-    clearModel();
-
-
-    /*
-        Получаем URL модели
-        именно с вашего API.
-    */
-
-    const url =
-        getArchiveModelURL(
-            item
+        scene.remove(
+            model
         );
 
+        model.traverse(
+            object => {
 
-    if (
-        !url
-    ) {
+                if (
+                    object.geometry
+                ) {
+                    object.geometry.dispose();
+                }
 
-        console.error(
-            "URL 3D модели отсутствует:",
-            item
+                if (
+                    object.material
+                ) {
+
+                    if (
+                        Array.isArray(
+                            object.material
+                        )
+                    ) {
+
+                        object.material.forEach(
+                            material => {
+                                material.dispose();
+                            }
+                        );
+
+                    } else {
+
+                        object.material.dispose();
+
+                    }
+
+                }
+
+            }
         );
 
-        return;
+        model = null;
 
     }
 
+    loader.load(
 
-    console.log(
-        "ARCHIVE MODEL:",
-        url
-    );
+        item.url,
 
+        gltf => {
 
-    load3DModel(
-        url
+            model =
+                gltf.scene;
+
+            const box =
+                new THREE.Box3()
+                    .setFromObject(
+                        model
+                    );
+
+            const center =
+                box.getCenter(
+                    new THREE.Vector3()
+                );
+
+            const size =
+                box.getSize(
+                    new THREE.Vector3()
+                );
+
+            model.position.sub(
+                center
+            );
+
+            const maxSize =
+                Math.max(
+                    size.x,
+                    size.y,
+                    size.z
+                );
+
+            if (
+                maxSize > 0
+            ) {
+
+                model.scale.setScalar(
+                    2 / maxSize
+                );
+
+            }
+
+            model.traverse(
+                object => {
+
+                    if (
+                        object.isMesh
+                    ) {
+
+                        object.castShadow =
+                            true;
+
+                        object.receiveShadow =
+                            true;
+
+                    }
+
+                }
+            );
+
+            scene.add(
+                model
+            );
+
+            controls.target.set(
+                0,
+                0,
+                0
+            );
+
+            controls.update();
+
+        },
+
+        undefined,
+
+        error => {
+
+            console.error(
+                "ARCHIVE MODEL ERROR:",
+                error
+            );
+
+        }
+
     );
 
 }
 
 
-/* =========================================================
+/* =============================================================
    GALLERY DATA
-========================================================= */
+============================================================= */
 
 const galleryItems = [
 
     {
-
-        number:
-            1,
-
-        filename:
-            "creature.glb"
-
+        number: 1,
+        filename: "creature.glb"
     },
 
-
     {
-
-        number:
-            2,
-
-        filename:
-            "creature.glb"
-
+        number: 2,
+        filename: "creature.glb"
     },
 
-
     {
-
-        number:
-            3,
-
-        filename:
-            "creature.glb"
-
+        number: 3,
+        filename: "creature.glb"
     }
 
 ];
 
 
-/* =========================================================
+/* =============================================================
    GALLERY
-========================================================= */
+============================================================= */
 
 function buildGallery() {
 
@@ -3475,1122 +2514,655 @@ function buildGallery() {
 buildGallery();
 
 
-/* =========================================================
-   THREE VARIABLES
-========================================================= */
-
-let scene =
-    null;
-
-
-let camera =
-    null;
-
-
-let renderer =
-    null;
-
-
-let model =
-    null;
-
-
-let viewerOpenedFromArchive =
-    false;
-
-
-let animationStarted =
-    false;
-
-
-/* =========================================================
-   SCENE SIZE
-========================================================= */
-
-/*
-    Точная виртуальная сцена:
-
-    X = 4 м
-    Z = 7 м
-    Y = 4 м
-
-    Центр:
-
-    0, 0, 0
-*/
-
-const SCENE_WIDTH =
-    4;
-
-
-const SCENE_LENGTH =
-    7;
-
-
-const SCENE_HEIGHT =
-    4;
-
-
-/*
-    Половины размеров.
-*/
-
-const HALF_WIDTH =
-    SCENE_WIDTH / 2;
-
-
-const HALF_LENGTH =
-    SCENE_LENGTH / 2;
-
-
-/*
-    Безопасный отступ камеры
-    от стен.
-*/
-
-const CAMERA_MARGIN =
-    0.25;
-
-
-/*
-    Границы камеры.
-*/
-
-const CAMERA_MIN_X =
-    -HALF_WIDTH +
-    CAMERA_MARGIN;
-
-
-const CAMERA_MAX_X =
-    HALF_WIDTH -
-    CAMERA_MARGIN;
-
-
-const CAMERA_MIN_Z =
-    -HALF_LENGTH +
-    CAMERA_MARGIN;
-
-
-const CAMERA_MAX_Z =
-    HALF_LENGTH -
-    CAMERA_MARGIN;
-
-
-const CAMERA_MIN_Y =
-    0.35;
-
-
-const CAMERA_MAX_Y =
-    SCENE_HEIGHT -
-    0.35;
-
-
-/* =========================================================
-   CAMERA LIMIT
-========================================================= */
-
-function clampCamera() {
-
-    if (
-        !camera
-    ) {
-
-        return;
-
-    }
-
-
-    camera.position.x =
-
-        THREE.MathUtils.clamp(
-
-            camera.position.x,
-
-            CAMERA_MIN_X,
-
-            CAMERA_MAX_X
-
-        );
-
-
-    camera.position.z =
-
-        THREE.MathUtils.clamp(
-
-            camera.position.z,
-
-            CAMERA_MIN_Z,
-
-            CAMERA_MAX_Z
-
-        );
-
-
-    camera.position.y =
-
-        THREE.MathUtils.clamp(
-
-            camera.position.y,
-
-            CAMERA_MIN_Y,
-
-            CAMERA_MAX_Y
-
-        );
-
-}
-
-
-/* =========================================================
-   CREATE SCENE
-========================================================= */
-
-function createSceneRoom() {
-
-    const room =
-        new THREE.Group();
-
-
-    room.position.set(
-        0,
-        0,
-        0
-    );
-
-
-    /* =====================================================
-       FLOOR
-    ===================================================== */
-
-    const floorGeometry =
-        new THREE.PlaneGeometry(
-
-            SCENE_WIDTH,
-
-            SCENE_LENGTH
-
-        );
-
-
-    const floorMaterial =
-        new THREE.MeshBasicMaterial({
-
-            color:
-                0x101010,
-
-            side:
-                THREE.DoubleSide
-
-        });
-
-
-    const floor =
-        new THREE.Mesh(
-
-            floorGeometry,
-
-            floorMaterial
-
-        );
-
-
-    floor.rotation.x =
-        -Math.PI / 2;
-
-
-    floor.position.set(
-        0,
-        0,
-        0
-    );
-
-
-    room.add(
-        floor
-    );
-
-
-    /* =====================================================
-       CEILING
-    ===================================================== */
-
-    const ceiling =
-        new THREE.Mesh(
-
-            floorGeometry.clone(),
-
-            floorMaterial.clone()
-
-        );
-
-
-    ceiling.rotation.x =
-        -Math.PI / 2;
-
-
-    ceiling.position.set(
-
-        0,
-
-        SCENE_HEIGHT,
-
-        0
-
-    );
-
-
-    room.add(
-        ceiling
-    );
-
-
-    /* =====================================================
-       WALLS
-    ===================================================== */
-
-    const wallMaterial =
-        new THREE.MeshBasicMaterial({
-
-            color:
-                0x151515,
-
-            side:
-                THREE.DoubleSide
-
-        });
-
-
-    /* LEFT */
-
-    const sideGeometry =
-        new THREE.PlaneGeometry(
-
-            SCENE_LENGTH,
-
-            SCENE_HEIGHT
-
-        );
-
-
-    const leftWall =
-        new THREE.Mesh(
-
-            sideGeometry,
-
-            wallMaterial.clone()
-
-        );
-
-
-    leftWall.rotation.y =
-        Math.PI / 2;
-
-
-    leftWall.position.set(
-
-        -HALF_WIDTH,
-
-        SCENE_HEIGHT / 2,
-
-        0
-
-    );
-
-
-    room.add(
-        leftWall
-    );
-
-
-    /* RIGHT */
-
-    const rightWall =
-        new THREE.Mesh(
-
-            sideGeometry.clone(),
-
-            wallMaterial.clone()
-
-        );
-
-
-    rightWall.rotation.y =
-        Math.PI / 2;
-
-
-    rightWall.position.set(
-
-        HALF_WIDTH,
-
-        SCENE_HEIGHT / 2,
-
-        0
-
-    );
-
-
-    room.add(
-        rightWall
-    );
-
-
-    /* FRONT */
-
-    const frontGeometry =
-        new THREE.PlaneGeometry(
-
-            SCENE_WIDTH,
-
-            SCENE_HEIGHT
-
-        );
-
-
-    const frontWall =
-        new THREE.Mesh(
-
-            frontGeometry,
-
-            wallMaterial.clone()
-
-        );
-
-
-    frontWall.position.set(
-
-        0,
-
-        SCENE_HEIGHT / 2,
-
-        -HALF_LENGTH
-
-    );
-
-
-    room.add(
-        frontWall
-    );
-
-
-    /* BACK */
-
-    const backWall =
-        new THREE.Mesh(
-
-            frontGeometry.clone(),
-
-            wallMaterial.clone()
-
-        );
-
-
-    backWall.position.set(
-
-        0,
-
-        SCENE_HEIGHT / 2,
-
-        HALF_LENGTH
-
-    );
-
-
-    room.add(
-        backWall
-    );
-
-
-    scene.add(
-        room
-    );
-
-}
-
-
-/* =========================================================
+/* =============================================================
+   THREE.JS VIEWER
+   Доработка:
+   - размеры определяются по реальной модели;
+   - камера не выходит за рассчитанные границы;
+   - камера не входит внутрь модели;
+   - 1 палец = вращение вокруг модели;
+   - 2 пальца = приближение / отдаление;
+   - архив загружает item.url вместе с ресурсами GLTF/GLB.
+============================================================= */
+
+let scene = null;
+let camera = null;
+let renderer = null;
+let model = null;
+let viewerOpenedFromArchive = false;
+
+const loader = new GLTFLoader();
+
+let modelBounds = null;
+let modelCenter = new THREE.Vector3(0, 0, 0);
+let modelRadius = 1;
+
+/* Без фиксированного размера сцены. */
+const CAMERA_MARGIN = 0.20;
+const MODEL_COLLISION_MARGIN = 0.30;
+const MIN_CAMERA_HEIGHT = 0.08;
+const MAX_CAMERA_HEIGHT_FACTOR = 1.50;
+
+/* Поворот пальцем. */
+let touchActive = false;
+let touchLastX = 0;
+let touchLastY = 0;
+let yaw = 0;
+let pitch = 0;
+
+/* Два пальца. */
+let pinchLastDistance = 0;
+
+/* Направление взгляда. */
+const tempVector = new THREE.Vector3();
+const tempCenter = new THREE.Vector3();
+
+
+/* =============================================================
    INIT VIEWER
-========================================================= */
+============================================================= */
 
 function initViewer() {
 
-    /*
-        Не создаём второй renderer.
-    */
-
-    if (
-        renderer
-    ) {
-
+    if (renderer) {
         return;
-
     }
 
+    scene = new THREE.Scene();
 
-    /* =====================================================
-       SCENE
-    ===================================================== */
+    scene.background = new THREE.Color(0x000000);
 
-    scene =
-        new THREE.Scene();
-
-
-    scene.background =
-        new THREE.Color(
-            0x000000
-        );
-
-
-    /* =====================================================
-       CAMERA
-    ===================================================== */
-
-    camera =
-        new THREE.PerspectiveCamera(
-
-            70,
-
-            window.innerWidth /
-            window.innerHeight,
-
-            0.01,
-
-            100
-
-        );
-
-
-    /*
-        Камера стартует
-        внутри комнаты.
-    */
-
-    camera.position.set(
-
-        0,
-
-        1.7,
-
-        2.5
-
+    camera = new THREE.PerspectiveCamera(
+        55,
+        window.innerWidth / window.innerHeight,
+        0.01,
+        2000
     );
 
+    camera.position.set(0, 1.5, 3);
 
-    camera.rotation.order =
-        "YXZ";
-
-
-    /*
-        Смотрим к центру.
-    */
-
-    camera.lookAt(
-
-        0,
-
-        1.5,
-
-        0
-
-    );
-
-
-    /* =====================================================
-       RENDERER
-    ===================================================== */
-
-    renderer =
-        new THREE.WebGLRenderer({
-
-            antialias:
-                true,
-
-            alpha:
-                false,
-
-            powerPreference:
-                "high-performance"
-
-        });
-
+    renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        alpha: false,
+        powerPreference: "high-performance"
+    });
 
     renderer.setPixelRatio(
-
-        Math.min(
-
-            window.devicePixelRatio || 1,
-
-            2
-
-        )
-
+        Math.min(window.devicePixelRatio || 1, 2)
     );
-
 
     renderer.setSize(
-
         window.innerWidth,
-
         window.innerHeight
-
     );
 
-
-    renderer.domElement.style.width =
-        "100%";
-
-
-    renderer.domElement.style.height =
-        "100%";
-
-
-    renderer.domElement.style.display =
-        "block";
-
-
-    viewerCanvas.innerHTML =
-        "";
-
+    viewerCanvas.innerHTML = "";
 
     viewerCanvas.appendChild(
         renderer.domElement
     );
 
+    renderer.domElement.style.touchAction = "none";
+    renderer.domElement.style.userSelect = "none";
+    renderer.domElement.style.webkitUserSelect = "none";
 
-    /* =====================================================
-       LIGHT
-    ===================================================== */
-
-    const ambient =
-        new THREE.AmbientLight(
-
-            0xffffff,
-
-            2
-
-        );
-
-
-    scene.add(
-        ambient
+    const ambient = new THREE.AmbientLight(
+        0xffffff,
+        2
     );
 
+    scene.add(ambient);
 
-    const light =
-        new THREE.DirectionalLight(
-
-            0xffffff,
-
-            3
-
-        );
-
-
-    light.position.set(
-
-        4,
-
-        5,
-
-        4
-
+    const light = new THREE.DirectionalLight(
+        0xffffff,
+        3
     );
 
+    light.position.set(5, 8, 5);
 
-    scene.add(
-        light
-    );
-
-
-    /* =====================================================
-       ROOM
-    ===================================================== */
-
-    createSceneRoom();
-
-
-    /* =====================================================
-       TOUCH
-    ===================================================== */
+    scene.add(light);
 
     renderer.domElement.addEventListener(
-
         "touchstart",
-
-        touchStart,
-
-        {
-            passive:
-                false
-        }
-
+        onTouchStart,
+        { passive: false }
     );
 
-
     renderer.domElement.addEventListener(
-
         "touchmove",
-
-        touchMove,
-
-        {
-            passive:
-                false
-        }
-
+        onTouchMove,
+        { passive: false }
     );
 
-
     renderer.domElement.addEventListener(
-
         "touchend",
-
-        touchEnd,
-
-        {
-            passive:
-                false
-        }
-
+        onTouchEnd,
+        { passive: false }
     );
-
 
     renderer.domElement.addEventListener(
-
         "touchcancel",
-
-        touchEnd,
-
-        {
-            passive:
-                false
-        }
-
+        onTouchEnd,
+        { passive: false }
     );
-
-
-    /* =====================================================
-       RESIZE
-    ===================================================== */
 
     window.addEventListener(
-
         "resize",
-
         resizeViewer
-
     );
 
-
-    /* =====================================================
-       ANIMATION
-    ===================================================== */
-
-    if (
-        !animationStarted
-    ) {
-
-        animationStarted =
-            true;
-
-
-        animateViewer();
-
-    }
-
+    animateViewer();
 }
 
 
-/* =========================================================
-   TOUCH
-========================================================= */
+/* =============================================================
+   CLEAR MODEL
+============================================================= */
 
-const touchState = {
+function clearModel() {
 
-    active:
-        false,
-
-    lastX:
-        0,
-
-    lastY:
-        0,
-
-    twoFinger:
-        false,
-
-    distance:
-        0
-
-};
-
-
-/* =========================================================
-   TOUCH START
-========================================================= */
-
-function touchStart(
-    event
-) {
-
-    event.preventDefault();
-
-
-    if (
-        event.touches.length === 1
-    ) {
-
-        const touch =
-            event.touches[0];
-
-
-        touchState.active =
-            true;
-
-
-        touchState.twoFinger =
-            false;
-
-
-        touchState.lastX =
-            touch.clientX;
-
-
-        touchState.lastY =
-            touch.clientY;
-
-
+    if (!model || !scene) {
         return;
-
     }
 
+    scene.remove(model);
 
-    if (
-        event.touches.length >= 2
-    ) {
+    model.traverse(object => {
 
-        const a =
-            event.touches[0];
-
-
-        const b =
-            event.touches[1];
-
-
-        touchState.active =
-            false;
-
-
-        touchState.twoFinger =
-            true;
-
-
-        touchState.distance =
-
-            Math.hypot(
-
-                a.clientX -
-                b.clientX,
-
-                a.clientY -
-                b.clientY
-
-            );
-
-    }
-
-}
-
-
-/* =========================================================
-   TOUCH MOVE
-========================================================= */
-
-function touchMove(
-    event
-) {
-
-    event.preventDefault();
-
-
-    if (
-        !camera
-    ) {
-
-        return;
-
-    }
-
-
-    /*
-        Два пальца.
-
-        Расстояние между пальцами
-        двигает камеру вперёд/назад.
-    */
-
-    if (
-        event.touches.length >= 2
-    ) {
-
-        const a =
-            event.touches[0];
-
-
-        const b =
-            event.touches[1];
-
-
-        const distance =
-
-            Math.hypot(
-
-                a.clientX -
-                b.clientX,
-
-                a.clientY -
-                b.clientY
-
-            );
-
-
-        if (
-            touchState.distance > 0
-        ) {
-
-            const delta =
-
-                distance -
-                touchState.distance;
-
-
-            moveCameraForward(
-
-                delta *
-                0.012
-
-            );
-
+        if (object.geometry) {
+            object.geometry.dispose();
         }
 
+        if (object.material) {
 
-        touchState.distance =
-            distance;
+            const materials = Array.isArray(object.material)
+                ? object.material
+                : [object.material];
 
+            materials.forEach(material => {
 
-        clampCamera();
+                if (material.map) {
+                    material.map.dispose();
+                }
 
+                if (material.normalMap) {
+                    material.normalMap.dispose();
+                }
 
-        return;
+                if (material.roughnessMap) {
+                    material.roughnessMap.dispose();
+                }
 
-    }
+                if (material.metalnessMap) {
+                    material.metalnessMap.dispose();
+                }
 
+                if (material.emissiveMap) {
+                    material.emissiveMap.dispose();
+                }
 
-    /*
-        Один палец.
+                material.dispose();
+            });
+        }
+    });
 
-        Перемещение по X/Z.
-    */
-
-    if (
-
-        event.touches.length === 1 &&
-
-        touchState.active
-
-    ) {
-
-        const touch =
-            event.touches[0];
-
-
-        const dx =
-
-            touch.clientX -
-            touchState.lastX;
-
-
-        const dy =
-
-            touch.clientY -
-            touchState.lastY;
-
-
-        const speed =
-            0.009;
-
-
-        /*
-            X
-        */
-
-        camera.position.x +=
-
-            dx *
-            speed;
-
-
-        /*
-            Z
-        */
-
-        camera.position.z +=
-
-            dy *
-            speed;
-
-
-        /*
-            Жёсткое ограничение.
-        */
-
-        clampCamera();
-
-
-        touchState.lastX =
-            touch.clientX;
-
-
-        touchState.lastY =
-            touch.clientY;
-
-    }
-
+    model = null;
+    modelBounds = null;
+    modelCenter.set(0, 0, 0);
+    modelRadius = 1;
 }
 
 
-/* =========================================================
-   TOUCH END
-========================================================= */
+/* =============================================================
+   CALCULATE REAL MODEL BOUNDS
+============================================================= */
 
-function touchEnd(
-    event
-) {
+function calculateModelBounds() {
+
+    if (!model) {
+        return;
+    }
+
+    model.updateMatrixWorld(true);
+
+    const box = new THREE.Box3()
+        .setFromObject(model);
+
+    if (box.isEmpty()) {
+        return;
+    }
+
+    modelBounds = box.clone();
+
+    box.getCenter(modelCenter);
+
+    const sphere = box.getBoundingSphere(
+        new THREE.Sphere()
+    );
+
+    modelRadius = Math.max(
+        sphere.radius,
+        0.1
+    );
+
+    const size = box.getSize(
+        new THREE.Vector3()
+    );
+
+    console.log("MODEL REAL BOUNDS:", {
+        min: box.min.clone(),
+        max: box.max.clone(),
+        size: size,
+        center: modelCenter.clone(),
+        radius: modelRadius
+    });
+
+    /*
+       Начальный ракурс располагаем перед моделью.
+       Расстояние зависит от реального размера модели.
+    */
+
+    const startDistance = Math.max(
+        modelRadius * 2.5,
+        1.0
+    );
+
+    camera.position.set(
+        modelCenter.x,
+        modelCenter.y,
+        modelCenter.z + startDistance
+    );
+
+    yaw = 0;
+    pitch = 0;
+
+    clampCameraToModelBounds();
+
+    camera.lookAt(modelCenter);
+}
+
+
+/* =============================================================
+   CAMERA BOUNDS
+
+   Границы строятся из реального bounding box модели.
+   Камера получает небольшой безопасный отступ.
+============================================================= */
+
+function clampCameraToModelBounds() {
+
+    if (!camera || !modelBounds) {
+        return;
+    }
+
+    const minX =
+        modelBounds.min.x - CAMERA_MARGIN;
+
+    const maxX =
+        modelBounds.max.x + CAMERA_MARGIN;
+
+    const minZ =
+        modelBounds.min.z - CAMERA_MARGIN;
+
+    const maxZ =
+        modelBounds.max.z + CAMERA_MARGIN;
+
+    const minY =
+        Math.max(
+            MIN_CAMERA_HEIGHT,
+            modelBounds.min.y - CAMERA_MARGIN
+        );
+
+    const maxY =
+        modelBounds.max.y +
+        Math.max(
+            CAMERA_MARGIN,
+            modelRadius * MAX_CAMERA_HEIGHT_FACTOR
+        );
+
+    camera.position.x = Math.max(
+        minX,
+        Math.min(maxX, camera.position.x)
+    );
+
+    camera.position.y = Math.max(
+        minY,
+        Math.min(maxY, camera.position.y)
+    );
+
+    camera.position.z = Math.max(
+        minZ,
+        Math.min(maxZ, camera.position.z)
+    );
+
+    keepCameraOutsideModel();
+}
+
+
+/* =============================================================
+   KEEP CAMERA OUTSIDE MODEL
+
+   Bounding sphere + bounding box используются вместе.
+   Это не позволяет камере проваливаться внутрь модели.
+============================================================= */
+
+function keepCameraOutsideModel() {
+
+    if (!camera || !modelBounds) {
+        return;
+    }
+
+    const direction = camera.position
+        .clone()
+        .sub(modelCenter);
+
+    const distance = direction.length();
+
+    const safeDistance = Math.max(
+        MODEL_COLLISION_MARGIN,
+        modelRadius * 0.18
+    );
+
+    if (distance >= safeDistance) {
+        return;
+    }
+
+    if (distance < 0.0001) {
+        direction.set(0, 0, 1);
+    } else {
+        direction.normalize();
+    }
+
+    camera.position.copy(
+        modelCenter
+            .clone()
+            .add(
+                direction.multiplyScalar(
+                    safeDistance
+                )
+            )
+    );
+
+    /* После выталкивания ещё раз проверяем реальные края. */
+    clampCameraPositionOnly();
+}
+
+
+/* =============================================================
+   POSITION CLAMP ONLY
+============================================================= */
+
+function clampCameraPositionOnly() {
+
+    if (!camera || !modelBounds) {
+        return;
+    }
+
+    const minX = modelBounds.min.x - CAMERA_MARGIN;
+    const maxX = modelBounds.max.x + CAMERA_MARGIN;
+
+    const minZ = modelBounds.min.z - CAMERA_MARGIN;
+    const maxZ = modelBounds.max.z + CAMERA_MARGIN;
+
+    const minY = Math.max(
+        MIN_CAMERA_HEIGHT,
+        modelBounds.min.y - CAMERA_MARGIN
+    );
+
+    const maxY =
+        modelBounds.max.y +
+        Math.max(
+            CAMERA_MARGIN,
+            modelRadius * MAX_CAMERA_HEIGHT_FACTOR
+        );
+
+    camera.position.x = Math.max(
+        minX,
+        Math.min(maxX, camera.position.x)
+    );
+
+    camera.position.y = Math.max(
+        minY,
+        Math.min(maxY, camera.position.y)
+    );
+
+    camera.position.z = Math.max(
+        minZ,
+        Math.min(maxZ, camera.position.z)
+    );
+}
+
+
+/* =============================================================
+   CAMERA ROTATION
+============================================================= */
+
+function rotateCamera(deltaX, deltaY) {
+
+    if (!camera || !modelBounds) {
+        return;
+    }
+
+    const offset = camera.position
+        .clone()
+        .sub(modelCenter);
+
+    let radius = offset.length();
+
+    radius = Math.max(
+        radius,
+        modelRadius * 0.25
+    );
+
+    const spherical = new THREE.Spherical()
+        .setFromVector3(offset);
+
+    spherical.theta -= deltaX;
+    spherical.phi += deltaY;
+
+    spherical.phi = Math.max(
+        0.05,
+        Math.min(
+            Math.PI - 0.05,
+            spherical.phi
+        )
+    );
+
+    spherical.radius = radius;
+
+    camera.position
+        .setFromSpherical(spherical)
+        .add(modelCenter);
+
+    clampCameraToModelBounds();
+
+    camera.lookAt(modelCenter);
+}
+
+
+/* =============================================================
+   PINCH / CAMERA DISTANCE
+============================================================= */
+
+function moveCameraByPinch(delta) {
+
+    if (!camera || !modelBounds) {
+        return;
+    }
+
+    const direction = camera.position
+        .clone()
+        .sub(modelCenter)
+        .normalize();
+
+    /*
+       Положительный delta = пальцы раздвигаются,
+       камера приближается.
+    */
+
+    const movement = delta * 0.012;
+
+    camera.position.sub(
+        direction.multiplyScalar(movement)
+    );
+
+    clampCameraToModelBounds();
+
+    camera.lookAt(modelCenter);
+}
+
+
+/* =============================================================
+   TOUCH START
+============================================================= */
+
+function onTouchStart(event) {
 
     event.preventDefault();
 
+    if (event.touches.length === 1) {
 
-    if (
-        event.touches.length === 0
-    ) {
+        const touch = event.touches[0];
 
-        touchState.active =
-            false;
+        touchLastX = touch.clientX;
+        touchLastY = touch.clientY;
 
+        touchActive = true;
 
-        touchState.twoFinger =
-            false;
-
-
-        touchState.distance =
-            0;
-
+        pinchLastDistance = 0;
     }
 
+    if (event.touches.length === 2) {
+
+        touchActive = false;
+
+        pinchLastDistance =
+            getTouchDistance(event.touches);
+    }
 }
 
 
-/* =========================================================
-   CAMERA FORWARD
-========================================================= */
+/* =============================================================
+   TOUCH MOVE
+============================================================= */
 
-function moveCameraForward(
-    amount
-) {
+function onTouchMove(event) {
 
-    if (
-        !camera
-    ) {
+    event.preventDefault();
 
-        return;
+    if (event.touches.length === 1 && touchActive) {
 
+        const touch = event.touches[0];
+
+        const dx =
+            touch.clientX - touchLastX;
+
+        const dy =
+            touch.clientY - touchLastY;
+
+        touchLastX = touch.clientX;
+        touchLastY = touch.clientY;
+
+        /* Один палец вращает сцену. */
+        rotateCamera(
+            dx * 0.008,
+            dy * 0.008
+        );
     }
 
+    if (event.touches.length === 2) {
 
-    const direction =
-        new THREE.Vector3();
+        const distance =
+            getTouchDistance(event.touches);
 
+        if (pinchLastDistance > 0) {
 
-    camera.getWorldDirection(
-        direction
-    );
+            const delta =
+                distance - pinchLastDistance;
 
+            moveCameraByPinch(delta);
+        }
 
-    /*
-        Не меняем высоту.
-    */
-
-    direction.y =
-        0;
-
-
-    if (
-        direction.lengthSq() === 0
-    ) {
-
-        return;
-
+        pinchLastDistance = distance;
     }
-
-
-    direction.normalize();
-
-
-    camera.position.add(
-
-        direction.multiplyScalar(
-            amount
-        )
-
-    );
-
-
-    clampCamera();
-
 }
 
 
-/* =========================================================
+/* =============================================================
+   TOUCH END
+============================================================= */
+
+function onTouchEnd(event) {
+
+    event.preventDefault();
+
+    if (event.touches.length === 0) {
+
+        touchActive = false;
+        pinchLastDistance = 0;
+        return;
+    }
+
+    if (event.touches.length === 1) {
+
+        const touch = event.touches[0];
+
+        touchLastX = touch.clientX;
+        touchLastY = touch.clientY;
+
+        touchActive = true;
+        pinchLastDistance = 0;
+    }
+}
+
+
+/* =============================================================
+   TOUCH DISTANCE
+============================================================= */
+
+function getTouchDistance(touches) {
+
+    const dx =
+        touches[0].clientX -
+        touches[1].clientX;
+
+    const dy =
+        touches[0].clientY -
+        touches[1].clientY;
+
+    return Math.sqrt(
+        dx * dx +
+        dy * dy
+    );
+}
+
+
+/* =============================================================
    RESIZE
-========================================================= */
+============================================================= */
 
 function resizeViewer() {
 
-    if (
-
-        !camera ||
-
-        !renderer
-
-    ) {
-
+    if (!camera || !renderer) {
         return;
-
     }
 
-
     camera.aspect =
-
         window.innerWidth /
         window.innerHeight;
 
-
     camera.updateProjectionMatrix();
 
-
     renderer.setSize(
-
         window.innerWidth,
-
         window.innerHeight
-
     );
-
 }
 
 
-/* =========================================================
-   ANIMATION
-========================================================= */
+/* =============================================================
+   ANIMATE
+============================================================= */
 
 function animateViewer() {
 
@@ -4598,464 +3170,280 @@ function animateViewer() {
         animateViewer
     );
 
-
-    /*
-        Каждый кадр проверяем
-        границы камеры.
-    */
-
-    clampCamera();
-
+    /* Жёсткая проверка каждый кадр. */
+    if (camera && modelBounds) {
+        clampCameraToModelBounds();
+        camera.lookAt(modelCenter);
+    }
 
     if (
-
         renderer &&
-
         scene &&
-
         camera
-
     ) {
 
         renderer.render(
-
             scene,
-
             camera
-
         );
-
     }
-
 }
 
 
-/* =========================================================
-   CLEAR MODEL
-========================================================= */
+/* =============================================================
+   LOAD ARCHIVE MODEL + TEXTURES
+============================================================= */
 
-function clearModel() {
+function loadArchiveModel(item) {
 
-    if (
-
-        !model ||
-
-        !scene
-
-    ) {
-
+    if (!item) {
         return;
-
     }
 
+    let url = item.url;
 
-    scene.remove(
-        model
-    );
-
-
-    model.traverse(
-        object => {
-
-            if (
-                object.geometry
-            ) {
-
-                object.geometry.dispose();
-
-            }
-
-
-            if (
-                object.material
-            ) {
-
-                if (
-                    Array.isArray(
-                        object.material
-                    )
-                ) {
-
-                    object.material.forEach(
-                        material => {
-
-                            if (
-                                material.map
-                            ) {
-
-                                material.map.dispose();
-
-                            }
-
-
-                            material.dispose();
-
-                        }
-                    );
-
-                }
-                else {
-
-                    if (
-                        object.material.map
-                    ) {
-
-                        object.material.map.dispose();
-
-                    }
-
-
-                    object.material.dispose();
-
-                }
-
-            }
-
-        }
-    );
-
-
-    model =
-        null;
-
-}
-
-
-/* =========================================================
-   LOAD 3D MODEL
-========================================================= */
-
-const loader =
-    new GLTFLoader();
-
-
-function load3DModel(
-    url
-) {
-
-    if (
-        !url
-    ) {
+    if (!url) {
 
         console.error(
-            "Пустой URL модели"
+            "ARCHIVE MODEL URL отсутствует:",
+            item
+        );
+
+        viewerNumber.textContent =
+            "URL МОДЕЛИ НЕ НАЙДЕН";
+
+        return;
+    }
+
+    /*
+       API может вернуть абсолютный URL
+       или относительный путь.
+    */
+
+    try {
+        url = new URL(
+            url,
+            ARCHIVE_API
+        ).href;
+    } catch (error) {
+
+        console.error(
+            "ARCHIVE URL ERROR:",
+            error
         );
 
         return;
-
     }
 
-
     console.log(
-        "Загрузка модели:",
+        "ARCHIVE MODEL URL:",
         url
     );
-
 
     loader.load(
 
         url,
 
-
-        /* =================================================
-           SUCCESS
-        ================================================= */
-
         gltf => {
 
-            console.log(
-                "Модель загружена:",
-                url
-            );
-
-
-            model =
-                gltf.scene;
-
+            model = gltf.scene;
 
             /*
-                Получаем исходные размеры.
+               GLTFLoader сам загружает ресурсы,
+               которые указаны внутри GLB/GLTF:
+               PNG/JPG текстуры, normal map,
+               roughness map и т.д.
             */
 
-            const box =
-                new THREE.Box3()
-                    .setFromObject(
-                        model
-                    );
+            model.traverse(object => {
 
+                if (object.isMesh) {
 
-            const center =
-                box.getCenter(
-                    new THREE.Vector3()
-                );
+                    object.castShadow = true;
+                    object.receiveShadow = true;
 
+                    if (object.material) {
 
-            const size =
-                box.getSize(
-                    new THREE.Vector3()
-                );
+                        const materials =
+                            Array.isArray(object.material)
+                                ? object.material
+                                : [object.material];
 
-
-            /*
-                Ставим origin модели
-                в мировой центр.
-            */
-
-            model.position.sub(
-                center
-            );
-
-
-            /*
-                Максимальный размер.
-            */
-
-            const maxSize =
-
-                Math.max(
-
-                    size.x,
-
-                    size.y,
-
-                    size.z
-
-                );
-
-
-            /*
-                Модель максимум
-                2.2 метра.
-            */
-
-            if (
-                maxSize > 0
-            ) {
-
-                model.scale.setScalar(
-
-                    2.2 /
-                    maxSize
-
-                );
-
-            }
-
-
-            /*
-                После масштабирования
-                определяем нижнюю точку.
-            */
-
-            const scaledBox =
-
-                new THREE.Box3()
-                    .setFromObject(
-                        model
-                    );
-
-
-            /*
-                Ставим модель
-                на пол.
-
-                X/Z остаются
-                по центру.
-            */
-
-            if (
-                scaledBox.min.y < 0
-            ) {
-
-                model.position.y +=
-
-                    -scaledBox.min.y;
-
-            }
-
-
-            /*
-                Материалы и текстуры
-                не удаляем.
-            */
-
-            model.traverse(
-                object => {
-
-                    if (
-                        object.isMesh
-                    ) {
-
-                        object.castShadow =
-                            true;
-
-
-                        object.receiveShadow =
-                            true;
-
-
-                        if (
-                            object.material
-                        ) {
-
-                            object.material
-                                .needsUpdate =
-                                true;
-
-                        }
-
+                        materials.forEach(material => {
+                            material.needsUpdate = true;
+                        });
                     }
-
                 }
-            );
+            });
 
-
-            /*
-                Добавляем модель
-                в сцену.
-            */
-
-            scene.add(
-                model
-            );
-
+            scene.add(model);
 
             /*
-                Камера гарантированно
-                остаётся внутри.
+               Реальные края и углы модели.
+               Никаких 4x7x4.
             */
 
-            clampCamera();
+            calculateModelBounds();
 
+            viewerNumber.textContent =
+                item.filename || "3D";
 
         },
 
+        progress => {
 
-        /* =================================================
-           PROGRESS
-        ================================================= */
+            if (progress.total > 0) {
 
-        undefined,
+                const percent = Math.round(
+                    progress.loaded /
+                    progress.total *
+                    100
+                );
 
-
-        /* =================================================
-           ERROR
-        ================================================= */
+                console.log(
+                    "MODEL LOAD:",
+                    percent + "%"
+                );
+            }
+        },
 
         error => {
 
             console.error(
-                "3D MODEL ERROR:",
+                "ARCHIVE MODEL ERROR:",
                 error
             );
 
-
-            console.error(
-                "URL:",
-                url
-            );
-
+            viewerNumber.textContent =
+                "ОШИБКА ЗАГРУЗКИ";
         }
-
     );
-
 }
 
 
-/* =========================================================
+/* =============================================================
+   OPEN ARCHIVE VIEWER
+============================================================= */
+
+function openArchiveViewer(index) {
+
+    viewerOpenedFromArchive = true;
+
+    if (!requireAccess()) {
+        return;
+    }
+
+    const item = archiveModels[index];
+
+    if (!item) {
+        return;
+    }
+
+    viewerNumber.textContent =
+        item.filename || "3D";
+
+    showScreen(viewerScreen);
+
+    initViewer();
+
+    clearModel();
+
+    loadArchiveModel(item);
+}
+
+
+/* =============================================================
    OPEN GALLERY MODEL
-========================================================= */
+============================================================= */
 
-function openViewer(
-    index
-) {
+function openViewer(index) {
 
-    viewerOpenedFromArchive =
-        false;
+    viewerOpenedFromArchive = false;
 
-
-    if (
-        !requireAccess()
-    ) {
-
+    if (!requireAccess()) {
         return;
-
     }
 
+    const item = galleryItems[index];
 
-    const item =
-        galleryItems[index];
-
-
-    if (
-        !item
-    ) {
-
+    if (!item) {
         return;
-
     }
-
 
     viewerNumber.textContent =
         item.number;
 
-
-    showScreen(
-        viewerScreen
-    );
-
+    showScreen(viewerScreen);
 
     initViewer();
 
-
     clearModel();
 
-
     const url =
-
         MODEL_BASE +
-
         encodeURIComponent(
             item.filename
         );
 
+    loader.load(
 
-    load3DModel(
-        url
+        url,
+
+        gltf => {
+
+            model = gltf.scene;
+
+            model.traverse(object => {
+
+                if (object.isMesh) {
+
+                    object.castShadow = true;
+                    object.receiveShadow = true;
+                }
+            });
+
+            scene.add(model);
+
+            calculateModelBounds();
+        },
+
+        undefined,
+
+        error => {
+
+            console.error(
+                "MODEL ERROR:",
+                error
+            );
+
+            viewerNumber.textContent =
+                "ОШИБКА ЗАГРУЗКИ";
+        }
     );
-
 }
 
 
-/* =========================================================
+/* =============================================================
    RESTORE
-========================================================= */
+============================================================= */
 
 tonConnectUI.connectionRestored
-
     .then(
         restored => {
 
             console.log(
-
                 "TON connection restored:",
-
                 restored
-
             );
 
         }
     )
-
     .catch(
         error => {
 
             console.error(
-
                 "TON RESTORE ERROR:",
-
                 error
-
             );
 
         }
@@ -5066,5 +3454,4 @@ tonConnectUI.connectionRestored
 
 
 </body>
-
-</html>
+</html>м
