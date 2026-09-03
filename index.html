@@ -2495,11 +2495,16 @@ let modelBounds = null;
 let modelCenter = new THREE.Vector3(0, 0, 0);
 let modelRadius = 1;
 
-/* Без фиксированного размера сцены. */
-const CAMERA_MARGIN = 0.20;
-const MODEL_COLLISION_MARGIN = 0.30;
-const MIN_CAMERA_HEIGHT = 0.08;
-const MAX_CAMERA_HEIGHT_FACTOR = 1.50;
+/*
+   ДИНАМИЧЕСКИЕ ГРАНИЦЫ СЦЕНЫ.
+   Никаких фиксированных размеров сцены.
+   Размер невидимой зоны рассчитывается от реального
+   размера загруженной 3D-сцены.
+*/
+const BOUNDARY_RATIO = 0.04;
+const MIN_BOUNDARY_MARGIN = 0.02;
+const COLLISION_RATIO = 0.02;
+const MIN_COLLISION_MARGIN = 0.01;
 
 /* Поворот пальцем. */
 let touchActive = false;
@@ -2757,30 +2762,28 @@ function clampCameraToModelBounds() {
         return;
     }
 
-    const minX =
-        modelBounds.min.x - CAMERA_MARGIN;
+    /*
+       Невидимая граница рассчитывается ИСКЛЮЧИТЕЛЬНО
+       по фактическим размерам текущей модели.
+       Для каждой оси используется собственный отступ.
+    */
 
-    const maxX =
-        modelBounds.max.x + CAMERA_MARGIN;
+    const size = modelBounds.getSize(
+        new THREE.Vector3()
+    );
 
-    const minZ =
-        modelBounds.min.z - CAMERA_MARGIN;
+    const margin = new THREE.Vector3(
+        Math.max(size.x * BOUNDARY_RATIO, MIN_BOUNDARY_MARGIN),
+        Math.max(size.y * BOUNDARY_RATIO, MIN_BOUNDARY_MARGIN),
+        Math.max(size.z * BOUNDARY_RATIO, MIN_BOUNDARY_MARGIN)
+    );
 
-    const maxZ =
-        modelBounds.max.z + CAMERA_MARGIN;
-
-    const minY =
-        Math.max(
-            MIN_CAMERA_HEIGHT,
-            modelBounds.min.y - CAMERA_MARGIN
-        );
-
-    const maxY =
-        modelBounds.max.y +
-        Math.max(
-            CAMERA_MARGIN,
-            modelRadius * MAX_CAMERA_HEIGHT_FACTOR
-        );
+    const minX = modelBounds.min.x - margin.x;
+    const maxX = modelBounds.max.x + margin.x;
+    const minY = modelBounds.min.y - margin.y;
+    const maxY = modelBounds.max.y + margin.y;
+    const minZ = modelBounds.min.z - margin.z;
+    const maxZ = modelBounds.max.z + margin.z;
 
     camera.position.x = Math.max(
         minX,
@@ -2799,7 +2802,6 @@ function clampCameraToModelBounds() {
 
     keepCameraOutsideModel();
 }
-
 
 /* =============================================================
    KEEP CAMERA OUTSIDE MODEL
@@ -2821,7 +2823,8 @@ function keepCameraOutsideModel() {
     const distance = direction.length();
 
     const safeDistance = Math.max(
-        MODEL_COLLISION_MARGIN,
+        modelRadius * COLLISION_RATIO,
+        MIN_COLLISION_MARGIN,
         modelRadius * 0.18
     );
 
@@ -2860,23 +2863,22 @@ function clampCameraPositionOnly() {
         return;
     }
 
-    const minX = modelBounds.min.x - CAMERA_MARGIN;
-    const maxX = modelBounds.max.x + CAMERA_MARGIN;
-
-    const minZ = modelBounds.min.z - CAMERA_MARGIN;
-    const maxZ = modelBounds.max.z + CAMERA_MARGIN;
-
-    const minY = Math.max(
-        MIN_CAMERA_HEIGHT,
-        modelBounds.min.y - CAMERA_MARGIN
+    const size = modelBounds.getSize(
+        new THREE.Vector3()
     );
 
-    const maxY =
-        modelBounds.max.y +
-        Math.max(
-            CAMERA_MARGIN,
-            modelRadius * MAX_CAMERA_HEIGHT_FACTOR
-        );
+    const margin = new THREE.Vector3(
+        Math.max(size.x * BOUNDARY_RATIO, MIN_BOUNDARY_MARGIN),
+        Math.max(size.y * BOUNDARY_RATIO, MIN_BOUNDARY_MARGIN),
+        Math.max(size.z * BOUNDARY_RATIO, MIN_BOUNDARY_MARGIN)
+    );
+
+    const minX = modelBounds.min.x - margin.x;
+    const maxX = modelBounds.max.x + margin.x;
+    const minY = modelBounds.min.y - margin.y;
+    const maxY = modelBounds.max.y + margin.y;
+    const minZ = modelBounds.min.z - margin.z;
+    const maxZ = modelBounds.max.z + margin.z;
 
     camera.position.x = Math.max(
         minX,
@@ -2893,54 +2895,6 @@ function clampCameraPositionOnly() {
         Math.min(maxZ, camera.position.z)
     );
 }
-
-
-/* =============================================================
-   CAMERA ROTATION
-============================================================= */
-
-function rotateCamera(deltaX, deltaY) {
-
-    if (!camera || !modelBounds) {
-        return;
-    }
-
-    const offset = camera.position
-        .clone()
-        .sub(modelCenter);
-
-    let radius = offset.length();
-
-    radius = Math.max(
-        radius,
-        modelRadius * 0.25
-    );
-
-    const spherical = new THREE.Spherical()
-        .setFromVector3(offset);
-
-    spherical.theta -= deltaX;
-    spherical.phi += deltaY;
-
-    spherical.phi = Math.max(
-        0.05,
-        Math.min(
-            Math.PI - 0.05,
-            spherical.phi
-        )
-    );
-
-    spherical.radius = radius;
-
-    camera.position
-        .setFromSpherical(spherical)
-        .add(modelCenter);
-
-    clampCameraToModelBounds();
-
-    camera.lookAt(modelCenter);
-}
-
 
 /* =============================================================
    PINCH / CAMERA DISTANCE
@@ -3263,7 +3217,7 @@ function loadArchiveModel(item) {
 
             /*
                Реальные края и углы модели.
-               Никаких 4x7x4.
+               Граница полностью рассчитывается по текущей 3D-сцене.
             */
 
             calculateModelBounds();
