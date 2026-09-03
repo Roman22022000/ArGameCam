@@ -2269,171 +2269,6 @@ async function loadArchiveModels() {
 }
 
 
-function openArchiveViewer(index) {
-
-    viewerOpenedFromArchive =
-        true;
-
-    if (!requireAccess()) {
-        return;
-    }
-
-    const item =
-        archiveModels[index];
-
-    if (!item) {
-        return;
-    }
-
-    viewerNumber.textContent =
-        item.filename || "3D";
-
-    showScreen(
-        viewerScreen
-    );
-
-    initViewer();
-
-    if (model) {
-
-        scene.remove(
-            model
-        );
-
-        model.traverse(
-            object => {
-
-                if (
-                    object.geometry
-                ) {
-                    object.geometry.dispose();
-                }
-
-                if (
-                    object.material
-                ) {
-
-                    if (
-                        Array.isArray(
-                            object.material
-                        )
-                    ) {
-
-                        object.material.forEach(
-                            material => {
-                                material.dispose();
-                            }
-                        );
-
-                    } else {
-
-                        object.material.dispose();
-
-                    }
-
-                }
-
-            }
-        );
-
-        model = null;
-
-    }
-
-    loader.load(
-
-        item.url,
-
-        gltf => {
-
-            model =
-                gltf.scene;
-
-            const box =
-                new THREE.Box3()
-                    .setFromObject(
-                        model
-                    );
-
-            const center =
-                box.getCenter(
-                    new THREE.Vector3()
-                );
-
-            const size =
-                box.getSize(
-                    new THREE.Vector3()
-                );
-
-            model.position.sub(
-                center
-            );
-
-            const maxSize =
-                Math.max(
-                    size.x,
-                    size.y,
-                    size.z
-                );
-
-            if (
-                maxSize > 0
-            ) {
-
-                model.scale.setScalar(
-                    2 / maxSize
-                );
-
-            }
-
-            model.traverse(
-                object => {
-
-                    if (
-                        object.isMesh
-                    ) {
-
-                        object.castShadow =
-                            true;
-
-                        object.receiveShadow =
-                            true;
-
-                    }
-
-                }
-            );
-
-            scene.add(
-                model
-            );
-
-            controls.target.set(
-                0,
-                0,
-                0
-            );
-
-            controls.update();
-
-        },
-
-        undefined,
-
-        error => {
-
-            console.error(
-                "ARCHIVE MODEL ERROR:",
-                error
-            );
-
-        }
-
-    );
-
-}
-
-
 /* =============================================================
    GALLERY DATA
 ============================================================= */
@@ -2531,7 +2366,130 @@ let renderer = null;
 let model = null;
 let viewerOpenedFromArchive = false;
 
-const loader = new GLTFLoader();
+const galleryLoader = new GLTFLoader();
+
+const ARCHIVE_API_ORIGIN =
+    new URL(ARCHIVE_API).origin;
+
+
+/* =============================================================
+   GLTF / GLB RESOURCE LOADER
+
+   Для архивных .gltf все внешние PNG/JPG/BIN-файлы
+   направляются через серверный ресурсный endpoint:
+   /api/models/resource/<model_id>/<resource_path>
+
+   Это позволяет хранить модель в 3d_model, а текстуры
+   отдельно в texture.
+============================================================= */
+
+function createArchiveLoader(item) {
+
+    const manager = new THREE.LoadingManager();
+
+    const modelUrl =
+        new URL(
+            item.url,
+            ARCHIVE_API
+        ).href;
+
+    manager.setURLModifier(resourceUrl => {
+
+        // Встроенные ресурсы GLB / blob / data не трогаем.
+        if (
+            resourceUrl.startsWith("data:") ||
+            resourceUrl.startsWith("blob:")
+        ) {
+            return resourceUrl;
+        }
+
+        let absolute;
+
+        try {
+            absolute = new URL(
+                resourceUrl,
+                modelUrl
+            );
+        } catch (error) {
+            return resourceUrl;
+        }
+
+        // Если GLTF ссылается на внешний HTTPS-ресурс,
+        // оставляем его как есть.
+        if (
+            absolute.origin !== ARCHIVE_API_ORIGIN
+        ) {
+            return absolute.href;
+        }
+
+        let resourcePath = "";
+
+        const modelsPrefix =
+            "/api/models/";
+
+        const modelFilePrefix =
+            "/api/models/file/";
+
+        if (
+            absolute.pathname.startsWith(
+                modelFilePrefix
+            )
+        ) {
+            resourcePath =
+                absolute.pathname.substring(
+                    modelFilePrefix.length
+                );
+        } else if (
+            absolute.pathname.startsWith(
+                modelsPrefix
+            )
+        ) {
+            resourcePath =
+                absolute.pathname.substring(
+                    modelsPrefix.length
+                );
+        }
+
+        // Для ../texture/file.png и других путей
+        // берём полный pathname после /api/models/.
+        if (!resourcePath) {
+            resourcePath =
+                absolute.pathname
+                    .split("/")
+                    .filter(Boolean)
+                    .pop() || "";
+        }
+
+        try {
+            resourcePath =
+                decodeURIComponent(
+                    resourcePath
+                );
+        } catch (error) {
+            // Оставляем исходную строку.
+        }
+
+        const encodedPath =
+            resourcePath
+                .split("/")
+                .filter(Boolean)
+                .map(part =>
+                    encodeURIComponent(part)
+                )
+                .join("/");
+
+        return
+            ARCHIVE_API_ORIGIN +
+            "/api/models/resource/" +
+            encodeURIComponent(
+                String(item.id)
+            ) +
+            "/" +
+            encodedPath;
+    });
+
+    return new GLTFLoader(manager);
+}
 
 let modelBounds = null;
 let modelCenter = new THREE.Vector3(0, 0, 0);
@@ -2586,6 +2544,10 @@ function initViewer() {
         alpha: false,
         powerPreference: "high-performance"
     });
+
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.0;
 
     renderer.setPixelRatio(
         Math.min(window.devicePixelRatio || 1, 2)
@@ -3240,7 +3202,15 @@ function loadArchiveModel(item) {
         url
     );
 
-    loader.load(
+    console.log(
+        "ARCHIVE MODEL ID:",
+        item.id
+    );
+
+    const archiveLoader =
+        createArchiveLoader(item);
+
+    archiveLoader.load(
 
         url,
 
@@ -3270,6 +3240,19 @@ function loadArchiveModel(item) {
                                 : [object.material];
 
                         materials.forEach(material => {
+
+                            if (material.map) {
+                                material.map.colorSpace =
+                                    THREE.SRGBColorSpace;
+                                material.map.needsUpdate = true;
+                            }
+
+                            if (material.emissiveMap) {
+                                material.emissiveMap.colorSpace =
+                                    THREE.SRGBColorSpace;
+                                material.emissiveMap.needsUpdate = true;
+                            }
+
                             material.needsUpdate = true;
                         });
                     }
@@ -3314,8 +3297,13 @@ function loadArchiveModel(item) {
                 error
             );
 
+            console.error(
+                "Проверь model id, GLTF/GLB и внешние текстуры.",
+                item
+            );
+
             viewerNumber.textContent =
-                "ОШИБКА ЗАГРУЗКИ";
+                "ОШИБКА МОДЕЛИ / ТЕКСТУР";
         }
     );
 }
@@ -3385,7 +3373,7 @@ function openViewer(index) {
             item.filename
         );
 
-    loader.load(
+    galleryLoader.load(
 
         url,
 
