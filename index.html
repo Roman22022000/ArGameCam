@@ -1067,7 +1067,13 @@ const REQUIRED_COLLECTION =
 
 
 const REQUIRED_COLLECTION_RAW =
-    "0:fd9a6de1c7e42f1d8346d7c80369a26d4934d04d5558563eb38689d7a1c8f6";
+    "0:fd9a6de1c7e42f1f2346d7c80369a26d4934d04d555856327ace1a275e8723d9";
+
+const REQUIRED_COLLECTION_ALIASES = [
+    REQUIRED_COLLECTION,
+    REQUIRED_COLLECTION_RAW,
+    "0:fd9a6de1c7e42f1d8346d7c80369a26d4934d04d5558563eb38689d7a1c8f6"
+];
 
 
 const GENERATION_API =
@@ -1405,9 +1411,11 @@ function normalizeTonAddress(address) {
 }
 
 
-const normalizedRequiredCollection =
-    normalizeTonAddress(
-        REQUIRED_COLLECTION
+const normalizedRequiredCollections =
+    new Set(
+        REQUIRED_COLLECTION_ALIASES
+            .map(normalizeTonAddress)
+            .filter(Boolean)
     );
 
 
@@ -1419,10 +1427,13 @@ async function checkCollectionNFT(
     walletAddress
 ) {
 
+    const rawWalletAddress =
+        normalizeTonAddress(walletAddress);
+
     const url =
         "https://tonapi.io/v2/accounts/" +
         encodeURIComponent(
-            walletAddress
+            rawWalletAddress || walletAddress
         ) +
         "/nfts?limit=1000";
 
@@ -1484,11 +1495,9 @@ async function checkCollectionNFT(
 
 
         if (
-            normalized ===
-                normalizedRequiredCollection
-            ||
-            normalized ===
-                REQUIRED_COLLECTION_RAW
+            normalizedRequiredCollections.has(
+                normalized
+            )
         ) {
 
             return true;
@@ -2109,6 +2118,8 @@ document
     );
 
 
+/* =============================================================
+   GENERATION BACK
 ============================================================= */
 
 const generationBack =
@@ -2318,251 +2329,6 @@ async function loadArchiveModels() {
     }
 
 }
-
-
-function openArchiveViewer(index) {
-
-    viewerOpenedFromArchive =
-        true;
-
-    if (!requireAccess()) {
-        return;
-    }
-
-    const item =
-        archiveModels[index];
-
-    if (!item) {
-        return;
-    }
-
-    viewerNumber.textContent =
-        item.filename || "3D";
-
-    showScreen(
-        viewerScreen
-    );
-
-    initViewer();
-
-    if (model) {
-
-        scene.remove(
-            model
-        );
-
-        model.traverse(
-            object => {
-
-                if (
-                    object.geometry
-                ) {
-                    object.geometry.dispose();
-                }
-
-                if (
-                    object.material
-                ) {
-
-                    if (
-                        Array.isArray(
-                            object.material
-                        )
-                    ) {
-
-                        object.material.forEach(
-                            material => {
-                                material.dispose();
-                            }
-                        );
-
-                    } else {
-
-                        object.material.dispose();
-
-                    }
-
-                }
-
-            }
-        );
-
-        model = null;
-
-    }
-
-    loader.load(
-
-        item.url,
-
-        gltf => {
-
-            model =
-                gltf.scene;
-
-            const box =
-                new THREE.Box3()
-                    .setFromObject(
-                        model
-                    );
-
-            const center =
-                box.getCenter(
-                    new THREE.Vector3()
-                );
-
-            const size =
-                box.getSize(
-                    new THREE.Vector3()
-                );
-
-            model.position.sub(
-                center
-            );
-
-            const maxSize =
-                Math.max(
-                    size.x,
-                    size.y,
-                    size.z
-                );
-
-            if (
-                maxSize > 0
-            ) {
-
-                model.scale.setScalar(
-                    2 / maxSize
-                );
-
-            }
-
-            model.traverse(
-                object => {
-
-                    if (
-                        object.isMesh
-                    ) {
-
-                        object.castShadow =
-                            true;
-
-                        object.receiveShadow =
-                            true;
-
-                    }
-
-                }
-            );
-
-            scene.add(
-                model
-            );
-
-            controls.target.set(
-                0,
-                0,
-                0
-            );
-
-            controls.update();
-
-        },
-
-        undefined,
-
-        error => {
-
-            console.error(
-                "ARCHIVE MODEL ERROR:",
-                error
-            );
-
-        }
-
-    );
-
-}
-
-
-/* =============================================================
-   GALLERY DATA
-============================================================= */
-
-const galleryItems = [
-
-    {
-        number: 1,
-        filename: "creature.glb"
-    },
-
-    {
-        number: 2,
-        filename: "creature.glb"
-    },
-
-    {
-        number: 3,
-        filename: "creature.glb"
-    }
-
-];
-
-
-/* =============================================================
-   GALLERY
-============================================================= */
-
-function buildGallery() {
-
-    galleryGrid.innerHTML =
-        "";
-
-
-    galleryItems.forEach(
-        (item, index) => {
-
-            const button =
-                document.createElement(
-                    "button"
-                );
-
-
-            button.className =
-                "galleryItem";
-
-
-            button.type =
-                "button";
-
-
-            button.textContent =
-                item.number;
-
-
-            button.addEventListener(
-                "click",
-                () => {
-
-                    openViewer(
-                        index
-                    );
-
-                }
-            );
-
-
-            galleryGrid.appendChild(
-                button
-            );
-
-        }
-    );
-
-}
-
-
-buildGallery();
 
 
 /* =============================================================
