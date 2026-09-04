@@ -1019,6 +1019,12 @@ const GENERATION_API =
 const ARCHIVE_API =
     "https://api.araicameragame.party/api/models";
 
+const API_BASE =
+    "https://api.araicameragame.party";
+
+const ARCHIVE_POLL_INTERVAL =
+    2000;
+
 
 const MODEL_BASE =
     "https://raw.githubusercontent.com/Roman22022000/ArGameCam/main/models/";
@@ -1481,6 +1487,8 @@ async function processWallet(
         authStatus.textContent =
             "Подключите TON-кошелёк";
 
+        stopArchiveWatcher();
+
         showScreen(
             authScreen
         );
@@ -1572,6 +1580,8 @@ async function processWallet(
         showScreen(
             homeScreen
         );
+
+        startArchiveWatcher();
 
 
     } catch (error) {
@@ -2132,195 +2142,137 @@ generationBack.addEventListener(
 
 /* =============================================================
    ARCHIVE 3D MODELS
-   Только загрузка и отображение 3D-модели.
-   Текстуры, MTL и изображения НЕ загружаются.
+
+   Источник моделей:
+
+   ПК -> GUI AraiCameraGame Server
+      -> автоматический сканер папки 3d_model
+      -> SQLite archive_models
+      -> GET /api/models
+      -> GET /api/models/file/<id>
+      -> Three.js
+
+   Сайт регулярно проверяет /api/models.
+   Когда в GUI появляется новый файл, новый ID появляется в API,
+   после чего сайт автоматически добавляет модель и открывает её
+   в 3D-сцене.
+
+   ВАЖНО:
+   Здесь НЕ загружаются текстуры, MTL или другие изображения.
+   Загружается именно файл 3D-модели.
 ============================================================= */
 
 let archiveModels = [];
 
-const EMPTY_TEXTURE =
-    "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
+let archiveKnownIds = new Set();
+
+let archiveWatcherStarted = false;
+
+let archiveWatcherBusy = false;
+
+let archiveWatcherTimer = null;
+
+let archiveFirstSnapshot = true;
 
 
-function getArchiveModelUrl(item) {
-
-    if (!item) {
-        return "";
-    }
-
-    if (item.id !== undefined && item.id !== null) {
-        return ARCHIVE_API +
-            "/file/" +
-            encodeURIComponent(item.id);
-    }
-
-    if (item.url) {
-        return new URL(
-            item.url,
-            ARCHIVE_API + "/"
-        ).href;
-    }
-
-    return "";
-}
-
-
-function getArchiveExtension(item) {
+function getModelExtension(item) {
 
     let extension =
-        String(item?.extension || "")
+        String(
+            item && item.extension
+                ? item.extension
+                : ""
+        )
             .toLowerCase()
             .replace(".", "");
 
-    if (!extension && item?.filename) {
-        const parts =
-            String(item.filename).split(".");
 
-        extension =
-            parts.length > 1
-                ? parts.pop().toLowerCase()
-                : "";
+    if (!extension && item && item.filename) {
+
+        const filename =
+            String(item.filename);
+
+        const dot =
+            filename.lastIndexOf(".");
+
+        if (dot >= 0) {
+
+            extension =
+                filename
+                    .substring(dot + 1)
+                    .toLowerCase();
+
+        }
+
     }
+
 
     return extension;
+
 }
 
 
-function createArchiveLoadingManager(item, modelUrl) {
+function getModelUrl(item) {
 
-    const manager =
-        new THREE.LoadingManager();
+    if (!item) {
 
-    manager.setURLModifier(
-        originalUrl => {
+        throw new Error(
+            "Модель не найдена в API."
+        );
 
-            const url =
-                String(originalUrl || "");
-
-            // Сам файл модели не изменяем.
-            if (url === modelUrl) {
-                return url;
-            }
-
-            // Изображения и текстуры полностью блокируем.
-            if (/\.(png|jpe?g|webp|gif|bmp|tga|dds|ktx2?|avif|svg)(\?.*)?$/i.test(url)) {
-                return EMPTY_TEXTURE;
-            }
-
-            // Для .gltf/.glb разрешаем только служебные бинарные файлы.
-            // Они нужны для самой геометрии модели.
-            const clean =
-                url.split("?")[0].split("#")[0];
-
-            const filename =
-                clean.substring(
-                    clean.lastIndexOf("/") + 1
-                );
-
-            if (/\.(bin)(\?.*)?$/i.test(filename)) {
-
-                return ARCHIVE_API +
-                    "/resource/" +
-                    encodeURIComponent(item.id) +
-                    "/" +
-                    encodeURIComponent(filename);
-            }
-
-            // Любые остальные внешние ресурсы пробуем получить
-            // только из папки модели/разрешённых папок сервера.
-            return ARCHIVE_API +
-                "/resource/" +
-                encodeURIComponent(item.id) +
-                "/" +
-                encodeURIComponent(filename);
-        }
-    );
-
-    return manager;
-}
-
-
-function removeArchiveTextures(object) {
-
-    if (!object) {
-        return;
     }
 
-    object.traverse(
-        child => {
 
-            if (!child.isMesh) {
-                return;
-            }
+    if (item.url) {
 
-            child.castShadow = true;
-            child.receiveShadow = true;
+        return new URL(
+            item.url,
+            API_BASE
+        ).href;
 
-            const materials =
-                Array.isArray(child.material)
-                    ? child.material
-                    : [child.material];
+    }
 
-            materials.forEach(
-                material => {
 
-                    if (!material) {
-                        return;
-                    }
+    if (item.id !== undefined && item.id !== null) {
 
-                    // Удаляем все карты текстур.
-                    const textureKeys = [
-                        "map",
-                        "alphaMap",
-                        "aoMap",
-                        "bumpMap",
-                        "displacementMap",
-                        "emissiveMap",
-                        "metalnessMap",
-                        "normalMap",
-                        "roughnessMap",
-                        "specularMap",
-                        "clearcoatMap",
-                        "clearcoatNormalMap",
-                        "clearcoatRoughnessMap",
-                        "iridescenceMap",
-                        "iridescenceThicknessMap",
-                        "sheenColorMap",
-                        "sheenRoughnessMap",
-                        "transmissionMap",
-                        "thicknessMap"
-                    ];
+        return (
+            API_BASE +
+            "/api/models/file/" +
+            encodeURIComponent(
+                String(item.id)
+            )
+        );
 
-                    textureKeys.forEach(
-                        key => {
-                            if (material[key]) {
-                                material[key] = null;
-                            }
-                        }
-                    );
+    }
 
-                    material.needsUpdate = true;
-                }
-            );
-        }
+
+    throw new Error(
+        "API не передал URL или ID модели."
     );
+
 }
 
 
-function clearArchiveModel() {
+function disposeArchiveModel() {
 
     if (!model || !scene) {
+        model = null;
         return;
     }
 
+
     scene.remove(model);
+
 
     model.traverse(
         object => {
 
             if (object.geometry) {
+
                 object.geometry.dispose();
+
             }
+
 
             if (object.material) {
 
@@ -2329,6 +2281,7 @@ function clearArchiveModel() {
                         ? object.material
                         : [object.material];
 
+
                 materials.forEach(
                     material => {
 
@@ -2336,59 +2289,82 @@ function clearArchiveModel() {
                             return;
                         }
 
-                        Object.keys(material).forEach(
-                            key => {
+                        if (material.map) {
+                            material.map.dispose();
+                        }
 
-                                const value =
-                                    material[key];
+                        if (material.normalMap) {
+                            material.normalMap.dispose();
+                        }
 
-                                if (
-                                    value &&
-                                    value.isTexture
-                                ) {
-                                    value.dispose();
-                                }
-                            }
-                        );
+                        if (material.roughnessMap) {
+                            material.roughnessMap.dispose();
+                        }
+
+                        if (material.metalnessMap) {
+                            material.metalnessMap.dispose();
+                        }
+
+                        if (material.aoMap) {
+                            material.aoMap.dispose();
+                        }
+
+                        if (material.emissiveMap) {
+                            material.emissiveMap.dispose();
+                        }
 
                         material.dispose();
+
                     }
                 );
+
             }
+
         }
     );
 
+
     model = null;
+
 }
 
 
-function prepareArchiveModel(object) {
+function prepareArchiveObject(object) {
 
     if (!object) {
-        throw new Error("Пустая 3D модель");
+
+        throw new Error(
+            "Загрузчик вернул пустую 3D модель."
+        );
+
     }
 
-    removeArchiveTextures(object);
 
     const box =
         new THREE.Box3()
             .setFromObject(object);
 
+
     if (box.isEmpty()) {
-        throw new Error("В модели нет геометрии");
+
+        throw new Error(
+            "3D модель не содержит видимой геометрии."
+        );
+
     }
+
 
     const center =
         box.getCenter(
             new THREE.Vector3()
         );
 
+
     const size =
         box.getSize(
             new THREE.Vector3()
         );
 
-    object.position.sub(center);
 
     const maxSize =
         Math.max(
@@ -2397,272 +2373,659 @@ function prepareArchiveModel(object) {
             size.z
         );
 
+
+    object.position.sub(center);
+
+
     if (
         Number.isFinite(maxSize) &&
         maxSize > 0
     ) {
+
         object.scale.setScalar(
             2 / maxSize
         );
+
     }
 
+
+    object.traverse(
+        child => {
+
+            if (!child.isMesh) {
+                return;
+            }
+
+            child.frustumCulled = false;
+
+            child.castShadow = true;
+
+            child.receiveShadow = true;
+
+            if (child.material) {
+
+                const materials =
+                    Array.isArray(child.material)
+                        ? child.material
+                        : [child.material];
+
+                materials.forEach(
+                    material => {
+
+                        if (!material) {
+                            return;
+                        }
+
+                        material.side =
+                            THREE.DoubleSide;
+
+                        material.needsUpdate =
+                            true;
+
+                    }
+                );
+
+            }
+
+        }
+    );
+
+
     return object;
+
 }
 
 
-function loadArchiveModel(item) {
+function loadGLTFArchiveModel(url) {
 
     return new Promise(
         (resolve, reject) => {
 
-            const extension =
-                getArchiveExtension(item);
+            const archiveLoader =
+                new GLTFLoader();
 
-            const modelUrl =
-                getArchiveModelUrl(item);
+            archiveLoader.load(
 
-            if (!modelUrl) {
-                reject(
-                    new Error("Нет URL модели")
-                );
-                return;
-            }
+                url,
 
-            const manager =
-                createArchiveLoadingManager(
-                    item,
-                    modelUrl
-                );
+                result => {
 
-            let archiveLoader = null;
+                    if (!result || !result.scene) {
 
-            if (
-                extension === "glb" ||
-                extension === "gltf"
-            ) {
+                        reject(
+                            new Error(
+                                "GLTFLoader не вернул scene."
+                            )
+                        );
 
-                archiveLoader =
-                    new GLTFLoader(manager);
+                        return;
 
-                archiveLoader.load(
-                    modelUrl,
-                    result => {
-                        resolve(result.scene);
-                    },
-                    undefined,
-                    reject
-                );
+                    }
 
-                return;
-            }
+                    resolve(
+                        result.scene
+                    );
 
-            if (extension === "fbx") {
+                },
 
-                archiveLoader =
-                    new FBXLoader(manager);
+                progress => {
 
-                archiveLoader.load(
-                    modelUrl,
-                    result => {
-                        resolve(result);
-                    },
-                    undefined,
-                    reject
-                );
+                    if (
+                        progress &&
+                        progress.total > 0
+                    ) {
 
-                return;
-            }
-
-            if (extension === "obj") {
-
-                // OBJ загружается БЕЗ MTL.
-                // Поэтому никаких материалов/текстур из архива
-                // для OBJ не требуется.
-                archiveLoader =
-                    new OBJLoader(manager);
-
-                archiveLoader.load(
-                    modelUrl,
-                    result => {
-                        resolve(result);
-                    },
-                    undefined,
-                    reject
-                );
-
-                return;
-            }
-
-            if (extension === "stl") {
-
-                archiveLoader =
-                    new STLLoader(manager);
-
-                archiveLoader.load(
-                    modelUrl,
-                    geometry => {
-
-                        const material =
-                            new THREE.MeshStandardMaterial({
-                                color: 0xffffff,
-                                roughness: 0.72,
-                                metalness: 0.08,
-                                side: THREE.DoubleSide
-                            });
-
-                        const mesh =
-                            new THREE.Mesh(
-                                geometry,
-                                material
+                        const percent =
+                            Math.round(
+                                progress.loaded /
+                                progress.total *
+                                100
                             );
 
-                        resolve(mesh);
-                    },
-                    undefined,
-                    reject
-                );
+                        archiveStatus.textContent =
+                            "Загрузка модели: " +
+                            percent +
+                            "%";
 
-                return;
-            }
+                    } else {
 
-            reject(
-                new Error(
-                    "Формат не поддерживается: " +
-                    (extension || "unknown")
-                )
+                        archiveStatus.textContent =
+                            "Загрузка модели...";
+
+                    }
+
+                },
+
+                error => {
+
+                    reject(
+                        new Error(
+                            "GLB/GLTF: " +
+                            (
+                                error && error.message
+                                    ? error.message
+                                    : String(error)
+                            )
+                        )
+                    );
+
+                }
+
             );
+
         }
     );
+
 }
 
 
-async function loadArchiveModels() {
+function loadFBXArchiveModel(url) {
+
+    return new Promise(
+        (resolve, reject) => {
+
+            const archiveLoader =
+                new FBXLoader();
+
+            archiveLoader.load(
+
+                url,
+
+                object => {
+
+                    resolve(object);
+
+                },
+
+                progress => {
+
+                    if (
+                        progress &&
+                        progress.total > 0
+                    ) {
+
+                        const percent =
+                            Math.round(
+                                progress.loaded /
+                                progress.total *
+                                100
+                            );
+
+                        archiveStatus.textContent =
+                            "Загрузка модели: " +
+                            percent +
+                            "%";
+
+                    } else {
+
+                        archiveStatus.textContent =
+                            "Загрузка модели...";
+
+                    }
+
+                },
+
+                error => {
+
+                    reject(
+                        new Error(
+                            "FBX: " +
+                            (
+                                error && error.message
+                                    ? error.message
+                                    : String(error)
+                            )
+                        )
+                    );
+
+                }
+
+            );
+
+        }
+    );
+
+}
+
+
+function loadOBJArchiveModel(url) {
+
+    return new Promise(
+        (resolve, reject) => {
+
+            const archiveLoader =
+                new OBJLoader();
+
+            archiveLoader.load(
+
+                url,
+
+                object => {
+
+                    resolve(object);
+
+                },
+
+                progress => {
+
+                    if (
+                        progress &&
+                        progress.total > 0
+                    ) {
+
+                        const percent =
+                            Math.round(
+                                progress.loaded /
+                                progress.total *
+                                100
+                            );
+
+                        archiveStatus.textContent =
+                            "Загрузка модели: " +
+                            percent +
+                            "%";
+
+                    } else {
+
+                        archiveStatus.textContent =
+                            "Загрузка модели...";
+
+                    }
+
+                },
+
+                error => {
+
+                    reject(
+                        new Error(
+                            "OBJ: " +
+                            (
+                                error && error.message
+                                    ? error.message
+                                    : String(error)
+                            )
+                        )
+                    );
+
+                }
+
+            );
+
+        }
+    );
+
+}
+
+
+function loadSTLArchiveModel(url) {
+
+    return new Promise(
+        (resolve, reject) => {
+
+            const archiveLoader =
+                new STLLoader();
+
+            archiveLoader.load(
+
+                url,
+
+                geometry => {
+
+                    if (!geometry) {
+
+                        reject(
+                            new Error(
+                                "STLLoader не вернул geometry."
+                            )
+                        );
+
+                        return;
+
+                    }
+
+                    const material =
+                        new THREE.MeshStandardMaterial({
+                            color: 0xffffff,
+                            roughness: 0.65,
+                            metalness: 0.05,
+                            side: THREE.DoubleSide
+                        });
+
+                    const mesh =
+                        new THREE.Mesh(
+                            geometry,
+                            material
+                        );
+
+                    resolve(mesh);
+
+                },
+
+                progress => {
+
+                    if (
+                        progress &&
+                        progress.total > 0
+                    ) {
+
+                        const percent =
+                            Math.round(
+                                progress.loaded /
+                                progress.total *
+                                100
+                            );
+
+                        archiveStatus.textContent =
+                            "Загрузка модели: " +
+                            percent +
+                            "%";
+
+                    } else {
+
+                        archiveStatus.textContent =
+                            "Загрузка модели...";
+
+                    }
+
+                },
+
+                error => {
+
+                    reject(
+                        new Error(
+                            "STL: " +
+                            (
+                                error && error.message
+                                    ? error.message
+                                    : String(error)
+                            )
+                        )
+                    );
+
+                }
+
+            );
+
+        }
+    );
+
+}
+
+
+async function loadArchiveModel(item) {
+
+    const extension =
+        getModelExtension(item);
+
+    const url =
+        getModelUrl(item);
+
+
+    console.log(
+        "ARCHIVE MODEL REQUEST:",
+        {
+            id: item.id,
+            filename: item.filename,
+            extension,
+            url
+        }
+    );
+
+
+    if (extension === "glb" || extension === "gltf") {
+
+        return loadGLTFArchiveModel(url);
+
+    }
+
+
+    if (extension === "fbx") {
+
+        return loadFBXArchiveModel(url);
+
+    }
+
+
+    if (extension === "obj") {
+
+        return loadOBJArchiveModel(url);
+
+    }
+
+
+    if (extension === "stl") {
+
+        return loadSTLArchiveModel(url);
+
+    }
+
+
+    throw new Error(
+        "Формат 3D модели не поддерживается: ." +
+        extension
+    );
+
+}
+
+
+function renderArchiveModels() {
+
+    archiveGrid.innerHTML = "";
+
+
+    if (!archiveModels.length) {
+
+        archiveStatus.textContent =
+            "В архиве пока нет 3D моделей.";
+
+        return;
+
+    }
+
 
     archiveStatus.textContent =
-        "Загрузка списка моделей...";
+        "Моделей: " +
+        archiveModels.length;
 
-    archiveGrid.innerHTML =
-        "";
 
-    try {
+    archiveModels.forEach(
+        (item, index) => {
 
-        const response =
-            await fetch(
-                ARCHIVE_API,
-                {
-                    method: "GET",
-                    cache: "no-store"
+            const button =
+                document.createElement("button");
+
+            button.type = "button";
+
+            button.className = "archiveItem";
+
+
+            const preview =
+                document.createElement("div");
+
+            preview.className =
+                "archivePlaceholder";
+
+            preview.textContent = "3D";
+
+            button.appendChild(preview);
+
+
+            const info =
+                document.createElement("div");
+
+            info.className = "archiveInfo";
+
+
+            const name =
+                document.createElement("div");
+
+            name.className = "archiveName";
+
+            name.textContent =
+                item.filename || "model";
+
+            info.appendChild(name);
+
+
+            const folder =
+                document.createElement("div");
+
+            folder.className = "archiveFolder";
+
+            folder.textContent =
+                (
+                    item.folder || ""
+                ).toUpperCase();
+
+            info.appendChild(folder);
+
+
+            const format =
+                document.createElement("div");
+
+            format.className = "archiveFolder";
+
+            format.textContent =
+                (
+                    item.extension ||
+                    getModelExtension(item)
+                ).toUpperCase();
+
+            info.appendChild(format);
+
+
+            button.appendChild(info);
+
+
+            button.addEventListener(
+                "click",
+                () => {
+
+                    openArchiveViewer(
+                        index
+                    );
+
                 }
             );
 
-        if (!response.ok) {
-            throw new Error(
-                "HTTP " + response.status
-            );
+
+            archiveGrid.appendChild(button);
+
         }
+    );
 
-        const data =
-            await response.json();
+}
 
-        archiveModels =
-            Array.isArray(data.items)
-                ? data.items
-                : [];
 
-        if (!archiveModels.length) {
+async function fetchArchiveModels() {
 
-            archiveStatus.textContent =
-                "В архиве пока нет 3D моделей.";
-
-            return;
-        }
-
-        archiveStatus.textContent =
-            "Моделей: " +
-            archiveModels.length;
-
-        archiveModels.forEach(
-            (item, index) => {
-
-                const button =
-                    document.createElement("button");
-
-                button.type =
-                    "button";
-
-                button.className =
-                    "archiveItem";
-
-                const preview =
-                    document.createElement("div");
-
-                preview.className =
-                    "archivePlaceholder";
-
-                preview.textContent =
-                    String(
-                        item.extension ||
-                        "3D"
-                    ).replace(".", "").toUpperCase();
-
-                button.appendChild(
-                    preview
-                );
-
-                const info =
-                    document.createElement("div");
-
-                info.className =
-                    "archiveInfo";
-
-                const name =
-                    document.createElement("div");
-
-                name.className =
-                    "archiveName";
-
-                name.textContent =
-                    item.filename || "model";
-
-                const folder =
-                    document.createElement("div");
-
-                folder.className =
-                    "archiveFolder";
-
-                folder.textContent =
-                    (
-                        item.folder || ""
-                    ).toUpperCase();
-
-                info.appendChild(name);
-                info.appendChild(folder);
-                button.appendChild(info);
-
-                button.addEventListener(
-                    "click",
-                    () => {
-                        openArchiveViewer(index);
-                    }
-                );
-
-                archiveGrid.appendChild(
-                    button
-                );
+    const response =
+        await fetch(
+            ARCHIVE_API,
+            {
+                method: "GET",
+                cache: "no-store",
+                headers: {
+                    "Accept":
+                        "application/json"
+                }
             }
         );
+
+
+    if (!response.ok) {
+
+        throw new Error(
+            "API HTTP " +
+            response.status
+        );
+
+    }
+
+
+    const data =
+        await response.json();
+
+
+    if (
+        !data ||
+        data.success !== true ||
+        !Array.isArray(data.items)
+    ) {
+
+        throw new Error(
+            "API /api/models вернул неправильный ответ."
+        );
+
+    }
+
+
+    return data.items.filter(
+        item =>
+            item &&
+            (
+                item.id !== undefined &&
+                item.id !== null
+            )
+    );
+
+}
+
+
+async function loadArchiveModels(options = {}) {
+
+    const silent =
+        options.silent === true;
+
+
+    if (!silent) {
+
+        archiveStatus.textContent =
+            "Загрузка 3D моделей...";
+
+    }
+
+
+    try {
+
+        const items =
+            await fetchArchiveModels();
+
+
+        archiveModels =
+            items;
+
+
+        renderArchiveModels();
+
+
+        return archiveModels;
 
     } catch (error) {
 
         console.error(
-            "ARCHIVE ERROR:",
+            "ARCHIVE API ERROR:",
             error
         );
 
-        archiveStatus.textContent =
-            "Не удалось получить архив: " +
-            error.message;
+
+        if (!silent) {
+
+            archiveStatus.textContent =
+                "Ошибка API: " +
+                (
+                    error && error.message
+                        ? error.message
+                        : String(error)
+                );
+
+        }
+
+
+        return null;
+
     }
+
 }
 
 
@@ -2671,43 +3034,87 @@ async function openArchiveViewer(index) {
     viewerOpenedFromArchive =
         true;
 
+
     if (!requireAccess()) {
         return;
     }
 
+
     const item =
         archiveModels[index];
+
 
     if (!item) {
         return;
     }
 
+
+    await openArchiveItem(
+        item,
+        false
+    );
+
+}
+
+
+async function openArchiveItem(item, automatic) {
+
+    if (!item) {
+        return;
+    }
+
+
+    viewerOpenedFromArchive =
+        true;
+
+
+    if (!requireAccess()) {
+        return;
+    }
+
+
     viewerNumber.textContent =
         item.filename || "3D";
+
 
     showScreen(
         viewerScreen
     );
 
+
     initViewer();
 
-    clearArchiveModel();
+
+    disposeArchiveModel();
+
 
     archiveStatus.textContent =
-        "Загрузка модели: " +
-        (item.filename || "3D");
+        automatic
+            ? "Новая 3D модель найдена. Загрузка..."
+            : "Загрузка 3D модели...";
+
 
     try {
 
-        const loadedObject =
-            await loadArchiveModel(item);
-
-        model =
-            prepareArchiveModel(
-                loadedObject
+        const object =
+            await loadArchiveModel(
+                item
             );
 
-        scene.add(model);
+
+        prepareArchiveObject(
+            object
+        );
+
+
+        model =
+            object;
+
+
+        scene.add(
+            model
+        );
+
 
         controls.target.set(
             0,
@@ -2715,62 +3122,76 @@ async function openArchiveViewer(index) {
             0
         );
 
-        controls.update();
 
-        // Автоматически подбираем камеру под размер модели.
         const box =
             new THREE.Box3()
                 .setFromObject(model);
+
 
         const size =
             box.getSize(
                 new THREE.Vector3()
             );
 
-        const maxSize =
+
+        const radius =
             Math.max(
                 size.x,
                 size.y,
-                size.z
+                size.z,
+                0.5
             );
 
-        const distance =
+
+        controls.minDistance =
             Math.max(
-                3,
-                maxSize * 2.8
+                radius * 0.15,
+                0.05
             );
+
+
+        controls.maxDistance =
+            Math.max(
+                radius * 10,
+                20
+            );
+
 
         camera.position.set(
-            distance,
-            distance * 0.55,
-            distance
+            0,
+            radius * 0.35,
+            radius * 2.5
         );
+
 
         camera.near =
             Math.max(
-                0.001,
-                distance / 1000
+                radius / 1000,
+                0.001
             );
+
 
         camera.far =
             Math.max(
-                1000,
-                distance * 100
+                radius * 100,
+                100
             );
+
 
         camera.updateProjectionMatrix();
 
-        controls.target.set(
-            0,
-            0,
-            0
-        );
-
         controls.update();
 
-        archiveStatus.textContent =
-            "Модель загружена: " +
-            (item.filename || "3D");
+
+        console.log(
+            "ARCHIVE MODEL LOADED:",
+            {
+                id: item.id,
+                filename: item.filename,
+                extension: getModelExtension(item),
+                url: getModelUrl(item)
+            }
+        );
 
     } catch (error) {
 
@@ -2779,12 +3200,211 @@ async function openArchiveViewer(index) {
             error
         );
 
-        clearArchiveModel();
+        viewerNumber.textContent =
+            "ОШИБКА: " +
+            (
+                item.filename ||
+                "3D"
+            );
 
-        archiveStatus.textContent =
-            "Ошибка загрузки модели: " +
-            (error?.message || error);
+
+        alert(
+            "Не удалось загрузить 3D модель.\n\n" +
+            "Файл: " +
+            (
+                item.filename ||
+                "—"
+            ) +
+            "\nID: " +
+            (
+                item.id ?? "—"
+            ) +
+            "\n\nПричина: " +
+            (
+                error && error.message
+                    ? error.message
+                    : String(error)
+            )
+        );
+
     }
+
+}
+
+
+async function checkArchiveForNewModel() {
+
+    if (!accessGranted || !currentWallet) {
+        return;
+    }
+
+
+    if (archiveWatcherBusy) {
+        return;
+    }
+
+
+    archiveWatcherBusy = true;
+
+
+    try {
+
+        const items =
+            await fetchArchiveModels();
+
+
+        const currentIds =
+            new Set(
+                items.map(
+                    item => String(item.id)
+                )
+            );
+
+
+        const newItems =
+            items.filter(
+                item =>
+                    !archiveKnownIds.has(
+                        String(item.id)
+                    )
+            );
+
+
+        archiveModels =
+            items;
+
+
+        renderArchiveModels();
+
+
+        if (archiveFirstSnapshot) {
+
+            archiveKnownIds =
+                currentIds;
+
+            archiveFirstSnapshot =
+                false;
+
+            return;
+
+        }
+
+
+        archiveKnownIds =
+            currentIds;
+
+
+        if (!newItems.length) {
+            return;
+        }
+
+
+        newItems.sort(
+            (a, b) =>
+                Number(b.id) -
+                Number(a.id)
+        );
+
+
+        const newest =
+            newItems[0];
+
+
+        console.log(
+            "NEW ARCHIVE MODEL:",
+            newest
+        );
+
+
+        await openArchiveItem(
+            newest,
+            true
+        );
+
+    } catch (error) {
+
+        console.error(
+            "ARCHIVE WATCH ERROR:",
+            error
+        );
+
+        if (
+            archiveFirstSnapshot
+        ) {
+
+            archiveStatus.textContent =
+                "Ошибка подключения к API: " +
+                (
+                    error && error.message
+                        ? error.message
+                        : String(error)
+                );
+
+        }
+
+    } finally {
+
+        archiveWatcherBusy =
+            false;
+
+    }
+
+}
+
+
+function startArchiveWatcher() {
+
+    if (archiveWatcherStarted) {
+        return;
+    }
+
+
+    archiveWatcherStarted =
+        true;
+
+    archiveFirstSnapshot =
+        true;
+
+    archiveKnownIds.clear();
+
+
+    checkArchiveForNewModel();
+
+
+    archiveWatcherTimer =
+        window.setInterval(
+            checkArchiveForNewModel,
+            ARCHIVE_POLL_INTERVAL
+        );
+
+}
+
+
+function stopArchiveWatcher() {
+
+    if (archiveWatcherTimer !== null) {
+
+        window.clearInterval(
+            archiveWatcherTimer
+        );
+
+    }
+
+
+    archiveWatcherTimer =
+        null;
+
+    archiveWatcherStarted =
+        false;
+
+    archiveWatcherBusy =
+        false;
+
+    archiveKnownIds.clear();
+
+    archiveFirstSnapshot =
+        true;
+
 }
 
 
@@ -3290,6 +3910,14 @@ tonConnectUI.connectionRestored
     );
 
 
+
+
+window.addEventListener(
+    "beforeunload",
+    () => {
+        stopArchiveWatcher();
+    }
+);
 </script>
 
 
