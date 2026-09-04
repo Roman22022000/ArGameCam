@@ -422,6 +422,54 @@
         }
 
 
+        .viewerHint {
+            position: absolute;
+            left: 50%;
+            bottom: calc(18px + env(safe-area-inset-bottom));
+            transform: translateX(-50%);
+            z-index: 20;
+            max-width: calc(100% - 32px);
+            padding: 8px 12px;
+            border: 1px solid #303030;
+            background: rgba(0,0,0,.78);
+            color: #fff;
+            font-size: 12px;
+            line-height: 1.35;
+            text-align: center;
+            pointer-events: none;
+            transition: opacity .3s ease;
+        }
+
+        .viewerControls {
+            position: absolute;
+            right: 14px;
+            bottom: calc(18px + env(safe-area-inset-bottom));
+            z-index: 30;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .viewerControl {
+            width: 44px;
+            height: 44px;
+            border: 1px solid #303030;
+            background: rgba(0,0,0,.78);
+            color: #fff;
+            font-size: 20px;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        #viewerCanvas {
+            touch-action: none;
+            overscroll-behavior: none;
+        }
+
+        #viewerCanvas canvas {
+            touch-action: none;
+        }
+
         /* =========================================================
            GENERATION
         ========================================================= */
@@ -611,69 +659,6 @@
         }
 
 
-
-        /* =========================================================
-           3D MOBILE CONTROLS
-        ========================================================= */
-
-        #viewerCanvas {
-            touch-action: none;
-            user-select: none;
-            -webkit-user-select: none;
-        }
-
-        #viewerCanvas canvas {
-            touch-action: none;
-        }
-
-        .viewerHint {
-            position: absolute;
-            z-index: 12;
-            left: 50%;
-            bottom: 22px;
-            transform: translateX(-50%);
-            padding: 8px 12px;
-            background: rgba(0,0,0,.65);
-            border: 1px solid #292929;
-            color: #777;
-            font-size: 10px;
-            white-space: nowrap;
-            pointer-events: none;
-            opacity: 1;
-            transition: opacity .5s ease;
-        }
-
-        .viewerControls {
-            position: absolute;
-            z-index: 13;
-            right: 14px;
-            bottom: 14px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .viewerControl {
-            width: 42px;
-            height: 42px;
-            background: rgba(8,8,8,.82);
-            color: #fff;
-            border: 1px solid #292929;
-            font-size: 18px;
-            touch-action: manipulation;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        .viewerControl:active {
-            background: #222;
-        }
-
-        @media (min-width: 700px) {
-            .viewerHint {
-                bottom: 18px;
-            }
-        }
-
         /* =========================================================
            MOBILE
         ========================================================= */
@@ -695,7 +680,16 @@
 
         }
 
-    </style>
+            html, body {
+            overscroll-behavior: none;
+        }
+
+        body {
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+</style>
 
 </head>
 
@@ -879,7 +873,17 @@
         id="viewerCanvas"
     ></div>
 
-    <div class="viewerHeader">
+    <div class="viewerHint" id="viewerHint">1 палец — вращение · 2 пальца — приближение/отдаление</div>
+
+    <div class="viewerControls">
+        <button id="viewerForward" class="viewerControl" type="button" aria-label="Вперёд">↑</button>
+        <button id="viewerBackward" class="viewerControl" type="button" aria-label="Назад">↓</button>
+        <button id="viewerReset" class="viewerControl" type="button" aria-label="Сброс">⟳</button>
+    </div>
+
+    <div
+        class="viewerHeader"
+    >
 
         <button
             id="viewerBack"
@@ -896,16 +900,6 @@
             1
         </div>
 
-    </div>
-
-    <div id="viewerHint" class="viewerHint">
-        1 палец — вращение / наклон · 2 пальца — движение / масштаб
-    </div>
-
-    <div class="viewerControls">
-        <button id="viewerForward" class="viewerControl" type="button">↑</button>
-        <button id="viewerBackward" class="viewerControl" type="button">↓</button>
-        <button id="viewerReset" class="viewerControl" type="button">⟳</button>
     </div>
 
 </section>
@@ -1054,6 +1048,7 @@ import {
 } from "three/addons/loaders/GLTFLoader.js";
 
 
+
 /* =============================================================
    CONFIG
 ============================================================= */
@@ -1067,13 +1062,7 @@ const REQUIRED_COLLECTION =
 
 
 const REQUIRED_COLLECTION_RAW =
-    "0:fd9a6de1c7e42f1f2346d7c80369a26d4934d04d555856327ace1a275e8723d9";
-
-const REQUIRED_COLLECTION_ALIASES = [
-    REQUIRED_COLLECTION,
-    REQUIRED_COLLECTION_RAW,
-    "0:fd9a6de1c7e42f1d8346d7c80369a26d4934d04d5558563eb38689d7a1c8f6"
-];
+    "0:fd9a6de1c7e42f1d8346d7c80369a26d4934d04d5558563eb38689d7a1c8f6";
 
 
 const GENERATION_API =
@@ -1177,562 +1166,216 @@ function showScreen(screen) {
 
 
 /* =============================================================
-   TON CONNECT
+   TON CONNECT + NFT ACCESS
 ============================================================= */
 
 if (!window.TON_CONNECT_UI) {
-
-    authStatus.textContent =
-        "TON Connect не загрузился";
-
-    throw new Error(
-        "TON_CONNECT_UI not loaded"
-    );
+    authStatus.textContent = "TON Connect не загрузился";
+    throw new Error("TON_CONNECT_UI not loaded");
 }
 
-
-const tonConnectUI =
-    new TON_CONNECT_UI.TonConnectUI({
-
-        manifestUrl:
-            TON_MANIFEST,
-
-        buttonRootId:
-            null,
-
-        restoreConnection:
-            true
-
-    });
-
-
-/*
-    Важно:
-
-    uiOptions является setter.
-    Поэтому присваиваем объект целиком.
-*/
+const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
+    manifestUrl: TON_MANIFEST,
+    buttonRootId: null,
+    restoreConnection: true
+});
 
 tonConnectUI.uiOptions = {
-
     language: "ru",
-
     uiPreferences: {
-        theme:
-            "DARK",
-
-        borderRadius:
-            "none"
+        theme: "DARK",
+        borderRadius: "none"
     }
-
 };
 
-
-/*
-    Наша кнопка открывает
-    официальное TON Connect окно.
-
-    Именно внутри этого окна
-    TON Connect показывает QR-код
-    на desktop.
-*/
-
-connectWallet.addEventListener(
-    "click",
-    async () => {
-
-        try {
-
-            await tonConnectUI.openModal();
-
-        } catch (error) {
-
-            console.error(
-                "TON Connect:",
-                error
-            );
-
-            authStatus.textContent =
-                "Ошибка открытия TON Connect";
-
-        }
-
+connectWallet.addEventListener("click", async () => {
+    try {
+        authStatus.textContent = "Открытие TON Connect...";
+        await tonConnectUI.openModal();
+    } catch (error) {
+        console.error("TON Connect:", error);
+        authStatus.textContent = "Ошибка открытия TON Connect";
     }
-);
-
-
-/* =============================================================
-   TON ADDRESS
-============================================================= */
+});
 
 function base64UrlToBytes(value) {
-
-    let normalized =
-        String(value)
-            .replace(/-/g, "+")
-            .replace(/_/g, "/");
-
-
-    while (
-        normalized.length % 4 !== 0
-    ) {
-
-        normalized += "=";
-
-    }
-
-
-    const binary =
-        atob(normalized);
-
-
-    const bytes =
-        new Uint8Array(
-            binary.length
-        );
-
-
-    for (
-        let i = 0;
-        i < binary.length;
-        i++
-    ) {
-
-        bytes[i] =
-            binary.charCodeAt(i);
-
-    }
-
-
+    let normalized = String(value).replace(/-/g, "+").replace(/_/g, "/");
+    while (normalized.length % 4 !== 0) normalized += "=";
+    const binary = atob(normalized);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
     return bytes;
-
 }
-
 
 function normalizeTonAddress(address) {
+    if (!address) return "";
+    address = String(address).trim();
 
-    if (!address) {
-        return "";
+    if (/^-?\d+:[0-9a-fA-F]{64}$/.test(address)) {
+        const parts = address.split(":");
+        return parts[0] + ":" + parts[1].toLowerCase();
     }
-
-
-    address =
-        String(address).trim();
-
-
-    /*
-        Уже raw:
-        0:64hex
-    */
-
-    if (
-        /^-?\d+:[0-9a-fA-F]{64}$/
-            .test(address)
-    ) {
-
-        const parts =
-            address.split(":");
-
-
-        return (
-            parts[0] +
-            ":" +
-            parts[1].toLowerCase()
-        );
-
-    }
-
-
-    /*
-        Friendly:
-        EQ...
-        UQ...
-    */
 
     try {
+        const bytes = base64UrlToBytes(address);
+        if (bytes.length !== 36) return address.toLowerCase();
 
-        const bytes =
-            base64UrlToBytes(
-                address
-            );
-
-
-        if (
-            bytes.length !== 36
-        ) {
-
-            return address.toLowerCase();
-
-        }
-
-
-        let workchain =
-            bytes[1];
-
-
-        if (
-            workchain === 255
-        ) {
-
-            workchain = -1;
-
-        }
-
+        let workchain = bytes[1];
+        if (workchain === 255) workchain = -1;
 
         let hash = "";
-
-
-        for (
-            let i = 2;
-            i < 34;
-            i++
-        ) {
-
-            hash +=
-                bytes[i]
-                    .toString(16)
-                    .padStart(2, "0");
-
+        for (let i = 2; i < 34; i++) {
+            hash += bytes[i].toString(16).padStart(2, "0");
         }
 
-
-        return (
-            workchain +
-            ":" +
-            hash.toLowerCase()
-        );
-
+        return workchain + ":" + hash.toLowerCase();
     } catch {
-
         return address.toLowerCase();
-
     }
-
 }
 
+const normalizedRequiredCollection = normalizeTonAddress(REQUIRED_COLLECTION);
+const normalizedRequiredCollectionRaw = normalizeTonAddress(REQUIRED_COLLECTION_RAW);
 
-const normalizedRequiredCollections =
-    new Set(
-        REQUIRED_COLLECTION_ALIASES
-            .map(normalizeTonAddress)
-            .filter(Boolean)
-    );
+async function fetchWithTimeout(url, options = {}, timeoutMs = 15000) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+        return await fetch(url, { ...options, signal: controller.signal });
+    } finally {
+        clearTimeout(timer);
+    }
+}
 
+async function checkCollectionNFT(walletAddress) {
+    const normalizedWallet = normalizeTonAddress(walletAddress);
+    if (!normalizedWallet) throw new Error("Некорректный адрес кошелька");
 
-/* =============================================================
-   NFT CHECK
-============================================================= */
-
-async function checkCollectionNFT(
-    walletAddress
-) {
-
-    const rawWalletAddress =
-        normalizeTonAddress(walletAddress);
-
-    const url =
-        "https://tonapi.io/v2/accounts/" +
-        encodeURIComponent(
-            rawWalletAddress || walletAddress
-        ) +
-        "/nfts?limit=1000";
-
-
-    const response =
-        await fetch(url, {
-
-            method: "GET",
-
-            headers: {
-                "Accept":
-                    "application/json"
-            }
-
-        });
-
+    const url = "https://tonapi.io/v2/accounts/" + encodeURIComponent(normalizedWallet) + "/nfts?limit=1000";
+    const response = await fetchWithTimeout(url, {
+        method: "GET",
+        cache: "no-store",
+        headers: { "Accept": "application/json" }
+    }, 15000);
 
     if (!response.ok) {
-
-        throw new Error(
-            "TonAPI HTTP " +
-            response.status
-        );
-
+        if (response.status === 429) throw new Error("TonAPI: слишком много запросов, повторите через несколько секунд");
+        throw new Error("TonAPI HTTP " + response.status);
     }
 
+    const data = await response.json();
+    const nftItems = Array.isArray(data.nft_items) ? data.nft_items : [];
 
-    const data =
-        await response.json();
-
-
-    const nftItems =
-        Array.isArray(
-            data.nft_items
-        )
-            ? data.nft_items
-            : [];
-
-
-    for (
-        const nft of nftItems
-    ) {
-
+    for (const nft of nftItems) {
         const collectionAddress =
             nft.collection?.address ||
             nft.collection_address ||
+            nft.collection?.raw_address ||
             "";
 
-
-        if (!collectionAddress) {
-            continue;
-        }
-
-
-        const normalized =
-            normalizeTonAddress(
-                collectionAddress
-            );
-
-
+        const normalized = normalizeTonAddress(collectionAddress);
         if (
-            normalizedRequiredCollections.has(
-                normalized
-            )
+            normalized &&
+            (normalized === normalizedRequiredCollection ||
+             normalized === normalizedRequiredCollectionRaw)
         ) {
-
             return true;
-
         }
-
     }
-
 
     return false;
-
 }
 
+let currentWallet = null;
+let accessGranted = false;
+let checkingNFT = false;
+let processedWallet = "";
+let nftCache = new Map();
 
-/* =============================================================
-   WALLET
-============================================================= */
-
-let currentWallet =
-    null;
-
-let accessGranted =
-    false;
-
-let checkingNFT =
-    false;
-
-
-async function processWallet(
-    wallet
-) {
-
-    if (!wallet) {
-
-        currentWallet =
-            null;
-
-        accessGranted =
-            false;
-
-        userWalletAddress.textContent =
-            "";
-
-        userStatus.textContent =
-            "";
-
-        authStatus.textContent =
-            "Подключите TON-кошелёк";
-
-        showScreen(
-            authScreen
-        );
-
+async function processWallet(wallet) {
+    if (!wallet || !wallet.account || !wallet.account.address) {
+        currentWallet = null;
+        accessGranted = false;
+        processedWallet = "";
+        userWalletAddress.textContent = "";
+        userStatus.textContent = "";
+        authStatus.textContent = "Подключите TON-кошелёк";
+        showScreen(authScreen);
         return;
-
     }
 
+    const walletAddress = wallet.account.address;
+    const normalizedWallet = normalizeTonAddress(walletAddress);
+    currentWallet = walletAddress;
 
-    if (
-        checkingNFT
-    ) {
-
+    if (checkingNFT) return;
+    if (processedWallet === normalizedWallet && accessGranted) {
+        showScreen(homeScreen);
         return;
-
     }
 
-
-    if (
-        !wallet.account ||
-        !wallet.account.address
-    ) {
-
-        return;
-
-    }
-
-
-    currentWallet =
-        wallet.account.address;
-
-
-    accessGranted =
-        false;
-
-    checkingNFT =
-        true;
-
-
-    authStatus.textContent =
-        "Проверка NFT...";
-
-
-    loading.classList.add(
-        "active"
-    );
-
+    checkingNFT = true;
+    accessGranted = false;
+    processedWallet = normalizedWallet;
+    authStatus.textContent = "Проверка NFT...";
+    loading.classList.add("active");
 
     try {
+        const cached = nftCache.get(normalizedWallet);
+        let hasNFT;
 
-        const hasNFT =
-            await checkCollectionNFT(
-                currentWallet
-            );
-
-
-        if (!hasNFT) {
-
-            accessGranted =
-                false;
-
-
-            authStatus.textContent =
-                "NFT нужной коллекции не найден";
-
-
-            showScreen(
-                authScreen
-            );
-
-
-            return;
-
+        if (cached && Date.now() - cached.time < 60000) {
+            hasNFT = cached.hasNFT;
+        } else {
+            hasNFT = await checkCollectionNFT(walletAddress);
+            nftCache.set(normalizedWallet, { hasNFT, time: Date.now() });
         }
 
+        if (!hasNFT) {
+            accessGranted = false;
+            authStatus.textContent = "NFT нужной коллекции не найден";
+            userStatus.textContent = "Нет NFT доступа";
+            showScreen(authScreen);
+            return;
+        }
 
-        accessGranted =
-            true;
-
-
-        userWalletAddress.textContent =
-            currentWallet;
-
-
-        authStatus.textContent =
-            "Доступ разрешён";
-
-
-        showScreen(
-            homeScreen
-        );
-
-
+        accessGranted = true;
+        userWalletAddress.textContent = walletAddress;
+        userStatus.textContent = "NFT подтверждён";
+        authStatus.textContent = "Доступ разрешён";
+        showScreen(homeScreen);
     } catch (error) {
-
-        console.error(
-            "NFT CHECK ERROR:",
-            error
-        );
-
-
-        accessGranted =
-            false;
-
-
-        authStatus.textContent =
-            "Ошибка проверки NFT";
-
-
-        showScreen(
-            authScreen
-        );
-
-
+        console.error("NFT CHECK ERROR:", error);
+        accessGranted = false;
+        authStatus.textContent = error?.name === "AbortError"
+            ? "TonAPI не ответил вовремя"
+            : (error?.message || "Ошибка проверки NFT");
+        userStatus.textContent = "Проверка не завершена";
+        showScreen(authScreen);
     } finally {
-
-        checkingNFT =
-            false;
-
-
-        loading.classList.remove(
-            "active"
-        );
-
+        checkingNFT = false;
+        loading.classList.remove("active");
     }
-
 }
-
-
-/*
-    Срабатывает после:
-
-    - подключения
-    - отключения
-    - восстановления сессии
-*/
 
 tonConnectUI.onStatusChange(
     async wallet => {
-
-        await processWallet(
-            wallet
-        );
-
+        await processWallet(wallet);
     },
     error => {
-
-        console.error(
-            "TON Connect error:",
-            error
-        );
-
-        authStatus.textContent =
-            "Ошибка TON Connect";
-
+        console.error("TON Connect error:", error);
+        authStatus.textContent = "Ошибка TON Connect";
     }
 );
 
-
-/* =============================================================
-   ACCESS
-============================================================= */
-
 function requireAccess() {
-
-    if (
-        !accessGranted ||
-        !currentWallet
-    ) {
-
-        showScreen(
-            authScreen
-        );
-
-        authStatus.textContent =
-            "Доступ закрыт";
-
+    if (!accessGranted || !currentWallet) {
+        showScreen(authScreen);
+        authStatus.textContent = "Доступ закрыт";
         return false;
-
     }
-
-
     return true;
-
 }
-
 
 /* =============================================================
    MENU
@@ -2086,37 +1729,18 @@ generationSubmit.addEventListener(
    BACK
 ============================================================= */
 
-document
-    .getElementById("galleryBack")
-    .addEventListener(
-        "click",
-        () => {
-            showScreen(homeScreen);
-        }
-    );
+document.getElementById("galleryBack").addEventListener("click", () => {
+    showScreen(homeScreen);
+});
 
-document
-    .getElementById("archiveBack")
-    .addEventListener(
-        "click",
-        () => {
-            showScreen(homeScreen);
-        }
-    );
+document.getElementById("archiveBack").addEventListener("click", () => {
+    showScreen(homeScreen);
+});
 
-document
-    .getElementById("viewerBack")
-    .addEventListener(
-        "click",
-        () => {
-            if (viewerOpenedFromArchive) {
-                showScreen(archiveScreen);
-            } else {
-                showScreen(galleryScreen);
-            }
-        }
-    );
-
+document.getElementById("viewerBack").addEventListener("click", () => {
+    if (viewerOpenedFromArchive) showScreen(archiveScreen);
+    else showScreen(galleryScreen);
+});
 
 /* =============================================================
    GENERATION BACK
@@ -2183,1000 +1807,83 @@ generationBack.addEventListener(
 let archiveModels = [];
 
 async function loadArchiveModels() {
+    if (!requireAccess()) return;
 
-    archiveStatus.textContent =
-        "Загрузка 3D моделей...";
-
-    archiveGrid.innerHTML =
-        "";
+    archiveStatus.textContent = "Загрузка 3D моделей...";
+    archiveGrid.innerHTML = "";
 
     try {
+        const response = await fetchWithTimeout(ARCHIVE_API, {
+            method: "GET",
+            cache: "no-store",
+            headers: { "Accept": "application/json" }
+        }, 15000);
 
-        const response =
-            await fetch(
-                ARCHIVE_API,
-                {
-                    method: "GET",
-                    cache: "no-store"
-                }
-            );
-
-        if (!response.ok) {
-            throw new Error(
-                "HTTP " + response.status
-            );
-        }
-
-        const data =
-            await response.json();
-
-        archiveModels =
-            Array.isArray(data.items)
-                ? data.items
-                : [];
+        if (!response.ok) throw new Error("HTTP " + response.status);
+        const data = await response.json();
+        archiveModels = Array.isArray(data.items) ? data.items : [];
 
         if (!archiveModels.length) {
-
-            archiveStatus.textContent =
-                "В архиве пока нет 3D моделей.";
-
+            archiveStatus.textContent = "В архиве пока нет 3D моделей.";
             return;
         }
 
-        archiveStatus.textContent =
-            "Моделей: " +
-            archiveModels.length;
+        archiveStatus.textContent = "Моделей: " + archiveModels.length;
 
-        archiveModels.forEach(
-            (item, index) => {
+        archiveModels.forEach((item, index) => {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "archiveItem";
 
-                const button =
-                    document.createElement(
-                        "button"
-                    );
+            const preview = document.createElement("div");
+            preview.className = "archivePlaceholder";
+            preview.textContent = "3D";
+            button.appendChild(preview);
 
-                button.type =
-                    "button";
+            const info = document.createElement("div");
+            info.className = "archiveInfo";
 
-                button.className =
-                    "archiveItem";
+            const name = document.createElement("div");
+            name.className = "archiveName";
+            name.textContent = item.filename || "model";
 
-                const preview =
-                    document.createElement(
-                        "div"
-                    );
+            const folder = document.createElement("div");
+            folder.className = "archiveFolder";
+            folder.textContent = (item.folder || "").toUpperCase();
 
-                preview.className =
-                    "archivePlaceholder";
+            info.appendChild(name);
+            info.appendChild(folder);
+            button.appendChild(info);
 
-                preview.textContent =
-                    "3D";
-
-                button.appendChild(
-                    preview
-                );
-
-                const info =
-                    document.createElement(
-                        "div"
-                    );
-
-                info.className =
-                    "archiveInfo";
-
-                const name =
-                    document.createElement(
-                        "div"
-                    );
-
-                name.className =
-                    "archiveName";
-
-                name.textContent =
-                    item.filename || "model";
-
-                const folder =
-                    document.createElement(
-                        "div"
-                    );
-
-                folder.className =
-                    "archiveFolder";
-
-                folder.textContent =
-                    (
-                        item.folder || ""
-                    ).toUpperCase();
-
-                info.appendChild(
-                    name
-                );
-
-                info.appendChild(
-                    folder
-                );
-
-                button.appendChild(
-                    info
-                );
-
-                button.addEventListener(
-                    "click",
-                    () => {
-                        openArchiveViewer(
-                            index
-                        );
-                    }
-                );
-
-                archiveGrid.appendChild(
-                    button
-                );
-
-            }
-        );
-
+            button.addEventListener("click", () => openArchiveViewer(index));
+            archiveGrid.appendChild(button);
+        });
     } catch (error) {
-
-        console.error(
-            "ARCHIVE ERROR:",
-            error
-        );
-
-        archiveStatus.textContent =
-            "Не удалось получить архив.";
-
-    }
-
-}
-
-
-/* =============================================================
-   THREE.JS VIEWER
-============================================================= */
-
-let scene = null;
-let camera = null;
-let renderer = null;
-let model = null;
-
-let viewerOpenedFromArchive = false;
-
-const loader = new GLTFLoader();
-
-const viewerState = {
-    yaw: 0,
-    pitch: 0.18,
-    distance: 3,
-    target: new THREE.Vector3(0, 0, 0),
-    moveX: 0,
-    moveZ: 0
-};
-
-const touchState = {
-    active: false,
-    mode: null,
-    startX: 0,
-    startY: 0,
-    lastX: 0,
-    lastY: 0,
-    startDistance: 0,
-    lastDistance: 0,
-    startCenterX: 0,
-    startCenterY: 0,
-    lastCenterX: 0,
-    lastCenterY: 0
-};
-
-function initViewer() {
-
-    if (renderer) {
-        return;
-    }
-
-    scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x000000);
-
-    camera = new THREE.PerspectiveCamera(
-        45,
-        window.innerWidth / window.innerHeight,
-        0.01,
-        1000
-    );
-
-    renderer = new THREE.WebGLRenderer({
-        antialias: true,
-        alpha: false,
-        powerPreference: "high-performance"
-    });
-
-    renderer.setPixelRatio(
-        Math.min(window.devicePixelRatio || 1, 2)
-    );
-
-    renderer.setSize(
-        window.innerWidth,
-        window.innerHeight
-    );
-
-    renderer.outputColorSpace = THREE.SRGBColorSpace;
-
-    viewerCanvas.appendChild(renderer.domElement);
-
-    const ambient = new THREE.AmbientLight(
-        0xffffff,
-        2.2
-    );
-
-    scene.add(ambient);
-
-    const light = new THREE.DirectionalLight(
-        0xffffff,
-        3
-    );
-
-    light.position.set(4, 5, 4);
-    scene.add(light);
-
-    const fill = new THREE.DirectionalLight(
-        0xffffff,
-        1.5
-    );
-
-    fill.position.set(-4, 2, -4);
-    scene.add(fill);
-
-    setupViewerTouchControls();
-
-    window.addEventListener(
-        "resize",
-        resizeViewer
-    );
-
-    animateViewer();
-}
-
-function resetViewerCamera() {
-
-    viewerState.yaw = 0;
-    viewerState.pitch = 0.18;
-    viewerState.distance = 3;
-    viewerState.moveX = 0;
-    viewerState.moveZ = 0;
-
-    viewerState.target.set(0, 0, 0);
-
-    updateViewerCamera();
-}
-
-function updateViewerCamera() {
-
-    if (!camera) {
-        return;
-    }
-
-    const pitchLimit = Math.PI / 2 - 0.08;
-
-    viewerState.pitch = THREE.MathUtils.clamp(
-        viewerState.pitch,
-        -pitchLimit,
-        pitchLimit
-    );
-
-    viewerState.distance = THREE.MathUtils.clamp(
-        viewerState.distance,
-        0.35,
-        30
-    );
-
-    const cosPitch = Math.cos(
-        viewerState.pitch
-    );
-
-    const x =
-        viewerState.target.x +
-        Math.sin(viewerState.yaw) *
-        cosPitch *
-        viewerState.distance;
-
-    const y =
-        viewerState.target.y +
-        Math.sin(viewerState.pitch) *
-        viewerState.distance;
-
-    const z =
-        viewerState.target.z +
-        Math.cos(viewerState.yaw) *
-        cosPitch *
-        viewerState.distance;
-
-    camera.position.set(x, y, z);
-
-    camera.lookAt(
-        viewerState.target
-    );
-}
-
-function resizeViewer() {
-
-    if (!camera || !renderer) {
-        return;
-    }
-
-    camera.aspect =
-        window.innerWidth /
-        window.innerHeight;
-
-    camera.updateProjectionMatrix();
-
-    renderer.setSize(
-        window.innerWidth,
-        window.innerHeight
-    );
-}
-
-function getTouchDistance(t1, t2) {
-
-    const dx = t2.clientX - t1.clientX;
-    const dy = t2.clientY - t1.clientY;
-
-    return Math.sqrt(
-        dx * dx +
-        dy * dy
-    );
-}
-
-function getTouchCenter(t1, t2) {
-
-    return {
-        x: (t1.clientX + t2.clientX) / 2,
-        y: (t1.clientY + t2.clientY) / 2
-    };
-}
-
-function setupViewerTouchControls() {
-
-    const canvas = renderer.domElement;
-
-    canvas.addEventListener(
-        "contextmenu",
-        event => event.preventDefault()
-    );
-
-    canvas.addEventListener(
-        "touchstart",
-        event => {
-
-            event.preventDefault();
-
-            if (event.touches.length === 1) {
-
-                const touch =
-                    event.touches[0];
-
-                touchState.active = true;
-                touchState.mode = "rotate";
-
-                touchState.startX =
-                    touch.clientX;
-
-                touchState.startY =
-                    touch.clientY;
-
-                touchState.lastX =
-                    touch.clientX;
-
-                touchState.lastY =
-                    touch.clientY;
-
-            } else if (event.touches.length >= 2) {
-
-                const t1 =
-                    event.touches[0];
-
-                const t2 =
-                    event.touches[1];
-
-                const center =
-                    getTouchCenter(t1, t2);
-
-                touchState.active = true;
-                touchState.mode = "move";
-
-                touchState.startDistance =
-                    getTouchDistance(t1, t2);
-
-                touchState.lastDistance =
-                    touchState.startDistance;
-
-                touchState.startCenterX =
-                    center.x;
-
-                touchState.startCenterY =
-                    center.y;
-
-                touchState.lastCenterX =
-                    center.x;
-
-                touchState.lastCenterY =
-                    center.y;
-            }
-
-        },
-        { passive: false }
-    );
-
-    canvas.addEventListener(
-        "touchmove",
-        event => {
-
-            event.preventDefault();
-
-            if (
-                !touchState.active ||
-                !camera
-            ) {
-                return;
-            }
-
-            if (
-                event.touches.length === 1 &&
-                touchState.mode === "rotate"
-            ) {
-
-                const touch =
-                    event.touches[0];
-
-                const dx =
-                    touch.clientX -
-                    touchState.lastX;
-
-                const dy =
-                    touch.clientY -
-                    touchState.lastY;
-
-                touchState.lastX =
-                    touch.clientX;
-
-                touchState.lastY =
-                    touch.clientY;
-
-                viewerState.yaw -=
-                    dx * 0.008;
-
-                viewerState.pitch -=
-                    dy * 0.006;
-
-                updateViewerCamera();
-
-            } else if (
-                event.touches.length >= 2
-            ) {
-
-                const t1 =
-                    event.touches[0];
-
-                const t2 =
-                    event.touches[1];
-
-                const distance =
-                    getTouchDistance(t1, t2);
-
-                const center =
-                    getTouchCenter(t1, t2);
-
-                const distanceDelta =
-                    distance -
-                    touchState.lastDistance;
-
-                viewerState.distance -=
-                    distanceDelta * 0.008;
-
-                viewerState.distance =
-                    THREE.MathUtils.clamp(
-                        viewerState.distance,
-                        0.35,
-                        30
-                    );
-
-                const centerDX =
-                    center.x -
-                    touchState.lastCenterX;
-
-                const centerDY =
-                    center.y -
-                    touchState.lastCenterY;
-
-                const moveScale =
-                    Math.max(
-                        viewerState.distance * 0.0025,
-                        0.002
-                    );
-
-                const right =
-                    new THREE.Vector3(
-                        camera.matrix.elements[0],
-                        camera.matrix.elements[1],
-                        camera.matrix.elements[2]
-                    ).normalize();
-
-                const up =
-                    new THREE.Vector3(
-                        camera.matrix.elements[4],
-                        camera.matrix.elements[5],
-                        camera.matrix.elements[6]
-                    ).normalize();
-
-                viewerState.target
-                    .addScaledVector(
-                        right,
-                        -centerDX * moveScale
-                    );
-
-                viewerState.target
-                    .addScaledVector(
-                        up,
-                        centerDY * moveScale
-                    );
-
-                touchState.lastDistance =
-                    distance;
-
-                touchState.lastCenterX =
-                    center.x;
-
-                touchState.lastCenterY =
-                    center.y;
-
-                updateViewerCamera();
-            }
-
-        },
-        { passive: false }
-    );
-
-    canvas.addEventListener(
-        "touchend",
-        event => {
-
-            event.preventDefault();
-
-            if (event.touches.length === 0) {
-
-                touchState.active = false;
-                touchState.mode = null;
-
-            } else if (event.touches.length === 1) {
-
-                const touch =
-                    event.touches[0];
-
-                touchState.mode = "rotate";
-
-                touchState.lastX =
-                    touch.clientX;
-
-                touchState.lastY =
-                    touch.clientY;
-            }
-
-        },
-        { passive: false }
-    );
-
-    canvas.addEventListener(
-        "touchcancel",
-        () => {
-            touchState.active = false;
-            touchState.mode = null;
-        },
-        { passive: false }
-    );
-
-    canvas.addEventListener(
-        "wheel",
-        event => {
-
-            event.preventDefault();
-
-            viewerState.distance +=
-                event.deltaY * 0.002;
-
-            viewerState.distance =
-                THREE.MathUtils.clamp(
-                    viewerState.distance,
-                    0.35,
-                    30
-                );
-
-            updateViewerCamera();
-
-        },
-        { passive: false }
-    );
-}
-
-function moveViewerForward(amount) {
-
-    const direction =
-        new THREE.Vector3();
-
-    camera.getWorldDirection(
-        direction
-    );
-
-    direction.y = 0;
-
-    if (direction.lengthSq() > 0) {
-        direction.normalize();
-
-        viewerState.target.addScaledVector(
-            direction,
-            amount
-        );
-
-        updateViewerCamera();
+        console.error("ARCHIVE ERROR:", error);
+        archiveStatus.textContent = "Не удалось получить архив.";
     }
 }
 
-function moveViewerBackward(amount) {
-    moveViewerForward(-amount);
+function getArchiveModelUrl(item) {
+    if (!item) return "";
+    if (item.url) return item.url;
+    if (item.download_url) return item.download_url;
+    if (item.file_url) return item.file_url;
+    if (item.id != null) return ARCHIVE_API + "/file/" + encodeURIComponent(item.id);
+    return "";
 }
-
-function animateViewer() {
-
-    requestAnimationFrame(
-        animateViewer
-    );
-
-    if (
-        renderer &&
-        scene &&
-        camera
-    ) {
-
-        renderer.render(
-            scene,
-            camera
-        );
-    }
-}
-
-function disposeCurrentModel() {
-
-    if (!model || !scene) {
-        return;
-    }
-
-    scene.remove(model);
-
-    model.traverse(
-        object => {
-
-            if (object.geometry) {
-                object.geometry.dispose();
-            }
-
-            if (object.material) {
-
-                const materials =
-                    Array.isArray(object.material)
-                        ? object.material
-                        : [object.material];
-
-                materials.forEach(
-                    material => {
-
-                        if (
-                            material.map
-                        ) {
-                            material.map.dispose();
-                        }
-
-                        if (
-                            material.normalMap
-                        ) {
-                            material.normalMap.dispose();
-                        }
-
-                        if (
-                            material.roughnessMap
-                        ) {
-                            material.roughnessMap.dispose();
-                        }
-
-                        if (
-                            material.metalnessMap
-                        ) {
-                            material.metalnessMap.dispose();
-                        }
-
-                        if (
-                            material.emissiveMap
-                        ) {
-                            material.emissiveMap.dispose();
-                        }
-
-                        material.dispose();
-                    }
-                );
-            }
-        }
-    );
-
-    model = null;
-}
-
-function prepareLoadedModel(gltf) {
-
-    model = gltf.scene;
-
-    const box =
-        new THREE.Box3()
-            .setFromObject(model);
-
-    const center =
-        box.getCenter(
-            new THREE.Vector3()
-        );
-
-    const size =
-        box.getSize(
-            new THREE.Vector3()
-        );
-
-    model.position.sub(center);
-
-    const maxSize =
-        Math.max(
-            size.x,
-            size.y,
-            size.z
-        );
-
-    if (maxSize > 0) {
-
-        model.scale.setScalar(
-            2 / maxSize
-        );
-    }
-
-    model.traverse(
-        object => {
-
-            if (object.isMesh) {
-
-                object.castShadow = true;
-                object.receiveShadow = true;
-
-                if (
-                    object.material
-                ) {
-
-                    const materials =
-                        Array.isArray(
-                            object.material
-                        )
-                            ? object.material
-                            : [object.material];
-
-                    materials.forEach(
-                        material => {
-
-                            material.side =
-                                THREE.FrontSide;
-
-                            material.needsUpdate =
-                                true;
-                        }
-                    );
-                }
-            }
-        }
-    );
-
-    scene.add(model);
-
-    resetViewerCamera();
-}
-
-function showViewerError(message) {
-
-    console.error(message);
-
-    viewerNumber.textContent =
-        "ОШИБКА";
-
-    const status =
-        document.createElement("div");
-
-    status.id =
-        "viewerError";
-
-    status.style.position =
-        "absolute";
-
-    status.style.zIndex =
-        "20";
-
-    status.style.left =
-        "50%";
-
-    status.style.top =
-        "50%";
-
-    status.style.transform =
-        "translate(-50%, -50%)";
-
-    status.style.color =
-        "#777";
-
-    status.style.fontSize =
-        "12px";
-
-    status.style.textAlign =
-        "center";
-
-    status.style.padding =
-        "20px";
-
-    status.textContent =
-        message;
-
-    const old =
-        document.getElementById(
-            "viewerError"
-        );
-
-    if (old) {
-        old.remove();
-    }
-
-    viewerScreen.appendChild(status);
-}
-
-function loadModelIntoViewer(url) {
-
-    disposeCurrentModel();
-
-    const oldError =
-        document.getElementById(
-            "viewerError"
-        );
-
-    if (oldError) {
-        oldError.remove();
-    }
-
-    viewerNumber.textContent =
-        "Загрузка...";
-
-    loader.load(
-        url,
-
-        gltf => {
-
-            prepareLoadedModel(gltf);
-
-            viewerNumber.textContent =
-                viewerNumber.dataset.filename ||
-                "3D";
-
-        },
-
-        xhr => {
-
-            if (
-                xhr.total > 0
-            ) {
-
-                const percent =
-                    Math.round(
-                        xhr.loaded /
-                        xhr.total *
-                        100
-                    );
-
-                viewerNumber.textContent =
-                    percent + "%";
-            }
-        },
-
-        error => {
-
-            showViewerError(
-                "Не удалось загрузить GLB"
-            );
-        }
-    );
-}
-
-/* =============================================================
-   ARCHIVE MODEL
-============================================================= */
 
 function openArchiveViewer(index) {
-
     viewerOpenedFromArchive = true;
+    if (!requireAccess()) return;
 
-    if (!requireAccess()) {
-        return;
-    }
+    const item = archiveModels[index];
+    if (!item) return;
 
-    const item =
-        archiveModels[index];
-
-    if (!item) {
-        return;
-    }
-
+    viewerNumber.textContent = item.filename || "3D";
     showScreen(viewerScreen);
-
     initViewer();
-
-    const filename =
-        item.filename ||
-        "3D";
-
-    viewerNumber.dataset.filename =
-        filename;
-
-    viewerNumber.textContent =
-        filename;
-
-    let url =
-        item.url ||
-        item.download_url ||
-        item.file_url ||
-        "";
-
-    if (!url && item.id !== undefined) {
-
-        url =
-            ARCHIVE_API +
-            "/file/" +
-            encodeURIComponent(
-                item.id
-            );
-    }
-
-    if (!url && item.filename) {
-
-        url =
-            ARCHIVE_API +
-            "/file/" +
-            encodeURIComponent(
-                item.filename
-            );
-    }
-
-    if (!url) {
-
-        showViewerError(
-            "API не передал URL модели"
-        );
-
-        return;
-    }
-
-    loadModelIntoViewer(url);
-
-    const hint =
-        document.getElementById(
-            "viewerHint"
-        );
-
-    if (hint) {
-
-        hint.style.opacity = "1";
-
-        setTimeout(
-            () => {
-                hint.style.opacity = "0";
-            },
-            3500
-        );
-    }
+    loadModelIntoViewer(getArchiveModelUrl(item));
 }
 
 /* =============================================================
@@ -3184,162 +1891,450 @@ function openArchiveViewer(index) {
 ============================================================= */
 
 const galleryItems = [
-    {
-        number: 1,
-        filename: "creature.glb"
-    },
-    {
-        number: 2,
-        filename: "creature.glb"
-    },
-    {
-        number: 3,
-        filename: "creature.glb"
-    }
+    { number: 1, filename: "creature.glb" },
+    { number: 2, filename: "creature.glb" },
+    { number: 3, filename: "creature.glb" }
 ];
 
-/* =============================================================
-   GALLERY
-============================================================= */
-
 function buildGallery() {
-
     galleryGrid.innerHTML = "";
 
-    galleryItems.forEach(
-        (item, index) => {
-
-            const button =
-                document.createElement(
-                    "button"
-                );
-
-            button.className =
-                "galleryItem";
-
-            button.type =
-                "button";
-
-            button.textContent =
-                item.number;
-
-            button.addEventListener(
-                "click",
-                () => {
-                    openViewer(index);
-                }
-            );
-
-            galleryGrid.appendChild(
-                button
-            );
-        }
-    );
+    galleryItems.forEach((item, index) => {
+        const button = document.createElement("button");
+        button.className = "galleryItem";
+        button.type = "button";
+        button.textContent = item.number;
+        button.addEventListener("click", () => openViewer(index));
+        galleryGrid.appendChild(button);
+    });
 }
 
 buildGallery();
 
 /* =============================================================
-   OPEN LOCAL/GITHUB GALLERY MODEL
+   THREE.JS VIEWER — MOBILE SAFE
 ============================================================= */
 
-function openViewer(index) {
+let scene = null;
+let camera = null;
+let renderer = null;
+let model = null;
+let viewerOpenedFromArchive = false;
+let viewerInitialized = false;
+let viewerAnimationId = null;
+let viewerLoadToken = 0;
 
-    viewerOpenedFromArchive = false;
+const viewerState = {
+    yaw: 0,
+    pitch: 0.12,
+    distance: 3.0,
+    target: new THREE.Vector3(0, 0, 0),
+    minDistance: 1.25,
+    maxDistance: 4.5,
+    spawnDistance: 3.0,
+    moveStep: 0.28,
+    maxPitch: 1.15,
+    minPitch: -0.35
+};
 
-    if (!requireAccess()) {
-        return;
+const touchState = {
+    mode: "none",
+    x: 0,
+    y: 0,
+    lastDistance: 0
+};
+
+const keyState = new Set();
+const loader = new GLTFLoader();
+
+const viewerForward = document.getElementById("viewerForward");
+const viewerBackward = document.getElementById("viewerBackward");
+const viewerReset = document.getElementById("viewerReset");
+const viewerHint = document.getElementById("viewerHint");
+
+function disposeMaterial(material) {
+    if (!material) return;
+    const materials = Array.isArray(material) ? material : [material];
+    for (const mat of materials) {
+        for (const key of [
+            "map", "normalMap", "roughnessMap", "metalnessMap",
+            "emissiveMap", "aoMap", "alphaMap", "bumpMap",
+            "displacementMap", "clearcoatMap", "clearcoatNormalMap",
+            "clearcoatRoughnessMap", "sheenColorMap", "sheenRoughnessMap"
+        ]) {
+            if (mat[key] && typeof mat[key].dispose === "function") mat[key].dispose();
+        }
+        if (typeof mat.dispose === "function") mat.dispose();
     }
-
-    const item =
-        galleryItems[index];
-
-    if (!item) {
-        return;
-    }
-
-    viewerNumber.dataset.filename =
-        item.filename;
-
-    viewerNumber.textContent =
-        item.filename;
-
-    showScreen(
-        viewerScreen
-    );
-
-    initViewer();
-
-    const url =
-        MODEL_BASE +
-        encodeURIComponent(
-            item.filename
-        );
-
-    loadModelIntoViewer(url);
 }
 
-/* =============================================================
-   VIEWER BUTTONS
-============================================================= */
+function disposeModel() {
+    if (!model || !scene) return;
+    scene.remove(model);
+    model.traverse(object => {
+        if (object.geometry) object.geometry.dispose();
+        if (object.material) disposeMaterial(object.material);
+    });
+    model = null;
+}
 
-document
-    .getElementById("viewerForward")
-    .addEventListener(
-        "click",
-        () => {
-            if (camera) {
-                moveViewerForward(0.35);
+function initViewer() {
+    if (viewerInitialized) {
+        resizeViewer();
+        return;
+    }
+
+    viewerInitialized = true;
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x000000);
+
+    camera = new THREE.PerspectiveCamera(
+        55,
+        Math.max(window.innerWidth, 1) / Math.max(window.innerHeight, 1),
+        0.01,
+        100
+    );
+
+    renderer = new THREE.WebGLRenderer({
+        antialias: window.devicePixelRatio <= 1.5,
+        alpha: false,
+        powerPreference: "high-performance"
+    });
+
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+    renderer.setSize(window.innerWidth, window.innerHeight, false);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.0;
+    renderer.domElement.setAttribute("aria-label", "3D scene");
+    viewerCanvas.innerHTML = "";
+    viewerCanvas.appendChild(renderer.domElement);
+
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x222222, 2.2));
+
+    const key = new THREE.DirectionalLight(0xffffff, 3.0);
+    key.position.set(4, 6, 5);
+    scene.add(key);
+
+    const fill = new THREE.DirectionalLight(0xffffff, 1.5);
+    fill.position.set(-4, 2, -4);
+    scene.add(fill);
+
+    renderer.domElement.addEventListener("touchstart", onViewerTouchStart, { passive: false });
+    renderer.domElement.addEventListener("touchmove", onViewerTouchMove, { passive: false });
+    renderer.domElement.addEventListener("touchend", onViewerTouchEnd, { passive: false });
+    renderer.domElement.addEventListener("touchcancel", onViewerTouchEnd, { passive: false });
+    renderer.domElement.addEventListener("wheel", onViewerWheel, { passive: false });
+
+    window.addEventListener("resize", resizeViewer, { passive: true });
+    window.addEventListener("keydown", onViewerKeyDown);
+    window.addEventListener("keyup", onViewerKeyUp);
+
+    viewerForward?.addEventListener("click", () => moveViewer(-1));
+    viewerBackward?.addEventListener("click", () => moveViewer(1));
+    viewerReset?.addEventListener("click", resetViewerCamera);
+
+    resetViewerCamera();
+    animateViewer();
+}
+
+function resetViewerCamera() {
+    viewerState.yaw = 0;
+    viewerState.pitch = 0.12;
+    viewerState.distance = viewerState.spawnDistance;
+    viewerState.target.set(0, 0, 0);
+    updateViewerCamera();
+}
+
+function updateViewerCamera() {
+    if (!camera) return;
+
+    viewerState.distance = THREE.MathUtils.clamp(
+        viewerState.distance,
+        viewerState.minDistance,
+        viewerState.maxDistance
+    );
+
+    viewerState.pitch = THREE.MathUtils.clamp(
+        viewerState.pitch,
+        viewerState.minPitch,
+        viewerState.maxPitch
+    );
+
+    const horizontal = Math.cos(viewerState.pitch) * viewerState.distance;
+    camera.position.set(
+        viewerState.target.x + Math.sin(viewerState.yaw) * horizontal,
+        viewerState.target.y + Math.sin(viewerState.pitch) * viewerState.distance,
+        viewerState.target.z + Math.cos(viewerState.yaw) * horizontal
+    );
+
+    camera.lookAt(viewerState.target);
+}
+
+function resizeViewer() {
+    if (!camera || !renderer) return;
+    const width = Math.max(window.innerWidth, 1);
+    const height = Math.max(window.innerHeight, 1);
+    camera.aspect = width / height;
+    camera.updateProjectionMatrix();
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+    renderer.setSize(width, height, false);
+}
+
+function animateViewer() {
+    viewerAnimationId = requestAnimationFrame(animateViewer);
+    handleKeyboardMovement();
+    updateViewerCamera();
+    if (renderer && scene && camera) renderer.render(scene, camera);
+}
+
+function handleKeyboardMovement() {
+    if (!viewerInitialized) return;
+    if (keyState.has("w") || keyState.has("arrowup")) moveViewer(-0.06);
+    if (keyState.has("s") || keyState.has("arrowdown")) moveViewer(0.06);
+}
+
+function onViewerKeyDown(event) {
+    keyState.add(String(event.key).toLowerCase());
+}
+
+function onViewerKeyUp(event) {
+    keyState.delete(String(event.key).toLowerCase());
+}
+
+function moveViewer(direction) {
+    const step = viewerState.moveStep * direction;
+    viewerState.distance = THREE.MathUtils.clamp(
+        viewerState.distance + step,
+        viewerState.minDistance,
+        viewerState.maxDistance
+    );
+    updateViewerCamera();
+}
+
+function onViewerWheel(event) {
+    event.preventDefault();
+    const amount = event.deltaY > 0 ? 0.18 : -0.18;
+    viewerState.distance = THREE.MathUtils.clamp(
+        viewerState.distance + amount,
+        viewerState.minDistance,
+        viewerState.maxDistance
+    );
+    updateViewerCamera();
+}
+
+function getTouchDistance(touches) {
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.hypot(dx, dy);
+}
+
+function onViewerTouchStart(event) {
+    event.preventDefault();
+
+    if (event.touches.length === 1) {
+        touchState.mode = "rotate";
+        touchState.x = event.touches[0].clientX;
+        touchState.y = event.touches[0].clientY;
+    } else if (event.touches.length >= 2) {
+        touchState.mode = "pinch";
+        touchState.lastDistance = getTouchDistance(event.touches);
+    }
+}
+
+function onViewerTouchMove(event) {
+    event.preventDefault();
+
+    if (event.touches.length === 1 && touchState.mode === "rotate") {
+        const touch = event.touches[0];
+        const dx = touch.clientX - touchState.x;
+        const dy = touch.clientY - touchState.y;
+
+        viewerState.yaw -= dx * 0.008;
+        viewerState.pitch -= dy * 0.006;
+        viewerState.pitch = THREE.MathUtils.clamp(
+            viewerState.pitch,
+            viewerState.minPitch,
+            viewerState.maxPitch
+        );
+
+        touchState.x = touch.clientX;
+        touchState.y = touch.clientY;
+        updateViewerCamera();
+        return;
+    }
+
+    if (event.touches.length >= 2) {
+        if (touchState.mode !== "pinch") {
+            touchState.mode = "pinch";
+            touchState.lastDistance = getTouchDistance(event.touches);
+            return;
+        }
+
+        const distance = getTouchDistance(event.touches);
+        const delta = touchState.lastDistance - distance;
+        viewerState.distance = THREE.MathUtils.clamp(
+            viewerState.distance + delta * 0.008,
+            viewerState.minDistance,
+            viewerState.maxDistance
+        );
+        touchState.lastDistance = distance;
+        updateViewerCamera();
+    }
+}
+
+function onViewerTouchEnd(event) {
+    event.preventDefault();
+
+    if (event.touches.length === 1) {
+        touchState.mode = "rotate";
+        touchState.x = event.touches[0].clientX;
+        touchState.y = event.touches[0].clientY;
+    } else {
+        touchState.mode = "none";
+        touchState.lastDistance = 0;
+    }
+}
+
+function prepareLoadedModel(gltf) {
+    const object = gltf.scene;
+    if (!object) throw new Error("GLB не содержит scene");
+
+    const box = new THREE.Box3().setFromObject(object);
+    if (box.isEmpty()) throw new Error("GLB содержит пустую геометрию");
+
+    const center = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3());
+    const maxSize = Math.max(size.x, size.y, size.z);
+
+    object.position.sub(center);
+
+    if (maxSize > 0 && Number.isFinite(maxSize)) {
+        object.scale.setScalar(2.0 / maxSize);
+    }
+
+    object.traverse(node => {
+        if (!node.isMesh) return;
+        node.frustumCulled = true;
+        node.castShadow = false;
+        node.receiveShadow = false;
+
+        if (node.material) {
+            const mats = Array.isArray(node.material) ? node.material : [node.material];
+            mats.forEach(mat => {
+                if (mat.map) mat.map.colorSpace = THREE.SRGBColorSpace;
+                if (mat.emissiveMap) mat.emissiveMap.colorSpace = THREE.SRGBColorSpace;
+                mat.needsUpdate = true;
+            });
+        }
+    });
+
+    return object;
+}
+
+async function loadModelIntoViewer(url) {
+    const token = ++viewerLoadToken;
+    disposeModel();
+    resetViewerCamera();
+
+    if (!url) {
+        viewerNumber.textContent = "Ошибка: URL GLB отсутствует";
+        return;
+    }
+
+    viewerNumber.textContent = "Загрузка 3D...";
+
+    try {
+        const response = await fetchWithTimeout(url, {
+            method: "GET",
+            cache: "no-store",
+            headers: { "Accept": "model/gltf-binary,application/octet-stream,*/*" }
+        }, 30000);
+
+        if (token !== viewerLoadToken) return;
+
+        if (!response.ok) {
+            throw new Error("HTTP " + response.status);
+        }
+
+        const contentType = (response.headers.get("content-type") || "").toLowerCase();
+        const buffer = await response.arrayBuffer();
+
+        if (token !== viewerLoadToken) return;
+        if (buffer.byteLength < 20) throw new Error("Файл GLB слишком мал или пустой");
+
+        // GLB magic must be ASCII 'glTF' = 0x46546c67 in little-endian.
+        const magic = new DataView(buffer).getUint32(0, true);
+        if (magic !== 0x46546c67) {
+            if (contentType.includes("text/html")) throw new Error("Сервер вернул HTML вместо GLB");
+            if (contentType.includes("application/json")) throw new Error("Сервер вернул JSON вместо GLB");
+            throw new Error("Ответ не является корректным GLB");
+        }
+
+        let basePath = url.slice(0, url.lastIndexOf("/") + 1);
+        const resourceMatch = url.match(/\/api\/models\/file\/(\d+)(?:\?.*)?$/);
+        if (resourceMatch) {
+            basePath = "https://api.araicameragame.party/api/models/resource/" + resourceMatch[1] + "/";
+        }
+
+        loader.parse(
+            buffer,
+            basePath,
+            gltf => {
+                if (token !== viewerLoadToken) return;
+                try {
+                    const loaded = prepareLoadedModel(gltf);
+                    model = loaded;
+                    scene.add(model);
+                    resetViewerCamera();
+                    viewerNumber.textContent = "3D";
+                    if (viewerHint) {
+                        viewerHint.style.opacity = "1";
+                        setTimeout(() => { viewerHint.style.opacity = "0"; }, 4500);
+                    }
+                } catch (error) {
+                    console.error("MODEL PREPARE ERROR:", error);
+                    viewerNumber.textContent = "Ошибка модели";
+                }
+            },
+            error => {
+                console.error("GLB PARSE ERROR:", error);
+                viewerNumber.textContent = "Ошибка декодирования GLB";
             }
-        }
-    );
+        );
+    } catch (error) {
+        console.error("GLB LOAD ERROR:", error);
+        viewerNumber.textContent = "Не удалось загрузить GLB";
+    }
+}
 
-document
-    .getElementById("viewerBackward")
-    .addEventListener(
-        "click",
-        () => {
-            if (camera) {
-                moveViewerBackward(0.35);
-            }
-        }
-    );
+function openViewer(index) {
+    viewerOpenedFromArchive = false;
+    if (!requireAccess()) return;
 
-document
-    .getElementById("viewerReset")
-    .addEventListener(
-        "click",
-        () => {
-            resetViewerCamera();
-        }
-    );
+    const item = galleryItems[index];
+    if (!item) return;
+
+    viewerNumber.textContent = item.number;
+    showScreen(viewerScreen);
+    initViewer();
+    loadModelIntoViewer(MODEL_BASE + encodeURIComponent(item.filename));
+}
 
 /* =============================================================
    RESTORE
 ============================================================= */
 
+// TON Connect documentation: onStatusChange is also used for a restored session.
+// Do not run a second NFT request from connectionRestored; that can cause
+// duplicate requests and unnecessary TonAPI rate limiting on mobile.
 tonConnectUI.connectionRestored
-    .then(
-        restored => {
-
-            console.log(
-                "TON connection restored:",
-                restored
-            );
-
-        }
-    )
-    .catch(
-        error => {
-
-            console.error(
-                "TON RESTORE ERROR:",
-                error
-            );
-
-        }
-    );
-
+    .then(restored => {
+        console.log("TON connection restored:", restored);
+    })
+    .catch(error => {
+        console.error("TON RESTORE ERROR:", error);
+    });
 
 </script>
 
