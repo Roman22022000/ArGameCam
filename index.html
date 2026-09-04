@@ -611,101 +611,68 @@
         }
 
 
+
         /* =========================================================
-           3D WALKING VIEWER
+           3D MOBILE CONTROLS
         ========================================================= */
 
-        .viewerHelp {
-            position: absolute;
-            z-index: 20;
-            left: 50%;
-            bottom: 18px;
-            transform: translateX(-50%);
-            padding: 9px 14px;
-            border: 1px solid #242424;
-            background: rgba(0, 0, 0, .72);
-            color: #aaa;
-            font-size: 11px;
-            text-align: center;
-            pointer-events: none;
-            white-space: nowrap;
-        }
-
-        .viewerError {
-            position: absolute;
-            z-index: 30;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-            width: min(520px, calc(100% - 30px));
-            padding: 18px;
-            border: 1px solid #333;
-            background: rgba(0, 0, 0, .9);
-            color: #fff;
-            font-size: 12px;
-            line-height: 1.5;
-            text-align: center;
-            display: none;
-            pointer-events: none;
-        }
-
-        .viewerLoading {
-            position: absolute;
-            z-index: 25;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-            padding: 10px 14px;
-            background: rgba(0, 0, 0, .75);
-            color: #aaa;
-            font-size: 11px;
-            display: none;
-            pointer-events: none;
-        }
-
-        .viewerCrosshair {
-            position: absolute;
-            z-index: 19;
-            left: 50%;
-            top: 50%;
-            width: 7px;
-            height: 7px;
-            margin: -3px 0 0 -3px;
-            border: 1px solid rgba(255,255,255,.8);
-            border-radius: 50%;
-            pointer-events: none;
-        }
-
-        .viewerLookPad {
-            position: absolute;
-            inset: 0;
-            z-index: 3;
+        #viewerCanvas {
             touch-action: none;
-            pointer-events: none;
+            user-select: none;
+            -webkit-user-select: none;
         }
 
-        .viewerTouch {
+        #viewerCanvas canvas {
+            touch-action: none;
+        }
+
+        .viewerHint {
             position: absolute;
-            z-index: 25;
+            z-index: 12;
+            left: 50%;
+            bottom: 22px;
+            transform: translateX(-50%);
+            padding: 8px 12px;
+            background: rgba(0,0,0,.65);
+            border: 1px solid #292929;
+            color: #777;
+            font-size: 10px;
+            white-space: nowrap;
+            pointer-events: none;
+            opacity: 1;
+            transition: opacity .5s ease;
+        }
+
+        .viewerControls {
+            position: absolute;
+            z-index: 13;
             right: 14px;
-            bottom: 18px;
-            display: none;
-            grid-template-columns: repeat(3, 44px);
-            grid-template-rows: repeat(2, 44px);
+            bottom: 14px;
+            display: flex;
+            flex-direction: column;
             gap: 6px;
         }
 
-        .viewerTouch button {
-            background: rgba(10,10,10,.78);
+        .viewerControl {
+            width: 42px;
+            height: 42px;
+            background: rgba(8,8,8,.82);
             color: #fff;
-            border: 1px solid #333;
-            font-size: 16px;
+            border: 1px solid #292929;
+            font-size: 18px;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        .viewerTouch .up { grid-column: 2; }
-        .viewerTouch .left { grid-column: 1; grid-row: 2; }
-        .viewerTouch .down { grid-column: 2; grid-row: 2; }
-        .viewerTouch .right { grid-column: 3; grid-row: 2; }
+        .viewerControl:active {
+            background: #222;
+        }
+
+        @media (min-width: 700px) {
+            .viewerHint {
+                bottom: 18px;
+            }
+        }
 
         /* =========================================================
            MOBILE
@@ -912,31 +879,6 @@
         id="viewerCanvas"
     ></div>
 
-    <div
-        id="viewerLoading"
-        class="viewerLoading"
-    >
-        ЗАГРУЗКА 3D МОДЕЛИ
-    </div>
-
-    <div
-        id="viewerError"
-        class="viewerError"
-    ></div>
-
-    <div class="viewerCrosshair"></div>
-
-    <div class="viewerHelp">ПК: WASD — движение · мышь — обзор · Shift — быстрее · Space — вверх · Ctrl — вниз. Телефон: кнопки — движение · свайп — обзор.</div>
-
-    <div class="viewerLookPad" id="viewerLookPad"></div>
-
-    <div class="viewerTouch" id="viewerTouch">
-        <button class="up" data-key="KeyW" type="button">▲</button>
-        <button class="left" data-key="KeyA" type="button">◀</button>
-        <button class="down" data-key="KeyS" type="button">▼</button>
-        <button class="right" data-key="KeyD" type="button">▶</button>
-    </div>
-
     <div class="viewerHeader">
 
         <button
@@ -954,6 +896,16 @@
             1
         </div>
 
+    </div>
+
+    <div id="viewerHint" class="viewerHint">
+        1 палец — вращение / наклон · 2 пальца — движение / масштаб
+    </div>
+
+    <div class="viewerControls">
+        <button id="viewerForward" class="viewerControl" type="button">↑</button>
+        <button id="viewerBackward" class="viewerControl" type="button">↓</button>
+        <button id="viewerReset" class="viewerControl" type="button">⟳</button>
     </div>
 
 </section>
@@ -1100,22 +1052,6 @@ import * as THREE from "three";
 import {
     GLTFLoader
 } from "three/addons/loaders/GLTFLoader.js";
-
-import {
-    FBXLoader
-} from "three/addons/loaders/FBXLoader.js";
-
-import {
-    OBJLoader
-} from "three/addons/loaders/OBJLoader.js";
-
-import {
-    STLLoader
-} from "three/addons/loaders/STLLoader.js";
-
-import {
-    PointerLockControls
-} from "three/addons/controls/PointerLockControls.js";
 
 
 /* =============================================================
@@ -1828,7 +1764,7 @@ document
                 archiveScreen
             );
 
-            startArchiveAutoRefresh();
+            await loadArchiveModels();
 
         }
     );
@@ -2146,55 +2082,33 @@ document
     .addEventListener(
         "click",
         () => {
-
-            showScreen(
-                homeScreen
-            );
-
+            showScreen(homeScreen);
         }
     );
-
 
 document
     .getElementById("archiveBack")
     .addEventListener(
         "click",
         () => {
-            showScreen(
-                homeScreen
-            );
+            showScreen(homeScreen);
         }
     );
-
 
 document
     .getElementById("viewerBack")
     .addEventListener(
         "click",
         () => {
-
-            if (
-                viewerOpenedFromArchive
-            ) {
-
-                showScreen(
-                    archiveScreen
-                );
-
+            if (viewerOpenedFromArchive) {
+                showScreen(archiveScreen);
             } else {
-
-                showScreen(
-                    galleryScreen
-                );
-
+                showScreen(galleryScreen);
             }
-
         }
     );
 
 
-/* =============================================================
-   GENERATION BACK
 ============================================================= */
 
 const generationBack =
@@ -2256,77 +2170,25 @@ generationBack.addEventListener(
 ============================================================= */
 
 let archiveModels = [];
-let archiveRefreshTimer = null;
-let lastArchiveSignature = "";
 
-function getArchiveModelUrl(item) {
+async function loadArchiveModels() {
 
-    if (!item) return "";
+    archiveStatus.textContent =
+        "Загрузка 3D моделей...";
 
-    // API возвращает /api/models/file/<id>.
-    // Всегда собираем полный URL на API-домене.
-    if (item.id !== undefined && item.id !== null) {
-        return (
-            ARCHIVE_API.replace(/\/$/, "") +
-            "/file/" +
-            encodeURIComponent(String(item.id))
-        );
-    }
-
-    if (item.url) {
-        const value = String(item.url);
-
-        if (/^https?:\/\//i.test(value)) {
-            return value;
-        }
-
-        return (
-            ARCHIVE_API.replace(/\/$/, "") +
-            "/" +
-            value.replace(/^\/+/, "")
-        );
-    }
-
-    return "";
-}
-
-function getModelExtension(item) {
-
-    const name = String(
-        item?.filename ||
-        item?.name ||
-        item?.file ||
-        ""
-    ).toLowerCase();
-
-    return name.split(".").pop();
-}
-
-function getArchiveSignature(items) {
-
-    return items.map(item => (
-        String(item.id ?? "") + "|" +
-        String(item.filename ?? item.name ?? "") + "|" +
-        String(item.url ?? "")
-    )).join("||");
-}
-
-async function loadArchiveModels(silent = false) {
-
-    if (!silent) {
-        archiveStatus.textContent =
-            "Загрузка 3D моделей...";
-    }
+    archiveGrid.innerHTML =
+        "";
 
     try {
 
-        const response = await fetch(
-            ARCHIVE_API,
-            {
-                method: "GET",
-                cache: "no-store"
-            }
-        );
+        const response =
+            await fetch(
+                ARCHIVE_API,
+                {
+                    method: "GET",
+                    cache: "no-store"
+                }
+            );
 
         if (!response.ok) {
             throw new Error(
@@ -2334,122 +2196,294 @@ async function loadArchiveModels(silent = false) {
             );
         }
 
-        const data = await response.json();
+        const data =
+            await response.json();
 
-        const items = Array.isArray(data.items)
-            ? data.items
-            : Array.isArray(data)
-                ? data
+        archiveModels =
+            Array.isArray(data.items)
+                ? data.items
                 : [];
 
-        const signature = getArchiveSignature(items);
-
-        archiveModels = items;
-
         if (!archiveModels.length) {
+
             archiveStatus.textContent =
                 "В архиве пока нет 3D моделей.";
-            archiveGrid.innerHTML = "";
-            lastArchiveSignature = signature;
+
             return;
         }
-
-        if (silent && signature === lastArchiveSignature) {
-            return;
-        }
-
-        lastArchiveSignature = signature;
-        archiveGrid.innerHTML = "";
 
         archiveStatus.textContent =
-            "Моделей: " + archiveModels.length;
+            "Моделей: " +
+            archiveModels.length;
 
-        archiveModels.forEach((item, index) => {
+        archiveModels.forEach(
+            (item, index) => {
 
-            const button = document.createElement("button");
-            button.type = "button";
-            button.className = "archiveItem";
+                const button =
+                    document.createElement(
+                        "button"
+                    );
 
-            const preview = document.createElement("div");
-            preview.className = "archivePlaceholder";
-            preview.textContent =
-                getModelExtension(item).toUpperCase() || "3D";
-            button.appendChild(preview);
+                button.type =
+                    "button";
 
-            const info = document.createElement("div");
-            info.className = "archiveInfo";
+                button.className =
+                    "archiveItem";
 
-            const name = document.createElement("div");
-            name.className = "archiveName";
-            name.textContent =
-                item.filename || item.name || "model";
+                const preview =
+                    document.createElement(
+                        "div"
+                    );
 
-            const folder = document.createElement("div");
-            folder.className = "archiveFolder";
-            folder.textContent =
-                String(item.folder || getModelExtension(item) || "3D").toUpperCase();
+                preview.className =
+                    "archivePlaceholder";
 
-            info.appendChild(name);
-            info.appendChild(folder);
-            button.appendChild(info);
+                preview.textContent =
+                    "3D";
 
-            button.addEventListener("click", () => {
-                openArchiveViewer(index);
-            });
+                button.appendChild(
+                    preview
+                );
 
-            archiveGrid.appendChild(button);
-        });
+                const info =
+                    document.createElement(
+                        "div"
+                    );
+
+                info.className =
+                    "archiveInfo";
+
+                const name =
+                    document.createElement(
+                        "div"
+                    );
+
+                name.className =
+                    "archiveName";
+
+                name.textContent =
+                    item.filename || "model";
+
+                const folder =
+                    document.createElement(
+                        "div"
+                    );
+
+                folder.className =
+                    "archiveFolder";
+
+                folder.textContent =
+                    (
+                        item.folder || ""
+                    ).toUpperCase();
+
+                info.appendChild(
+                    name
+                );
+
+                info.appendChild(
+                    folder
+                );
+
+                button.appendChild(
+                    info
+                );
+
+                button.addEventListener(
+                    "click",
+                    () => {
+                        openArchiveViewer(
+                            index
+                        );
+                    }
+                );
+
+                archiveGrid.appendChild(
+                    button
+                );
+
+            }
+        );
 
     } catch (error) {
 
-        console.error("ARCHIVE ERROR:", error);
+        console.error(
+            "ARCHIVE ERROR:",
+            error
+        );
 
-        if (!silent || !archiveModels.length) {
-            archiveStatus.textContent =
-                "Не удалось получить архив: " +
-                (error.message || error);
-        }
-    }
-}
+        archiveStatus.textContent =
+            "Не удалось получить архив.";
 
-function startArchiveAutoRefresh() {
-
-    if (archiveRefreshTimer) {
-        return;
     }
 
-    loadArchiveModels(false);
-
-    archiveRefreshTimer = setInterval(() => {
-        loadArchiveModels(true);
-    }, 2000);
 }
 
-function stopArchiveAutoRefresh() {
-
-    if (archiveRefreshTimer) {
-        clearInterval(archiveRefreshTimer);
-        archiveRefreshTimer = null;
-    }
-}
 
 function openArchiveViewer(index) {
 
-    viewerOpenedFromArchive = true;
+    viewerOpenedFromArchive =
+        true;
 
-    const item = archiveModels[index];
+    if (!requireAccess()) {
+        return;
+    }
+
+    const item =
+        archiveModels[index];
 
     if (!item) {
         return;
     }
 
     viewerNumber.textContent =
-        item.filename || item.name || "3D";
+        item.filename || "3D";
 
-    showScreen(viewerScreen);
+    showScreen(
+        viewerScreen
+    );
+
     initViewer();
-    loadArchiveModel(item);
+
+    if (model) {
+
+        scene.remove(
+            model
+        );
+
+        model.traverse(
+            object => {
+
+                if (
+                    object.geometry
+                ) {
+                    object.geometry.dispose();
+                }
+
+                if (
+                    object.material
+                ) {
+
+                    if (
+                        Array.isArray(
+                            object.material
+                        )
+                    ) {
+
+                        object.material.forEach(
+                            material => {
+                                material.dispose();
+                            }
+                        );
+
+                    } else {
+
+                        object.material.dispose();
+
+                    }
+
+                }
+
+            }
+        );
+
+        model = null;
+
+    }
+
+    loader.load(
+
+        item.url,
+
+        gltf => {
+
+            model =
+                gltf.scene;
+
+            const box =
+                new THREE.Box3()
+                    .setFromObject(
+                        model
+                    );
+
+            const center =
+                box.getCenter(
+                    new THREE.Vector3()
+                );
+
+            const size =
+                box.getSize(
+                    new THREE.Vector3()
+                );
+
+            model.position.sub(
+                center
+            );
+
+            const maxSize =
+                Math.max(
+                    size.x,
+                    size.y,
+                    size.z
+                );
+
+            if (
+                maxSize > 0
+            ) {
+
+                model.scale.setScalar(
+                    2 / maxSize
+                );
+
+            }
+
+            model.traverse(
+                object => {
+
+                    if (
+                        object.isMesh
+                    ) {
+
+                        object.castShadow =
+                            true;
+
+                        object.receiveShadow =
+                            true;
+
+                    }
+
+                }
+            );
+
+            scene.add(
+                model
+            );
+
+            controls.target.set(
+                0,
+                0,
+                0
+            );
+
+            controls.update();
+
+        },
+
+        undefined,
+
+        error => {
+
+            console.error(
+                "ARCHIVE MODEL ERROR:",
+                error
+            );
+
+        }
+
+    );
+
 }
+
 
 /* =============================================================
    GALLERY DATA
@@ -2532,505 +2566,41 @@ buildGallery();
 
 
 /* =============================================================
-   THREE.JS VIEWER + FIRST PERSON WALKING
+   THREE.JS VIEWER
 ============================================================= */
 
 let scene = null;
 let camera = null;
 let renderer = null;
-let walkControls = null;
 let model = null;
+
 let viewerOpenedFromArchive = false;
-let currentModelItem = null;
-let currentModelObjectUrl = null;
 
-const keys = Object.create(null);
-const clock = new THREE.Clock();
-const walkVelocity = new THREE.Vector3();
-const walkDirection = new THREE.Vector3();
-const modelCenter = new THREE.Vector3();
-const modelSize = new THREE.Vector3();
-const modelBox = new THREE.Box3();
-
-const viewerLoading =
-    document.getElementById("viewerLoading");
-
-const viewerError =
-    document.getElementById("viewerError");
-
-const viewerTouch =
-    document.getElementById("viewerTouch");
-
-const gltfLoader =
-    new GLTFLoader();
-
-const fbxLoader =
-    new FBXLoader();
-
-const objLoader =
-    new OBJLoader();
-
-const stlLoader =
-    new STLLoader();
-
-function showViewerLoading(value) {
-
-    viewerLoading.style.display =
-        value ? "block" : "none";
-}
-
-function showViewerError(message) {
-
-    viewerError.textContent = message || "Ошибка загрузки 3D модели.";
-    viewerError.style.display = "block";
-}
-
-function hideViewerError() {
-    viewerError.style.display = "none";
-}
-
-function disposeObject(object) {
-
-    if (!object) {
-        return;
-    }
-
-    object.traverse(child => {
-
-        if (child.geometry) {
-            child.geometry.dispose();
-        }
-
-        if (child.material) {
-
-            const materials = Array.isArray(child.material)
-                ? child.material
-                : [child.material];
-
-            materials.forEach(material => {
-
-                if (material.map) {
-                    material.map.dispose();
-                }
-
-                if (material.normalMap) {
-                    material.normalMap.dispose();
-                }
-
-                if (material.roughnessMap) {
-                    material.roughnessMap.dispose();
-                }
-
-                if (material.metalnessMap) {
-                    material.metalnessMap.dispose();
-                }
-
-                if (material.emissiveMap) {
-                    material.emissiveMap.dispose();
-                }
-
-                material.dispose();
-            });
-        }
-    });
-}
-
-function clearCurrentModel() {
-
-    if (!model || !scene) {
-        model = null;
-        return;
-    }
-
-    scene.remove(model);
-    disposeObject(model);
-    model = null;
-}
-
-function prepareModel(object) {
-
-    if (!object) {
-        throw new Error("Модель не содержит объектов.");
-    }
-
-    // Сохраняем ВСЕ дочерние объекты сцены. Ничего не удаляем.
-    object.updateMatrixWorld(true);
-
-    modelBox.setFromObject(object);
-
-    if (modelBox.isEmpty()) {
-        throw new Error("У модели нет видимой геометрии.");
-    }
-
-    modelBox.getCenter(modelCenter);
-    modelBox.getSize(modelSize);
-
-    object.position.sub(modelCenter);
-    object.updateMatrixWorld(true);
-
-    const maxDimension = Math.max(
-        modelSize.x,
-        modelSize.y,
-        modelSize.z
-    );
-
-    if (maxDimension > 0 && Number.isFinite(maxDimension)) {
-        object.scale.setScalar(4 / maxDimension);
-    }
-
-    object.updateMatrixWorld(true);
-
-    // После масштабирования получаем реальную границу для ходьбы.
-    modelBox.setFromObject(object);
-
-    object.traverse(child => {
-
-        if (child.isMesh) {
-            child.castShadow = true;
-            child.receiveShadow = true;
-
-            // Если материал полностью чёрный/без освещения, оставляем его,
-            // но добавляем базовую emissive только при необходимости.
-            if (child.material) {
-                const materials = Array.isArray(child.material)
-                    ? child.material
-                    : [child.material];
-
-                materials.forEach(material => {
-                    if (material.color) {
-                        material.color.set(material.color);
-                    }
-                    material.needsUpdate = true;
-                });
-            }
-        }
-    });
-
-    scene.add(object);
-    model = object;
-
-    // Ставим камеру перед моделью, а не внутри неё.
-    const size = modelBox.getSize(new THREE.Vector3());
-    const height = Math.max(size.y, 2);
-
-    camera.position.set(
-        0,
-        Math.max(1.6, Math.min(height * 0.35, 3)),
-        Math.max(2.5, Math.min(height * 0.8, 6))
-    );
-
-    // PointerLockControls работает непосредственно с камерой.
-    camera.position.set(
-        0,
-        Math.max(1.6, Math.min(height * 0.35, 3)),
-        Math.max(2.5, Math.min(height * 0.8, 6))
-    );
-
-    camera.rotation.set(0, 0, 0);
-
-    // Смотрим в сторону центра сцены.
-    camera.lookAt(
-        0,
-        Math.max(0, Math.min(height * 0.15, 1)),
-        0
-    );
-}
-
-function getResourceBaseUrl(item) {
-
-    if (item?.id !== undefined && item?.id !== null) {
-        return (
-            ARCHIVE_API.replace(/\/$/, "") +
-            "/resource/" +
-            encodeURIComponent(item.id) +
-            "/"
-        );
-    }
-
-    return getArchiveModelUrl(item);
-}
-
-function makeResourceManager(item) {
-
-    const manager = new THREE.LoadingManager();
-    const resourceBase = getResourceBaseUrl(item);
-
-    manager.setURLModifier(url => {
-
-        // Встроенные ресурсы GLB/GLTF.
-        if (
-            url.startsWith("blob:") ||
-            url.startsWith("data:")
-        ) {
-            return url;
-        }
-
-        try {
-            const parsed = new URL(
-                url,
-                resourceBase
-            );
-
-            // Уже наш API resource URL.
-            if (
-                parsed.origin === new URL(resourceBase).origin &&
-                parsed.pathname.includes("/api/models/resource/")
-            ) {
-                return parsed.href;
-            }
-
-            const filename =
-                decodeURIComponent(
-                    parsed.pathname.split("/").pop() || ""
-                );
-
-            if (filename) {
-                return (
-                    resourceBase +
-                    encodeURIComponent(filename)
-                );
-            }
-        } catch (error) {
-            console.warn(
-                "RESOURCE URL ERROR:",
-                error
-            );
-        }
-
-        return url;
-    });
-
-    return manager;
-}
-
-async function fetchModelBytes(url) {
-
-    const requestUrl =
-        url + (url.includes("?") ? "&" : "?") +
-        "_3d=" + Date.now();
-
-    let response;
-
-    try {
-        response = await fetch(
-            requestUrl,
-            {
-                method: "GET",
-                mode: "cors",
-                credentials: "omit",
-                cache: "no-store",
-                redirect: "follow",
-                headers: {
-                    "Accept": "model/gltf-binary, model/gltf+json, application/octet-stream, */*"
-                }
-            }
-        );
-    } catch (error) {
-        throw new Error(
-            "Ошибка CORS/сети при загрузке модели.\n" +
-            "API: " + url + "\n" +
-            "Проверь /api/cors-test и /api/models/file/<ID>.\n" +
-            "Браузер: " + (error?.message || String(error))
-        );
-    }
-
-    if (!response.ok) {
-        throw new Error(
-            "API вернул HTTP " + response.status + ".\n" +
-            "URL: " + url
-        );
-    }
-
-    const contentType =
-        response.headers.get("content-type") || "";
-
-    const contentLength = Number(
-        response.headers.get("content-length") || 0
-    );
-
-    console.log("3D RESPONSE:", {
-        status: response.status,
-        contentType,
-        contentLength,
-        cors: response.headers.get("access-control-allow-origin")
-    });
-
-    if (!response.body) {
-        const buffer = await response.arrayBuffer();
-        if (!buffer.byteLength) {
-            throw new Error("API вернул пустой файл модели.");
-        }
-        return buffer;
-    }
-
-    const reader = response.body.getReader();
-    const chunks = [];
-    let total = 0;
-
-    while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-
-        if (value && value.byteLength) {
-            chunks.push(value);
-            total += value.byteLength;
-
-            const expected = contentLength || 0;
-            if (expected > 0) {
-                const percent = Math.min(
-                    100,
-                    Math.round((total / expected) * 100)
-                );
-                viewerLoading.textContent =
-                    "ЗАГРУЗКА 3D МОДЕЛИ " + percent + "%";
-            }
-        }
-    }
-
-    if (!total) {
-        throw new Error("API вернул пустой файл модели.");
-    }
-
-    const buffer = new Uint8Array(total);
-    let offset = 0;
-
-    for (const chunk of chunks) {
-        buffer.set(chunk, offset);
-        offset += chunk.byteLength;
-    }
-
-    console.log("3D MODEL DOWNLOADED:", total, "bytes");
-
-    return buffer.buffer;
-}
-
-function parseOBJ(buffer) {
-
-    const text = new TextDecoder("utf-8").decode(buffer);
-    return objLoader.parse(text);
-}
-
-function parseSTL(buffer) {
-
-    const geometry = stlLoader.parse(buffer);
-
-    geometry.computeVertexNormals();
-
-    const material = new THREE.MeshStandardMaterial({
-        color: 0xbcbcbc,
-        metalness: 0.05,
-        roughness: 0.75,
-        side: THREE.DoubleSide
-    });
-
-    return new THREE.Mesh(
-        geometry,
-        material
-    );
-}
-
-async function parseModelByExtension(item, url, buffer) {
-
-    const extension = getModelExtension(item);
-
-    if (extension === "glb" || extension === "gltf") {
-
-        const manager = makeResourceManager(item);
-        const loader = new GLTFLoader(manager);
-
-        return await new Promise((resolve, reject) => {
-
-            const basePath = url.substring(
-                0,
-                url.lastIndexOf("/") + 1
-            );
-
-            loader.parse(
-                buffer,
-                basePath,
-                gltf => resolve(gltf.scene),
-                error => reject(error || new Error("GLTF parse error"))
-            );
-        });
-    }
-
-    if (extension === "fbx") {
-
-        const manager = makeResourceManager(item);
-        const loader = new FBXLoader(manager);
-        return loader.parse(buffer, getResourceBaseUrl(item));
-    }
-
-    if (extension === "obj") {
-
-        // OBJ geometry загружается без MTL, поэтому объект отображается
-        // даже если рядом пока нет файла материалов/текстур.
-        return parseOBJ(buffer);
-    }
-
-    if (extension === "stl") {
-        return parseSTL(buffer);
-    }
-
-    // Попытка GLTF для неизвестного расширения.
-    const manager = makeResourceManager(item);
-    const loader = new GLTFLoader(manager);
-
-    return await new Promise((resolve, reject) => {
-        loader.parse(
-            buffer,
-            url.substring(0, url.lastIndexOf("/") + 1),
-            gltf => resolve(gltf.scene),
-            error => reject(error || new Error("Unknown 3D format"))
-        );
-    });
-}
-
-async function loadArchiveModel(item) {
-
-    currentModelItem = item;
-    hideViewerError();
-    showViewerLoading(true);
-    clearCurrentModel();
-
-    const url = getArchiveModelUrl(item);
-
-    if (!url) {
-        showViewerLoading(false);
-        showViewerError("У модели отсутствует URL загрузки.");
-        return;
-    }
-
-    console.log("LOAD 3D MODEL:", url);
-
-    try {
-
-        const buffer = await fetchModelBytes(url);
-        const object = await parseModelByExtension(
-            item,
-            url,
-            buffer
-        );
-
-        prepareModel(object);
-
-        showViewerLoading(false);
-
-    } catch (error) {
-
-        console.error(
-            "ARCHIVE MODEL ERROR:",
-            error
-        );
-
-        showViewerLoading(false);
-
-        showViewerError(
-            "Не удалось отобразить 3D модель.\n" +
-            (error?.message || String(error))
-        );
-    }
-}
+const loader = new GLTFLoader();
+
+const viewerState = {
+    yaw: 0,
+    pitch: 0.18,
+    distance: 3,
+    target: new THREE.Vector3(0, 0, 0),
+    moveX: 0,
+    moveZ: 0
+};
+
+const touchState = {
+    active: false,
+    mode: null,
+    startX: 0,
+    startY: 0,
+    lastX: 0,
+    lastY: 0,
+    startDistance: 0,
+    lastDistance: 0,
+    startCenterX: 0,
+    startCenterY: 0,
+    lastCenterX: 0,
+    lastCenterY: 0
+};
 
 function initViewer() {
 
@@ -3039,44 +2609,23 @@ function initViewer() {
     }
 
     scene = new THREE.Scene();
-
     scene.background = new THREE.Color(0x000000);
 
     camera = new THREE.PerspectiveCamera(
-        70,
+        45,
         window.innerWidth / window.innerHeight,
         0.01,
-        2000
+        1000
     );
-
-    camera.position.set(0, 1.7, 4);
 
     renderer = new THREE.WebGLRenderer({
         antialias: true,
         alpha: false,
-        powerPreference: "high-performance",
-        preserveDrawingBuffer: false
+        powerPreference: "high-performance"
     });
 
-    renderer.domElement.setAttribute(
-        "aria-label",
-        "3D viewer"
-    );
-
-    renderer.domElement.addEventListener(
-        "webglcontextlost",
-        event => {
-            event.preventDefault();
-            showViewerError(
-                "WebGL контекст телефона был потерян. " +
-                "Обновите страницу и откройте модель снова."
-            );
-        },
-        false
-    );
-
     renderer.setPixelRatio(
-        Math.min(window.devicePixelRatio, 2)
+        Math.min(window.devicePixelRatio || 1, 2)
     );
 
     renderer.setSize(
@@ -3085,268 +2634,112 @@ function initViewer() {
     );
 
     renderer.outputColorSpace = THREE.SRGBColorSpace;
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
     viewerCanvas.appendChild(renderer.domElement);
 
-    walkControls = new PointerLockControls(
-        camera,
-        renderer.domElement
-    );
-
-    // PointerLockControls управляет камерой напрямую.
-    scene.add(walkControls.getObject());
-
-    walkControls.addEventListener("lock", () => {
-        viewerHelp.style.display = "none";
-    });
-
-    walkControls.addEventListener("unlock", () => {
-        viewerHelp.style.display = "block";
-    });
-
-    renderer.domElement.addEventListener("click", () => {
-        if (window.innerWidth > 700 && !walkControls.isLocked) {
-            walkControls.lock();
-        }
-    });
-
-    const ambient = new THREE.HemisphereLight(
+    const ambient = new THREE.AmbientLight(
         0xffffff,
-        0x333333,
-        2.4
+        2.2
     );
 
     scene.add(ambient);
 
-    const keyLight = new THREE.DirectionalLight(
+    const light = new THREE.DirectionalLight(
         0xffffff,
-        4
+        3
     );
 
-    keyLight.position.set(5, 8, 5);
-    keyLight.castShadow = true;
-    keyLight.shadow.mapSize.set(2048, 2048);
+    light.position.set(4, 5, 4);
+    scene.add(light);
 
-    scene.add(keyLight);
-
-    const fillLight = new THREE.DirectionalLight(
+    const fill = new THREE.DirectionalLight(
         0xffffff,
         1.5
     );
 
-    fillLight.position.set(-5, 4, -4);
-    scene.add(fillLight);
+    fill.position.set(-4, 2, -4);
+    scene.add(fill);
 
-    // Небольшая сетка пола даёт ощущение пространства, но не меняет модель.
-    const grid = new THREE.GridHelper(
-        100,
-        100,
-        0x333333,
-        0x161616
-    );
-
-    grid.position.y = -0.001;
-    scene.add(grid);
+    setupViewerTouchControls();
 
     window.addEventListener(
         "resize",
         resizeViewer
     );
 
-    window.addEventListener(
-        "keydown",
-        onViewerKeyDown
-    );
-
-    window.addEventListener(
-        "keyup",
-        onViewerKeyUp
-    );
-
-    // Сенсорные кнопки для мобильного движения.
-    viewerTouch.querySelectorAll("button").forEach(button => {
-
-        const code = button.dataset.key;
-
-        const press = event => {
-            event.preventDefault();
-            keys[code] = true;
-        };
-
-        const release = event => {
-            event.preventDefault();
-            keys[code] = false;
-        };
-
-        button.addEventListener("pointerdown", press);
-        button.addEventListener("pointerup", release);
-        button.addEventListener("pointercancel", release);
-        button.addEventListener("pointerleave", release);
-    });
-
-    if (window.innerWidth <= 700) {
-        viewerTouch.style.display = "grid";
-    }
-
-    setupMobileLook();
-
     animateViewer();
 }
 
-let mobileLookActive = false;
-let mobileLookPointerId = null;
-let mobileLastX = 0;
-let mobileLastY = 0;
+function resetViewerCamera() {
 
-function setupMobileLook() {
+    viewerState.yaw = 0;
+    viewerState.pitch = 0.18;
+    viewerState.distance = 3;
+    viewerState.moveX = 0;
+    viewerState.moveZ = 0;
 
-    const pad = document.getElementById("viewerLookPad");
-    if (!pad) return;
+    viewerState.target.set(0, 0, 0);
 
-    pad.style.pointerEvents = window.innerWidth <= 700 ? "auto" : "none";
-
-    pad.addEventListener("pointerdown", event => {
-        if (window.innerWidth > 700) return;
-        if (event.target.closest("button")) return;
-
-        mobileLookActive = true;
-        mobileLookPointerId = event.pointerId;
-        mobileLastX = event.clientX;
-        mobileLastY = event.clientY;
-
-        try {
-            pad.setPointerCapture(event.pointerId);
-        } catch (_) {}
-
-        event.preventDefault();
-    }, { passive: false });
-
-    pad.addEventListener("pointermove", event => {
-        if (!mobileLookActive) return;
-        if (event.pointerId !== mobileLookPointerId) return;
-        if (!camera) return;
-
-        const dx = event.clientX - mobileLastX;
-        const dy = event.clientY - mobileLastY;
-
-        mobileLastX = event.clientX;
-        mobileLastY = event.clientY;
-
-        camera.rotation.y -= dx * 0.004;
-        camera.rotation.x -= dy * 0.004;
-        camera.rotation.x = Math.max(
-            -Math.PI * 0.48,
-            Math.min(Math.PI * 0.48, camera.rotation.x)
-        );
-
-        event.preventDefault();
-    }, { passive: false });
-
-    const stop = event => {
-        if (event.pointerId !== mobileLookPointerId) return;
-        mobileLookActive = false;
-        mobileLookPointerId = null;
-        event.preventDefault();
-    };
-
-    pad.addEventListener("pointerup", stop, { passive: false });
-    pad.addEventListener("pointercancel", stop, { passive: false });
-    pad.addEventListener("lostpointercapture", () => {
-        mobileLookActive = false;
-        mobileLookPointerId = null;
-    });
+    updateViewerCamera();
 }
 
+function updateViewerCamera() {
 
-function onViewerKeyDown(event) {
-
-    if (event.code === "Escape") {
+    if (!camera) {
         return;
     }
 
-    keys[event.code] = true;
+    const pitchLimit = Math.PI / 2 - 0.08;
 
-    if (
-        [
-            "KeyW",
-            "KeyA",
-            "KeyS",
-            "KeyD",
-            "Space",
-            "ControlLeft",
-            "ControlRight",
-            "ShiftLeft",
-            "ShiftRight"
-        ].includes(event.code)
-    ) {
-        event.preventDefault();
-    }
-}
+    viewerState.pitch = THREE.MathUtils.clamp(
+        viewerState.pitch,
+        -pitchLimit,
+        pitchLimit
+    );
 
-function onViewerKeyUp(event) {
-    keys[event.code] = false;
-}
+    viewerState.distance = THREE.MathUtils.clamp(
+        viewerState.distance,
+        0.35,
+        30
+    );
 
-function updateWalking(delta) {
+    const cosPitch = Math.cos(
+        viewerState.pitch
+    );
 
-    if (!walkControls) {
-        return;
-    }
+    const x =
+        viewerState.target.x +
+        Math.sin(viewerState.yaw) *
+        cosPitch *
+        viewerState.distance;
 
-    const speed =
-        (keys.ShiftLeft || keys.ShiftRight)
-            ? 8
-            : 4;
+    const y =
+        viewerState.target.y +
+        Math.sin(viewerState.pitch) *
+        viewerState.distance;
 
-    walkDirection.set(0, 0, 0);
+    const z =
+        viewerState.target.z +
+        Math.cos(viewerState.yaw) *
+        cosPitch *
+        viewerState.distance;
 
-    if (keys.KeyW) walkDirection.z -= 1;
-    if (keys.KeyS) walkDirection.z += 1;
-    if (keys.KeyA) walkDirection.x -= 1;
-    if (keys.KeyD) walkDirection.x += 1;
+    camera.position.set(x, y, z);
 
-    if (walkDirection.lengthSq() > 0) {
-        walkDirection.normalize();
-        walkControls.moveRight(
-            walkDirection.x * speed * delta
-        );
-        walkControls.moveForward(
-            -walkDirection.z * speed * delta
-        );
-    }
-
-    if (keys.Space) {
-        walkControls.getObject().position.y +=
-            speed * delta;
-    }
-
-    if (keys.ControlLeft || keys.ControlRight) {
-        walkControls.getObject().position.y -=
-            speed * delta;
-    }
-
-    // Минимальная высота камеры.
-    walkControls.getObject().position.y = Math.max(
-        0.25,
-        walkControls.getObject().position.y
+    camera.lookAt(
+        viewerState.target
     );
 }
 
 function resizeViewer() {
-
-    const pad = document.getElementById("viewerLookPad");
-    if (pad) {
-        pad.style.pointerEvents = window.innerWidth <= 700 ? "auto" : "none";
-    }
 
     if (!camera || !renderer) {
         return;
     }
 
     camera.aspect =
-        window.innerWidth / window.innerHeight;
+        window.innerWidth /
+        window.innerHeight;
 
     camera.updateProjectionMatrix();
 
@@ -3356,18 +2749,326 @@ function resizeViewer() {
     );
 }
 
-function animateViewer() {
+function getTouchDistance(t1, t2) {
 
-    requestAnimationFrame(animateViewer);
+    const dx = t2.clientX - t1.clientX;
+    const dy = t2.clientY - t1.clientY;
 
-    const delta = Math.min(
-        clock.getDelta(),
-        0.05
+    return Math.sqrt(
+        dx * dx +
+        dy * dy
+    );
+}
+
+function getTouchCenter(t1, t2) {
+
+    return {
+        x: (t1.clientX + t2.clientX) / 2,
+        y: (t1.clientY + t2.clientY) / 2
+    };
+}
+
+function setupViewerTouchControls() {
+
+    const canvas = renderer.domElement;
+
+    canvas.addEventListener(
+        "contextmenu",
+        event => event.preventDefault()
     );
 
-    updateWalking(delta);
+    canvas.addEventListener(
+        "touchstart",
+        event => {
 
-    if (renderer && scene && camera) {
+            event.preventDefault();
+
+            if (event.touches.length === 1) {
+
+                const touch =
+                    event.touches[0];
+
+                touchState.active = true;
+                touchState.mode = "rotate";
+
+                touchState.startX =
+                    touch.clientX;
+
+                touchState.startY =
+                    touch.clientY;
+
+                touchState.lastX =
+                    touch.clientX;
+
+                touchState.lastY =
+                    touch.clientY;
+
+            } else if (event.touches.length >= 2) {
+
+                const t1 =
+                    event.touches[0];
+
+                const t2 =
+                    event.touches[1];
+
+                const center =
+                    getTouchCenter(t1, t2);
+
+                touchState.active = true;
+                touchState.mode = "move";
+
+                touchState.startDistance =
+                    getTouchDistance(t1, t2);
+
+                touchState.lastDistance =
+                    touchState.startDistance;
+
+                touchState.startCenterX =
+                    center.x;
+
+                touchState.startCenterY =
+                    center.y;
+
+                touchState.lastCenterX =
+                    center.x;
+
+                touchState.lastCenterY =
+                    center.y;
+            }
+
+        },
+        { passive: false }
+    );
+
+    canvas.addEventListener(
+        "touchmove",
+        event => {
+
+            event.preventDefault();
+
+            if (
+                !touchState.active ||
+                !camera
+            ) {
+                return;
+            }
+
+            if (
+                event.touches.length === 1 &&
+                touchState.mode === "rotate"
+            ) {
+
+                const touch =
+                    event.touches[0];
+
+                const dx =
+                    touch.clientX -
+                    touchState.lastX;
+
+                const dy =
+                    touch.clientY -
+                    touchState.lastY;
+
+                touchState.lastX =
+                    touch.clientX;
+
+                touchState.lastY =
+                    touch.clientY;
+
+                viewerState.yaw -=
+                    dx * 0.008;
+
+                viewerState.pitch -=
+                    dy * 0.006;
+
+                updateViewerCamera();
+
+            } else if (
+                event.touches.length >= 2
+            ) {
+
+                const t1 =
+                    event.touches[0];
+
+                const t2 =
+                    event.touches[1];
+
+                const distance =
+                    getTouchDistance(t1, t2);
+
+                const center =
+                    getTouchCenter(t1, t2);
+
+                const distanceDelta =
+                    distance -
+                    touchState.lastDistance;
+
+                viewerState.distance -=
+                    distanceDelta * 0.008;
+
+                viewerState.distance =
+                    THREE.MathUtils.clamp(
+                        viewerState.distance,
+                        0.35,
+                        30
+                    );
+
+                const centerDX =
+                    center.x -
+                    touchState.lastCenterX;
+
+                const centerDY =
+                    center.y -
+                    touchState.lastCenterY;
+
+                const moveScale =
+                    Math.max(
+                        viewerState.distance * 0.0025,
+                        0.002
+                    );
+
+                const right =
+                    new THREE.Vector3(
+                        camera.matrix.elements[0],
+                        camera.matrix.elements[1],
+                        camera.matrix.elements[2]
+                    ).normalize();
+
+                const up =
+                    new THREE.Vector3(
+                        camera.matrix.elements[4],
+                        camera.matrix.elements[5],
+                        camera.matrix.elements[6]
+                    ).normalize();
+
+                viewerState.target
+                    .addScaledVector(
+                        right,
+                        -centerDX * moveScale
+                    );
+
+                viewerState.target
+                    .addScaledVector(
+                        up,
+                        centerDY * moveScale
+                    );
+
+                touchState.lastDistance =
+                    distance;
+
+                touchState.lastCenterX =
+                    center.x;
+
+                touchState.lastCenterY =
+                    center.y;
+
+                updateViewerCamera();
+            }
+
+        },
+        { passive: false }
+    );
+
+    canvas.addEventListener(
+        "touchend",
+        event => {
+
+            event.preventDefault();
+
+            if (event.touches.length === 0) {
+
+                touchState.active = false;
+                touchState.mode = null;
+
+            } else if (event.touches.length === 1) {
+
+                const touch =
+                    event.touches[0];
+
+                touchState.mode = "rotate";
+
+                touchState.lastX =
+                    touch.clientX;
+
+                touchState.lastY =
+                    touch.clientY;
+            }
+
+        },
+        { passive: false }
+    );
+
+    canvas.addEventListener(
+        "touchcancel",
+        () => {
+            touchState.active = false;
+            touchState.mode = null;
+        },
+        { passive: false }
+    );
+
+    canvas.addEventListener(
+        "wheel",
+        event => {
+
+            event.preventDefault();
+
+            viewerState.distance +=
+                event.deltaY * 0.002;
+
+            viewerState.distance =
+                THREE.MathUtils.clamp(
+                    viewerState.distance,
+                    0.35,
+                    30
+                );
+
+            updateViewerCamera();
+
+        },
+        { passive: false }
+    );
+}
+
+function moveViewerForward(amount) {
+
+    const direction =
+        new THREE.Vector3();
+
+    camera.getWorldDirection(
+        direction
+    );
+
+    direction.y = 0;
+
+    if (direction.lengthSq() > 0) {
+        direction.normalize();
+
+        viewerState.target.addScaledVector(
+            direction,
+            amount
+        );
+
+        updateViewerCamera();
+    }
+}
+
+function moveViewerBackward(amount) {
+    moveViewerForward(-amount);
+}
+
+function animateViewer() {
+
+    requestAnimationFrame(
+        animateViewer
+    );
+
+    if (
+        renderer &&
+        scene &&
+        camera
+    ) {
+
         renderer.render(
             scene,
             camera
@@ -3375,8 +3076,405 @@ function animateViewer() {
     }
 }
 
+function disposeCurrentModel() {
+
+    if (!model || !scene) {
+        return;
+    }
+
+    scene.remove(model);
+
+    model.traverse(
+        object => {
+
+            if (object.geometry) {
+                object.geometry.dispose();
+            }
+
+            if (object.material) {
+
+                const materials =
+                    Array.isArray(object.material)
+                        ? object.material
+                        : [object.material];
+
+                materials.forEach(
+                    material => {
+
+                        if (
+                            material.map
+                        ) {
+                            material.map.dispose();
+                        }
+
+                        if (
+                            material.normalMap
+                        ) {
+                            material.normalMap.dispose();
+                        }
+
+                        if (
+                            material.roughnessMap
+                        ) {
+                            material.roughnessMap.dispose();
+                        }
+
+                        if (
+                            material.metalnessMap
+                        ) {
+                            material.metalnessMap.dispose();
+                        }
+
+                        if (
+                            material.emissiveMap
+                        ) {
+                            material.emissiveMap.dispose();
+                        }
+
+                        material.dispose();
+                    }
+                );
+            }
+        }
+    );
+
+    model = null;
+}
+
+function prepareLoadedModel(gltf) {
+
+    model = gltf.scene;
+
+    const box =
+        new THREE.Box3()
+            .setFromObject(model);
+
+    const center =
+        box.getCenter(
+            new THREE.Vector3()
+        );
+
+    const size =
+        box.getSize(
+            new THREE.Vector3()
+        );
+
+    model.position.sub(center);
+
+    const maxSize =
+        Math.max(
+            size.x,
+            size.y,
+            size.z
+        );
+
+    if (maxSize > 0) {
+
+        model.scale.setScalar(
+            2 / maxSize
+        );
+    }
+
+    model.traverse(
+        object => {
+
+            if (object.isMesh) {
+
+                object.castShadow = true;
+                object.receiveShadow = true;
+
+                if (
+                    object.material
+                ) {
+
+                    const materials =
+                        Array.isArray(
+                            object.material
+                        )
+                            ? object.material
+                            : [object.material];
+
+                    materials.forEach(
+                        material => {
+
+                            material.side =
+                                THREE.FrontSide;
+
+                            material.needsUpdate =
+                                true;
+                        }
+                    );
+                }
+            }
+        }
+    );
+
+    scene.add(model);
+
+    resetViewerCamera();
+}
+
+function showViewerError(message) {
+
+    console.error(message);
+
+    viewerNumber.textContent =
+        "ОШИБКА";
+
+    const status =
+        document.createElement("div");
+
+    status.id =
+        "viewerError";
+
+    status.style.position =
+        "absolute";
+
+    status.style.zIndex =
+        "20";
+
+    status.style.left =
+        "50%";
+
+    status.style.top =
+        "50%";
+
+    status.style.transform =
+        "translate(-50%, -50%)";
+
+    status.style.color =
+        "#777";
+
+    status.style.fontSize =
+        "12px";
+
+    status.style.textAlign =
+        "center";
+
+    status.style.padding =
+        "20px";
+
+    status.textContent =
+        message;
+
+    const old =
+        document.getElementById(
+            "viewerError"
+        );
+
+    if (old) {
+        old.remove();
+    }
+
+    viewerScreen.appendChild(status);
+}
+
+function loadModelIntoViewer(url) {
+
+    disposeCurrentModel();
+
+    const oldError =
+        document.getElementById(
+            "viewerError"
+        );
+
+    if (oldError) {
+        oldError.remove();
+    }
+
+    viewerNumber.textContent =
+        "Загрузка...";
+
+    loader.load(
+        url,
+
+        gltf => {
+
+            prepareLoadedModel(gltf);
+
+            viewerNumber.textContent =
+                viewerNumber.dataset.filename ||
+                "3D";
+
+        },
+
+        xhr => {
+
+            if (
+                xhr.total > 0
+            ) {
+
+                const percent =
+                    Math.round(
+                        xhr.loaded /
+                        xhr.total *
+                        100
+                    );
+
+                viewerNumber.textContent =
+                    percent + "%";
+            }
+        },
+
+        error => {
+
+            showViewerError(
+                "Не удалось загрузить GLB"
+            );
+        }
+    );
+}
+
 /* =============================================================
-   OPEN GALLERY MODEL
+   ARCHIVE MODEL
+============================================================= */
+
+function openArchiveViewer(index) {
+
+    viewerOpenedFromArchive = true;
+
+    if (!requireAccess()) {
+        return;
+    }
+
+    const item =
+        archiveModels[index];
+
+    if (!item) {
+        return;
+    }
+
+    showScreen(viewerScreen);
+
+    initViewer();
+
+    const filename =
+        item.filename ||
+        "3D";
+
+    viewerNumber.dataset.filename =
+        filename;
+
+    viewerNumber.textContent =
+        filename;
+
+    let url =
+        item.url ||
+        item.download_url ||
+        item.file_url ||
+        "";
+
+    if (!url && item.id !== undefined) {
+
+        url =
+            ARCHIVE_API +
+            "/file/" +
+            encodeURIComponent(
+                item.id
+            );
+    }
+
+    if (!url && item.filename) {
+
+        url =
+            ARCHIVE_API +
+            "/file/" +
+            encodeURIComponent(
+                item.filename
+            );
+    }
+
+    if (!url) {
+
+        showViewerError(
+            "API не передал URL модели"
+        );
+
+        return;
+    }
+
+    loadModelIntoViewer(url);
+
+    const hint =
+        document.getElementById(
+            "viewerHint"
+        );
+
+    if (hint) {
+
+        hint.style.opacity = "1";
+
+        setTimeout(
+            () => {
+                hint.style.opacity = "0";
+            },
+            3500
+        );
+    }
+}
+
+/* =============================================================
+   GALLERY DATA
+============================================================= */
+
+const galleryItems = [
+    {
+        number: 1,
+        filename: "creature.glb"
+    },
+    {
+        number: 2,
+        filename: "creature.glb"
+    },
+    {
+        number: 3,
+        filename: "creature.glb"
+    }
+];
+
+/* =============================================================
+   GALLERY
+============================================================= */
+
+function buildGallery() {
+
+    galleryGrid.innerHTML = "";
+
+    galleryItems.forEach(
+        (item, index) => {
+
+            const button =
+                document.createElement(
+                    "button"
+                );
+
+            button.className =
+                "galleryItem";
+
+            button.type =
+                "button";
+
+            button.textContent =
+                item.number;
+
+            button.addEventListener(
+                "click",
+                () => {
+                    openViewer(index);
+                }
+            );
+
+            galleryGrid.appendChild(
+                button
+            );
+        }
+    );
+}
+
+buildGallery();
+
+/* =============================================================
+   OPEN LOCAL/GITHUB GALLERY MODEL
 ============================================================= */
 
 function openViewer(index) {
@@ -3387,24 +3485,68 @@ function openViewer(index) {
         return;
     }
 
-    const item = galleryItems[index];
+    const item =
+        galleryItems[index];
 
     if (!item) {
         return;
     }
 
-    viewerNumber.textContent = item.number;
-    showScreen(viewerScreen);
+    viewerNumber.dataset.filename =
+        item.filename;
+
+    viewerNumber.textContent =
+        item.filename;
+
+    showScreen(
+        viewerScreen
+    );
+
     initViewer();
 
-    const archiveStyleItem = {
-        ...item,
-        filename: item.filename,
-        url: MODEL_BASE + encodeURIComponent(item.filename)
-    };
+    const url =
+        MODEL_BASE +
+        encodeURIComponent(
+            item.filename
+        );
 
-    loadArchiveModel(archiveStyleItem);
+    loadModelIntoViewer(url);
 }
+
+/* =============================================================
+   VIEWER BUTTONS
+============================================================= */
+
+document
+    .getElementById("viewerForward")
+    .addEventListener(
+        "click",
+        () => {
+            if (camera) {
+                moveViewerForward(0.35);
+            }
+        }
+    );
+
+document
+    .getElementById("viewerBackward")
+    .addEventListener(
+        "click",
+        () => {
+            if (camera) {
+                moveViewerBackward(0.35);
+            }
+        }
+    );
+
+document
+    .getElementById("viewerReset")
+    .addEventListener(
+        "click",
+        () => {
+            resetViewerCamera();
+        }
+    );
 
 /* =============================================================
    RESTORE
