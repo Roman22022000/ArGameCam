@@ -676,6 +676,14 @@
             pointer-events: none;
         }
 
+        .viewerLookPad {
+            position: absolute;
+            inset: 0;
+            z-index: 3;
+            touch-action: none;
+            pointer-events: none;
+        }
+
         .viewerTouch {
             position: absolute;
             z-index: 25;
@@ -918,7 +926,9 @@
 
     <div class="viewerCrosshair"></div>
 
-    <div class="viewerHelp">WASD — движение · мышь — обзор · Shift — быстрее · Space — вверх · Ctrl — вниз · клик — ходьба</div>
+    <div class="viewerHelp">ПК: WASD — движение · мышь — обзор · Shift — быстрее · Space — вверх · Ctrl — вниз. Телефон: кнопки — движение · свайп — обзор.</div>
+
+    <div class="viewerLookPad" id="viewerLookPad"></div>
 
     <div class="viewerTouch" id="viewerTouch">
         <button class="up" data-key="KeyW" type="button">▲</button>
@@ -2809,15 +2819,18 @@ async function fetchModelBytes(url) {
                 mode: "cors",
                 credentials: "omit",
                 cache: "no-store",
-                redirect: "follow"
+                redirect: "follow",
+                headers: {
+                    "Accept": "model/gltf-binary, model/gltf+json, application/octet-stream, */*"
+                }
             }
         );
     } catch (error) {
         throw new Error(
-            "Не удалось соединиться с API.\n" +
-            "URL: " + url + "\n" +
-            "Ошибка браузера: " +
-            (error?.message || String(error))
+            "Ошибка CORS/сети при загрузке модели.\n" +
+            "API: " + url + "\n" +
+            "Проверь /api/cors-test и /api/models/file/<ID>.\n" +
+            "Браузер: " + (error?.message || String(error))
         );
     }
 
@@ -2828,19 +2841,67 @@ async function fetchModelBytes(url) {
         );
     }
 
-    const buffer = await response.arrayBuffer();
+    const contentType =
+        response.headers.get("content-type") || "";
 
-    if (!buffer || buffer.byteLength === 0) {
+    const contentLength = Number(
+        response.headers.get("content-length") || 0
+    );
+
+    console.log("3D RESPONSE:", {
+        status: response.status,
+        contentType,
+        contentLength,
+        cors: response.headers.get("access-control-allow-origin")
+    });
+
+    if (!response.body) {
+        const buffer = await response.arrayBuffer();
+        if (!buffer.byteLength) {
+            throw new Error("API вернул пустой файл модели.");
+        }
+        return buffer;
+    }
+
+    const reader = response.body.getReader();
+    const chunks = [];
+    let total = 0;
+
+    while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        if (value && value.byteLength) {
+            chunks.push(value);
+            total += value.byteLength;
+
+            const expected = contentLength || 0;
+            if (expected > 0) {
+                const percent = Math.min(
+                    100,
+                    Math.round((total / expected) * 100)
+                );
+                viewerLoading.textContent =
+                    "ЗАГРУЗКА 3D МОДЕЛИ " + percent + "%";
+            }
+        }
+    }
+
+    if (!total) {
         throw new Error("API вернул пустой файл модели.");
     }
 
-    console.log(
-        "3D MODEL DOWNLOADED:",
-        buffer.byteLength,
-        "bytes"
-    );
+    const buffer = new Uint8Array(total);
+    let offset = 0;
 
-    return buffer;
+    for (const chunk of chunks) {
+        buffer.set(chunk, offset);
+        offset += chunk.byteLength;
+    }
+
+    console.log("3D MODEL DOWNLOADED:", total, "bytes");
+
+    return buffer.buffer;
 }
 
 function parseOBJ(buffer) {
@@ -3129,8 +3190,75 @@ function initViewer() {
         viewerTouch.style.display = "grid";
     }
 
+    setupMobileLook();
+
     animateViewer();
 }
+
+let mobileLookActive = false;
+let mobileLookPointerId = null;
+let mobileLastX = 0;
+let mobileLastY = 0;
+
+function setupMobileLook() {
+
+    const pad = document.getElementById("viewerLookPad");
+    if (!pad) return;
+
+    pad.style.pointerEvents = window.innerWidth <= 700 ? "auto" : "none";
+
+    pad.addEventListener("pointerdown", event => {
+        if (window.innerWidth > 700) return;
+        if (event.target.closest("button")) return;
+
+        mobileLookActive = true;
+        mobileLookPointerId = event.pointerId;
+        mobileLastX = event.clientX;
+        mobileLastY = event.clientY;
+
+        try {
+            pad.setPointerCapture(event.pointerId);
+        } catch (_) {}
+
+        event.preventDefault();
+    }, { passive: false });
+
+    pad.addEventListener("pointermove", event => {
+        if (!mobileLookActive) return;
+        if (event.pointerId !== mobileLookPointerId) return;
+        if (!camera) return;
+
+        const dx = event.clientX - mobileLastX;
+        const dy = event.clientY - mobileLastY;
+
+        mobileLastX = event.clientX;
+        mobileLastY = event.clientY;
+
+        camera.rotation.y -= dx * 0.004;
+        camera.rotation.x -= dy * 0.004;
+        camera.rotation.x = Math.max(
+            -Math.PI * 0.48,
+            Math.min(Math.PI * 0.48, camera.rotation.x)
+        );
+
+        event.preventDefault();
+    }, { passive: false });
+
+    const stop = event => {
+        if (event.pointerId !== mobileLookPointerId) return;
+        mobileLookActive = false;
+        mobileLookPointerId = null;
+        event.preventDefault();
+    };
+
+    pad.addEventListener("pointerup", stop, { passive: false });
+    pad.addEventListener("pointercancel", stop, { passive: false });
+    pad.addEventListener("lostpointercapture", () => {
+        mobileLookActive = false;
+        mobileLookPointerId = null;
+    });
+}
+
 
 function onViewerKeyDown(event) {
 
@@ -3207,6 +3335,11 @@ function updateWalking(delta) {
 }
 
 function resizeViewer() {
+
+    const pad = document.getElementById("viewerLookPad");
+    if (pad) {
+        pad.style.pointerEvents = window.innerWidth <= 700 ? "auto" : "none";
+    }
 
     if (!camera || !renderer) {
         return;
