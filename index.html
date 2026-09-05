@@ -2511,24 +2511,61 @@ const joystickKnob = document.getElementById("joystickKnob");
 const lookZone = document.getElementById("lookZone");
 const viewerReset = document.getElementById("viewerReset");
 
+/*
+    СЦЕНА 7 x 7 x 7
+
+    Центр сцены:
+        X = 0
+        Y = 0
+        Z = 0
+
+    Полный размер:
+        X = 7
+        Y = 7
+        Z = 7
+
+    Периметр:
+        -3.5 ... +3.5 по каждой оси.
+
+    Камере оставляется небольшой запас от стен,
+    чтобы её положение никогда не выходило за границы.
+*/
+const SCENE_SIZE = 7.0;
+const SCENE_HALF = SCENE_SIZE / 2;
+const CAMERA_MARGIN = 0.20;
+
+const SCENE_MIN_X = -SCENE_HALF + CAMERA_MARGIN;
+const SCENE_MAX_X =  SCENE_HALF - CAMERA_MARGIN;
+const SCENE_MIN_Y = -SCENE_HALF + CAMERA_MARGIN;
+const SCENE_MAX_Y =  SCENE_HALF - CAMERA_MARGIN;
+const SCENE_MIN_Z = -SCENE_HALF + CAMERA_MARGIN;
+const SCENE_MAX_Z =  SCENE_HALF - CAMERA_MARGIN;
+
+/*
+    Начальная позиция камеры внутри сцены.
+    Камера не находится снаружи и не вращается вокруг модели.
+*/
+const CAMERA_SPAWN = {
+    x: 0,
+    y: 1.15,
+    z: 2.40
+};
+
 const viewerState = {
-    yaw: 0,
+    yaw: Math.PI,
     pitch: -0.08,
-    distance: 3.6,
-    minDistance: 1.55,
-    maxDistance: 5.8,
-    minRadius: 1.55,
-    maxRadius: 5.8,
-    spawnRadius: 3.6,
+
     eyeHeight: 1.15,
-    targetY: 0.95,
+
     moveSpeed: 2.2,
     turnSpeed: 0.012,
     pitchSpeed: 0.009,
+
     moveX: 0,
     moveZ: 0,
-    modelRadius: 1.0,
-    loadedSize: 2.0
+
+    loadedSize: 2.0,
+    modelRadius: 1.0
 };
 
 const joystickState = {
@@ -2554,7 +2591,8 @@ const keyboardState = new Set();
 let lastFrameTime = performance.now();
 
 function isMobileDevice() {
-    return window.matchMedia("(pointer: coarse)").matches || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    return window.matchMedia("(pointer: coarse)").matches ||
+        /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 }
 
 function clamp(value, min, max) {
@@ -2567,25 +2605,30 @@ function setViewerStatus(text, visible = true) {
 }
 
 function updateJoystickVisual() {
-    joystickKnob.style.transform = `translate3d(${joystickState.x}px, ${joystickState.y}px, 0)`;
+    joystickKnob.style.transform =
+        `translate3d(${joystickState.x}px, ${joystickState.y}px, 0)`;
 }
 
 function resetJoystick() {
     joystickState.x = 0;
     joystickState.y = 0;
     joystickState.pointerId = null;
+
     viewerState.moveX = 0;
     viewerState.moveZ = 0;
+
     updateJoystickVisual();
 }
 
 function updateJoystickFromPointer(clientX, clientY) {
     const rect = moveJoystick.getBoundingClientRect();
+
     const cx = rect.left + rect.width / 2;
     const cy = rect.top + rect.height / 2;
 
     let dx = clientX - cx;
     let dy = clientY - cy;
+
     const length = Math.hypot(dx, dy);
 
     if (length > joystickState.max) {
@@ -2602,96 +2645,213 @@ function updateJoystickFromPointer(clientX, clientY) {
     updateJoystickVisual();
 }
 
-function resetViewerCamera() {
-    viewerState.yaw = 0;
-    viewerState.pitch = -0.08;
-    viewerState.distance = viewerState.spawnRadius;
-    viewerState.moveX = 0;
-    viewerState.moveZ = 0;
-    resetJoystick();
-    updateViewerCamera();
-}
-
-function updateViewerCamera() {
+/*
+    Возвращает камеру строго внутрь куба 7x7x7.
+    Ограничиваются сразу все три координаты:
+        X
+        Y
+        Z
+*/
+function clampCameraToScene() {
     if (!camera) return;
 
-    const radius = clamp(
-        viewerState.distance,
-        viewerState.minRadius,
-        viewerState.maxRadius
+    camera.position.x = clamp(
+        camera.position.x,
+        SCENE_MIN_X,
+        SCENE_MAX_X
     );
 
-    viewerState.distance = radius;
+    camera.position.y = clamp(
+        camera.position.y,
+        SCENE_MIN_Y,
+        SCENE_MAX_Y
+    );
 
-    const horizontal = Math.cos(viewerState.pitch) * radius;
-    const x = Math.sin(viewerState.yaw) * horizontal;
-    const z = Math.cos(viewerState.yaw) * horizontal;
-    const y = viewerState.targetY + Math.sin(viewerState.pitch) * radius;
-
-    camera.position.set(x, y, z);
-    camera.lookAt(0, viewerState.targetY, 0);
+    camera.position.z = clamp(
+        camera.position.z,
+        SCENE_MIN_Z,
+        SCENE_MAX_Z
+    );
 }
 
+/*
+    Направление взгляда камеры.
+    Камера остаётся на своей позиции и только меняет направление.
+*/
+function updateCameraLook() {
+    if (!camera) return;
+
+    const direction = new THREE.Vector3();
+
+    direction.x =
+        -Math.sin(viewerState.yaw) *
+        Math.cos(viewerState.pitch);
+
+    direction.y =
+        Math.sin(viewerState.pitch);
+
+    direction.z =
+        -Math.cos(viewerState.yaw) *
+        Math.cos(viewerState.pitch);
+
+    const lookTarget =
+        camera.position.clone().add(direction);
+
+    camera.lookAt(lookTarget);
+}
+
+/*
+    Начальное положение:
+    пользователь появляется ВНУТРИ сцены 7x7x7.
+*/
+function resetViewerCamera() {
+    if (!camera) return;
+
+    viewerState.yaw = Math.PI;
+    viewerState.pitch = -0.08;
+
+    viewerState.moveX = 0;
+    viewerState.moveZ = 0;
+
+    resetJoystick();
+
+    camera.position.set(
+        CAMERA_SPAWN.x,
+        CAMERA_SPAWN.y,
+        CAMERA_SPAWN.z
+    );
+
+    clampCameraToScene();
+    updateCameraLook();
+}
+
+/*
+    Движение камеры внутри ограниченного пространства.
+
+    WASD / стрелки на ПК.
+    Джойстик на телефоне.
+
+    Камера НЕ может:
+        X < -3.3
+        X >  3.3
+        Y < -3.3
+        Y >  3.3
+        Z < -3.3
+        Z >  3.3
+*/
 function moveViewer(dt) {
     if (!camera || !viewerReady) return;
 
     let strafe = viewerState.moveX;
     let forward = -viewerState.moveZ;
 
-    if (keyboardState.has("KeyW") || keyboardState.has("ArrowUp")) forward += 1;
-    if (keyboardState.has("KeyS") || keyboardState.has("ArrowDown")) forward -= 1;
-    if (keyboardState.has("KeyA") || keyboardState.has("ArrowLeft")) strafe -= 1;
-    if (keyboardState.has("KeyD") || keyboardState.has("ArrowRight")) strafe += 1;
-
-    const len = Math.hypot(strafe, forward);
-    if (len > 1) {
-        strafe /= len;
-        forward /= len;
+    if (
+        keyboardState.has("KeyW") ||
+        keyboardState.has("ArrowUp")
+    ) {
+        forward += 1;
     }
 
-    if (Math.abs(strafe) < 0.001 && Math.abs(forward) < 0.001) return;
+    if (
+        keyboardState.has("KeyS") ||
+        keyboardState.has("ArrowDown")
+    ) {
+        forward -= 1;
+    }
 
-    const speed = viewerState.moveSpeed * dt;
+    if (
+        keyboardState.has("KeyA") ||
+        keyboardState.has("ArrowLeft")
+    ) {
+        strafe -= 1;
+    }
+
+    if (
+        keyboardState.has("KeyD") ||
+        keyboardState.has("ArrowRight")
+    ) {
+        strafe += 1;
+    }
+
+    const length = Math.hypot(strafe, forward);
+
+    if (length > 1) {
+        strafe /= length;
+        forward /= length;
+    }
+
+    if (
+        Math.abs(strafe) < 0.001 &&
+        Math.abs(forward) < 0.001
+    ) {
+        clampCameraToScene();
+        updateCameraLook();
+        return;
+    }
+
+    const speed =
+        viewerState.moveSpeed * dt;
+
+    /*
+        Направление вперёд относительно yaw.
+    */
     const forwardX = -Math.sin(viewerState.yaw);
     const forwardZ = -Math.cos(viewerState.yaw);
+
+    /*
+        Направление вправо относительно yaw.
+    */
     const rightX = Math.cos(viewerState.yaw);
     const rightZ = -Math.sin(viewerState.yaw);
 
-    let x = camera.position.x + (forwardX * forward + rightX * strafe) * speed;
-    let z = camera.position.z + (forwardZ * forward + rightZ * strafe) * speed;
+    let x =
+        camera.position.x +
+        (forwardX * forward + rightX * strafe) * speed;
 
-    let radius = Math.hypot(x, z);
+    let z =
+        camera.position.z +
+        (forwardZ * forward + rightZ * strafe) * speed;
 
-    if (radius < viewerState.minRadius) {
-        if (radius < 0.0001) {
-            x = viewerState.minRadius;
-            z = 0;
-        } else {
-            const scale = viewerState.minRadius / radius;
-            x *= scale;
-            z *= scale;
-        }
-        radius = viewerState.minRadius;
-    }
+    /*
+        По высоте камера остаётся на уровне глаз.
+        Это обычное перемещение по полу сцены.
+    */
+    let y = viewerState.eyeHeight;
 
-    if (radius > viewerState.maxRadius) {
-        const scale = viewerState.maxRadius / radius;
-        x *= scale;
-        z *= scale;
-    }
+    /*
+        Жёсткое ограничение 7x7x7.
+    */
+    x = clamp(
+        x,
+        SCENE_MIN_X,
+        SCENE_MAX_X
+    );
 
-    camera.position.x = x;
-    camera.position.z = z;
-    viewerState.distance = Math.hypot(x, z);
+    z = clamp(
+        z,
+        SCENE_MIN_Z,
+        SCENE_MAX_Z
+    );
 
-    viewerState.yaw = Math.atan2(x, z);
-    camera.lookAt(0, viewerState.targetY, 0);
+    y = clamp(
+        y,
+        SCENE_MIN_Y,
+        SCENE_MAX_Y
+    );
+
+    camera.position.set(x, y, z);
+
+    clampCameraToScene();
+    updateCameraLook();
 }
 
 function disposeMaterial(material) {
     if (!material) return;
 
-    const materials = Array.isArray(material) ? material : [material];
+    const materials =
+        Array.isArray(material)
+            ? material
+            : [material];
 
     for (const mat of materials) {
         if (!mat) continue;
@@ -2719,7 +2879,10 @@ function disposeMaterial(material) {
         ];
 
         for (const key of textureKeys) {
-            if (mat[key] && mat[key].isTexture) {
+            if (
+                mat[key] &&
+                mat[key].isTexture
+            ) {
                 mat[key].dispose();
             }
         }
@@ -2737,6 +2900,7 @@ function disposeModel() {
         if (object.geometry) {
             object.geometry.dispose();
         }
+
         if (object.material) {
             disposeMaterial(object.material);
         }
@@ -2747,42 +2911,93 @@ function disposeModel() {
 }
 
 function prepareModel(loadedModel) {
-    const box = new THREE.Box3().setFromObject(loadedModel);
-    const center = box.getCenter(new THREE.Vector3());
-    const size = box.getSize(new THREE.Vector3());
-    const maxSize = Math.max(size.x, size.y, size.z);
+    const box =
+        new THREE.Box3().setFromObject(loadedModel);
 
-    if (!Number.isFinite(maxSize) || maxSize <= 0) {
-        throw new Error("GLB не содержит корректной геометрии");
+    const center =
+        box.getCenter(new THREE.Vector3());
+
+    const size =
+        box.getSize(new THREE.Vector3());
+
+    const maxSize =
+        Math.max(
+            size.x,
+            size.y,
+            size.z
+        );
+
+    if (
+        !Number.isFinite(maxSize) ||
+        maxSize <= 0
+    ) {
+        throw new Error(
+            "GLB не содержит корректной геометрии"
+        );
     }
 
     loadedModel.position.sub(center);
-    loadedModel.scale.setScalar(2 / maxSize);
+
+    /*
+        Модель остаётся прежнего нормализованного размера.
+        Меняется только управление камерой.
+    */
+    loadedModel.scale.setScalar(
+        2 / maxSize
+    );
+
     loadedModel.updateMatrixWorld(true);
 
-    const normalizedBox = new THREE.Box3().setFromObject(loadedModel);
-    const normalizedSize = normalizedBox.getSize(new THREE.Vector3());
-    const normalizedCenter = normalizedBox.getCenter(new THREE.Vector3());
-    const sphere = new THREE.Sphere();
+    const normalizedBox =
+        new THREE.Box3().setFromObject(
+            loadedModel
+        );
+
+    const normalizedSize =
+        normalizedBox.getSize(
+            new THREE.Vector3()
+        );
+
+    const normalizedCenter =
+        normalizedBox.getCenter(
+            new THREE.Vector3()
+        );
+
+    const sphere =
+        new THREE.Sphere();
+
     normalizedBox.getBoundingSphere(sphere);
 
-    loadedModel.position.y -= normalizedCenter.y;
+    loadedModel.position.y -=
+        normalizedCenter.y;
+
     loadedModel.updateMatrixWorld(true);
 
-    viewerState.loadedSize = Math.max(normalizedSize.x, normalizedSize.y, normalizedSize.z);
-    viewerState.modelRadius = Math.max(0.65, sphere.radius);
+    viewerState.loadedSize =
+        Math.max(
+            normalizedSize.x,
+            normalizedSize.y,
+            normalizedSize.z
+        );
 
-    // Camera must stay outside the model and inside the allowed outer circle.
-    viewerState.minRadius = Math.max(1.35, viewerState.modelRadius + 0.45);
-    viewerState.maxRadius = Math.max(viewerState.minRadius + 2.5, 5.8);
-    viewerState.spawnRadius = clamp(
-        Math.max(viewerState.minRadius + 1.0, 3.6),
-        viewerState.minRadius + 0.1,
-        viewerState.maxRadius - 0.1
-    );
-    viewerState.distance = viewerState.spawnRadius;
-    viewerState.targetY = clamp(normalizedSize.y * 0.35, 0.65, 1.15);
-    viewerState.eyeHeight = viewerState.targetY;
+    viewerState.modelRadius =
+        Math.max(
+            0.65,
+            sphere.radius
+        );
+
+    viewerState.eyeHeight =
+        clamp(
+            normalizedSize.y * 0.35,
+            0.65,
+            1.15
+        );
+
+    /*
+        Высота появления пользователя.
+    */
+    CAMERA_SPAWN.y =
+        viewerState.eyeHeight;
 
     loadedModel.traverse(object => {
         if (!object.isMesh) return;
@@ -2791,10 +3006,17 @@ function prepareModel(loadedModel) {
         object.receiveShadow = false;
 
         if (object.material) {
-            const mats = Array.isArray(object.material) ? object.material : [object.material];
+            const mats =
+                Array.isArray(object.material)
+                    ? object.material
+                    : [object.material];
+
             for (const mat of mats) {
                 if (!mat) continue;
-                if ("envMapIntensity" in mat) mat.envMapIntensity = 0.7;
+
+                if ("envMapIntensity" in mat) {
+                    mat.envMapIntensity = 0.7;
+                }
             }
         }
     });
@@ -2802,315 +3024,834 @@ function prepareModel(loadedModel) {
     return loadedModel;
 }
 
+function createSceneBoundary() {
+    /*
+        Видимая граница 7x7x7.
+        Она не влияет на загрузку GLB и не мешает камере.
+        Прозрачная линия показывает пользователю предел сцены.
+    */
+
+    if (!scene) return;
+
+    const geometry =
+        new THREE.BoxGeometry(
+            SCENE_SIZE,
+            SCENE_SIZE,
+            SCENE_SIZE
+        );
+
+    const edges =
+        new THREE.EdgesGeometry(
+            geometry
+        );
+
+    const material =
+        new THREE.LineBasicMaterial({
+            color: 0x303030,
+            transparent: true,
+            opacity: 0.35
+        });
+
+    const boundary =
+        new THREE.LineSegments(
+            edges,
+            material
+        );
+
+    boundary.name =
+        "SCENE_BOUNDARY_7x7x7";
+
+    scene.add(boundary);
+
+    geometry.dispose();
+}
+
 function initViewer() {
     if (renderer) return;
 
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x000000);
 
-    camera = new THREE.PerspectiveCamera(
-        55,
-        1,
-        0.03,
-        200
+    scene.background =
+        new THREE.Color(0x000000);
+
+    camera =
+        new THREE.PerspectiveCamera(
+            55,
+            1,
+            0.03,
+            200
+        );
+
+    renderer =
+        new THREE.WebGLRenderer({
+            antialias: !isMobileDevice(),
+            alpha: false,
+            powerPreference: "high-performance",
+            precision:
+                isMobileDevice()
+                    ? "mediump"
+                    : "highp"
+        });
+
+    const pixelRatio =
+        isMobileDevice()
+            ? Math.min(
+                window.devicePixelRatio || 1,
+                1.35
+            )
+            : Math.min(
+                window.devicePixelRatio || 1,
+                1.75
+            );
+
+    renderer.setPixelRatio(
+        pixelRatio
     );
 
-    renderer = new THREE.WebGLRenderer({
-        antialias: !isMobileDevice(),
-        alpha: false,
-        powerPreference: "high-performance",
-        precision: isMobileDevice() ? "mediump" : "highp"
-    });
+    renderer.setSize(
+        viewerCanvas.clientWidth ||
+            window.innerWidth,
+        viewerCanvas.clientHeight ||
+            window.innerHeight,
+        false
+    );
 
-    const pixelRatio = isMobileDevice()
-        ? Math.min(window.devicePixelRatio || 1, 1.35)
-        : Math.min(window.devicePixelRatio || 1, 1.75);
+    renderer.outputColorSpace =
+        THREE.SRGBColorSpace;
 
-    renderer.setPixelRatio(pixelRatio);
-    renderer.setSize(viewerCanvas.clientWidth || window.innerWidth, viewerCanvas.clientHeight || window.innerHeight, false);
-    renderer.outputColorSpace = THREE.SRGBColorSpace;
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.0;
-    renderer.domElement.setAttribute("aria-label", "3D сцена");
+    renderer.toneMapping =
+        THREE.ACESFilmicToneMapping;
 
-    viewerCanvas.appendChild(renderer.domElement);
+    renderer.toneMappingExposure =
+        1.0;
 
-    const ambient = new THREE.HemisphereLight(0xffffff, 0x222222, 2.2);
+    renderer.domElement.setAttribute(
+        "aria-label",
+        "3D сцена"
+    );
+
+    viewerCanvas.appendChild(
+        renderer.domElement
+    );
+
+    const ambient =
+        new THREE.HemisphereLight(
+            0xffffff,
+            0x222222,
+            2.2
+        );
+
     scene.add(ambient);
 
-    const key = new THREE.DirectionalLight(0xffffff, 2.2);
-    key.position.set(4, 7, 5);
+    const key =
+        new THREE.DirectionalLight(
+            0xffffff,
+            2.2
+        );
+
+    key.position.set(
+        4,
+        7,
+        5
+    );
+
     scene.add(key);
 
-    const fill = new THREE.DirectionalLight(0xffffff, 0.8);
-    fill.position.set(-4, 3, -4);
+    const fill =
+        new THREE.DirectionalLight(
+            0xffffff,
+            0.8
+        );
+
+    fill.position.set(
+        -4,
+        3,
+        -4
+    );
+
     scene.add(fill);
 
-    window.addEventListener("resize", resizeViewer, { passive: true });
+    /*
+        Создаём ограничивающий куб 7x7x7.
+    */
+    createSceneBoundary();
 
-    renderer.domElement.addEventListener("pointerdown", event => {
-        if (event.pointerType !== "mouse") return;
-        mouseState.down = true;
-        mouseState.lastX = event.clientX;
-        mouseState.lastY = event.clientY;
-        renderer.domElement.setPointerCapture?.(event.pointerId);
-    });
+    window.addEventListener(
+        "resize",
+        resizeViewer,
+        { passive: true }
+    );
 
-    renderer.domElement.addEventListener("pointermove", event => {
-        if (!mouseState.down || event.pointerType !== "mouse") return;
+    /*
+        ПК: мышь вращает камеру.
+        Позиция камеры при этом не меняется.
+    */
+    renderer.domElement.addEventListener(
+        "pointerdown",
+        event => {
+            if (event.pointerType !== "mouse") {
+                return;
+            }
 
-        const dx = event.clientX - mouseState.lastX;
-        const dy = event.clientY - mouseState.lastY;
-        mouseState.lastX = event.clientX;
-        mouseState.lastY = event.clientY;
+            mouseState.down = true;
 
-        viewerState.yaw += dx * 0.008;
-        viewerState.pitch = clamp(viewerState.pitch - dy * 0.006, -0.95, 0.55);
-        updateViewerCamera();
-    });
+            mouseState.lastX =
+                event.clientX;
 
-    renderer.domElement.addEventListener("pointerup", () => {
-        mouseState.down = false;
-    });
+            mouseState.lastY =
+                event.clientY;
 
-    renderer.domElement.addEventListener("pointercancel", () => {
-        mouseState.down = false;
-    });
-
-    renderer.domElement.addEventListener("wheel", event => {
-        event.preventDefault();
-        viewerState.distance = clamp(
-            viewerState.distance + event.deltaY * 0.003,
-            viewerState.minRadius,
-            viewerState.maxRadius
-        );
-        updateViewerCamera();
-    }, { passive: false });
-
-    moveJoystick.addEventListener("pointerdown", event => {
-        event.preventDefault();
-        joystickState.pointerId = event.pointerId;
-        moveJoystick.setPointerCapture?.(event.pointerId);
-        updateJoystickFromPointer(event.clientX, event.clientY);
-    });
-
-    moveJoystick.addEventListener("pointermove", event => {
-        if (event.pointerId !== joystickState.pointerId) return;
-        event.preventDefault();
-        updateJoystickFromPointer(event.clientX, event.clientY);
-    });
-
-    moveJoystick.addEventListener("pointerup", event => {
-        if (event.pointerId === joystickState.pointerId) resetJoystick();
-    });
-
-    moveJoystick.addEventListener("pointercancel", event => {
-        if (event.pointerId === joystickState.pointerId) resetJoystick();
-    });
-
-    lookZone.addEventListener("pointerdown", event => {
-        event.preventDefault();
-        lookState.pointerId = event.pointerId;
-        lookState.lastX = event.clientX;
-        lookState.lastY = event.clientY;
-        lookZone.setPointerCapture?.(event.pointerId);
-    });
-
-    lookZone.addEventListener("pointermove", event => {
-        if (event.pointerId !== lookState.pointerId) return;
-        event.preventDefault();
-
-        const dx = event.clientX - lookState.lastX;
-        const dy = event.clientY - lookState.lastY;
-        lookState.lastX = event.clientX;
-        lookState.lastY = event.clientY;
-
-        viewerState.yaw += dx * viewerState.turnSpeed;
-        viewerState.pitch = clamp(
-            viewerState.pitch - dy * viewerState.pitchSpeed,
-            -0.95,
-            0.55
-        );
-
-        updateViewerCamera();
-    });
-
-    const releaseLook = event => {
-        if (event.pointerId === lookState.pointerId) {
-            lookState.pointerId = null;
+            renderer.domElement.setPointerCapture?.(
+                event.pointerId
+            );
         }
-    };
+    );
 
-    lookZone.addEventListener("pointerup", releaseLook);
-    lookZone.addEventListener("pointercancel", releaseLook);
+    renderer.domElement.addEventListener(
+        "pointermove",
+        event => {
+            if (
+                !mouseState.down ||
+                event.pointerType !== "mouse"
+            ) {
+                return;
+            }
 
-    viewerReset.addEventListener("click", resetViewerCamera);
+            const dx =
+                event.clientX -
+                mouseState.lastX;
 
-    window.addEventListener("keydown", event => {
-        if (["KeyW", "KeyA", "KeyS", "KeyD", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.code)) {
-            keyboardState.add(event.code);
+            const dy =
+                event.clientY -
+                mouseState.lastY;
+
+            mouseState.lastX =
+                event.clientX;
+
+            mouseState.lastY =
+                event.clientY;
+
+            viewerState.yaw +=
+                dx * 0.008;
+
+            viewerState.pitch =
+                clamp(
+                    viewerState.pitch -
+                        dy * 0.006,
+                    -0.95,
+                    0.55
+                );
+
+            updateCameraLook();
+        }
+    );
+
+    renderer.domElement.addEventListener(
+        "pointerup",
+        () => {
+            mouseState.down = false;
+        }
+    );
+
+    renderer.domElement.addEventListener(
+        "pointercancel",
+        () => {
+            mouseState.down = false;
+        }
+    );
+
+    /*
+        Колесо мыши больше не выносит камеру
+        на другой радиус.
+        Оно не нужно для FPS-камеры.
+    */
+    renderer.domElement.addEventListener(
+        "wheel",
+        event => {
             event.preventDefault();
+        },
+        { passive: false }
+    );
+
+    /*
+        ТЕЛЕФОН:
+        левый круг — движение.
+    */
+    moveJoystick.addEventListener(
+        "pointerdown",
+        event => {
+            event.preventDefault();
+
+            joystickState.pointerId =
+                event.pointerId;
+
+            moveJoystick.setPointerCapture?.(
+                event.pointerId
+            );
+
+            updateJoystickFromPointer(
+                event.clientX,
+                event.clientY
+            );
         }
-    }, { passive: false });
+    );
 
-    window.addEventListener("keyup", event => {
-        keyboardState.delete(event.code);
-    });
+    moveJoystick.addEventListener(
+        "pointermove",
+        event => {
+            if (
+                event.pointerId !==
+                joystickState.pointerId
+            ) {
+                return;
+            }
 
-    window.addEventListener("blur", () => {
-        keyboardState.clear();
-        mouseState.down = false;
-        resetJoystick();
-    });
+            event.preventDefault();
 
-    setViewerStatus("Готово", false);
+            updateJoystickFromPointer(
+                event.clientX,
+                event.clientY
+            );
+        }
+    );
+
+    moveJoystick.addEventListener(
+        "pointerup",
+        event => {
+            if (
+                event.pointerId ===
+                joystickState.pointerId
+            ) {
+                resetJoystick();
+            }
+        }
+    );
+
+    moveJoystick.addEventListener(
+        "pointercancel",
+        event => {
+            if (
+                event.pointerId ===
+                joystickState.pointerId
+            ) {
+                resetJoystick();
+            }
+        }
+    );
+
+    /*
+        ТЕЛЕФОН:
+        правое поле — обзор.
+    */
+    lookZone.addEventListener(
+        "pointerdown",
+        event => {
+            event.preventDefault();
+
+            lookState.pointerId =
+                event.pointerId;
+
+            lookState.lastX =
+                event.clientX;
+
+            lookState.lastY =
+                event.clientY;
+
+            lookZone.setPointerCapture?.(
+                event.pointerId
+            );
+        }
+    );
+
+    lookZone.addEventListener(
+        "pointermove",
+        event => {
+            if (
+                event.pointerId !==
+                lookState.pointerId
+            ) {
+                return;
+            }
+
+            event.preventDefault();
+
+            const dx =
+                event.clientX -
+                lookState.lastX;
+
+            const dy =
+                event.clientY -
+                lookState.lastY;
+
+            lookState.lastX =
+                event.clientX;
+
+            lookState.lastY =
+                event.clientY;
+
+            viewerState.yaw +=
+                dx * viewerState.turnSpeed;
+
+            viewerState.pitch =
+                clamp(
+                    viewerState.pitch -
+                        dy * viewerState.pitchSpeed,
+                    -0.95,
+                    0.55
+                );
+
+            updateCameraLook();
+        }
+    );
+
+    const releaseLook =
+        event => {
+            if (
+                event.pointerId ===
+                lookState.pointerId
+            ) {
+                lookState.pointerId =
+                    null;
+            }
+        };
+
+    lookZone.addEventListener(
+        "pointerup",
+        releaseLook
+    );
+
+    lookZone.addEventListener(
+        "pointercancel",
+        releaseLook
+    );
+
+    viewerReset.addEventListener(
+        "click",
+        resetViewerCamera
+    );
+
+    /*
+        КЛАВИАТУРА ПК.
+    */
+    window.addEventListener(
+        "keydown",
+        event => {
+            if (
+                [
+                    "KeyW",
+                    "KeyA",
+                    "KeyS",
+                    "KeyD",
+                    "ArrowUp",
+                    "ArrowDown",
+                    "ArrowLeft",
+                    "ArrowRight"
+                ].includes(event.code)
+            ) {
+                keyboardState.add(
+                    event.code
+                );
+
+                event.preventDefault();
+            }
+        },
+        { passive: false }
+    );
+
+    window.addEventListener(
+        "keyup",
+        event => {
+            keyboardState.delete(
+                event.code
+            );
+        }
+    );
+
+    window.addEventListener(
+        "blur",
+        () => {
+            keyboardState.clear();
+
+            mouseState.down = false;
+
+            resetJoystick();
+        }
+    );
+
+    setViewerStatus(
+        "Готово",
+        false
+    );
+
     resizeViewer();
+
     resetViewerCamera();
+
     animateViewer();
 }
 
 function resizeViewer() {
-    if (!camera || !renderer) return;
+    if (!camera || !renderer) {
+        return;
+    }
 
-    const width = Math.max(1, viewerCanvas.clientWidth || window.innerWidth);
-    const height = Math.max(1, viewerCanvas.clientHeight || window.innerHeight);
+    const width =
+        Math.max(
+            1,
+            viewerCanvas.clientWidth ||
+                window.innerWidth
+        );
 
-    camera.aspect = width / height;
+    const height =
+        Math.max(
+            1,
+            viewerCanvas.clientHeight ||
+                window.innerHeight
+        );
+
+    camera.aspect =
+        width / height;
+
     camera.updateProjectionMatrix();
-    renderer.setSize(width, height, false);
+
+    renderer.setSize(
+        width,
+        height,
+        false
+    );
+
+    /*
+        Дополнительная страховка
+        после изменения окна.
+    */
+    clampCameraToScene();
+    updateCameraLook();
 }
 
-function animateViewer(now = performance.now()) {
-    requestAnimationFrame(animateViewer);
+function animateViewer(
+    now = performance.now()
+) {
+    requestAnimationFrame(
+        animateViewer
+    );
 
-    const dt = Math.min(0.05, Math.max(0, (now - lastFrameTime) / 1000));
+    const dt =
+        Math.min(
+            0.05,
+            Math.max(
+                0,
+                (now - lastFrameTime) /
+                    1000
+            )
+        );
+
     lastFrameTime = now;
 
     moveViewer(dt);
 
-    if (renderer && scene && camera) {
-        renderer.render(scene, camera);
+    if (
+        renderer &&
+        scene &&
+        camera
+    ) {
+        renderer.render(
+            scene,
+            camera
+        );
     }
 }
 
-async function loadModelDirect(url, token, label) {
-    return new Promise((resolve, reject) => {
-        const finalUrl = url + (url.includes("?") ? "&" : "?") + "v=" + Date.now();
+async function loadModelDirect(
+    url,
+    token,
+    label
+) {
+    return new Promise(
+        (resolve, reject) => {
+            const finalUrl =
+                url +
+                (url.includes("?")
+                    ? "&"
+                    : "?") +
+                "v=" +
+                Date.now();
 
-        setViewerStatus(`Загрузка ${label}...`, true);
+            setViewerStatus(
+                `Загрузка ${label}...`,
+                true
+            );
 
-        loader.load(
-            finalUrl,
-            gltf => {
-                if (token !== viewerLoadToken) {
-                    resolve(false);
-                    return;
+            loader.load(
+                finalUrl,
+                gltf => {
+                    if (
+                        token !==
+                        viewerLoadToken
+                    ) {
+                        resolve(false);
+                        return;
+                    }
+
+                    try {
+                        disposeModel();
+
+                        model =
+                            prepareModel(
+                                gltf.scene
+                            );
+
+                        scene.add(model);
+
+                        viewerReady =
+                            true;
+
+                        resetViewerCamera();
+
+                        setViewerStatus(
+                            "",
+                            false
+                        );
+
+                        resolve(true);
+                    } catch (error) {
+                        reject(error);
+                    }
+                },
+                xhr => {
+                    if (!xhr) return;
+
+                    if (xhr.total > 0) {
+                        const percent =
+                            Math.round(
+                                xhr.loaded /
+                                    xhr.total *
+                                    100
+                            );
+
+                        setViewerStatus(
+                            `Загрузка ${label}: ${percent}%`,
+                            true
+                        );
+                    } else if (
+                        xhr.loaded > 0
+                    ) {
+                        const mb =
+                            (
+                                xhr.loaded /
+                                1024 /
+                                1024
+                            ).toFixed(1);
+
+                        setViewerStatus(
+                            `Загрузка ${label}: ${mb} MB`,
+                            true
+                        );
+                    }
+                },
+                error => {
+                    reject(
+                        error ||
+                        new Error(
+                            "GLTFLoader не смог загрузить GLB"
+                        )
+                    );
                 }
+            );
+        }
+    );
+}
 
-                try {
-                    disposeModel();
-                    model = prepareModel(gltf.scene);
-                    scene.add(model);
-                    viewerReady = true;
-                    resetViewerCamera();
-                    setViewerStatus("", false);
-                    resolve(true);
-                } catch (error) {
-                    reject(error);
+async function loadModelFallback(
+    url,
+    token,
+    label
+) {
+    /*
+        Fallback is used only after the
+        normal GLTFLoader request fails.
+    */
+    const response =
+        await fetch(
+            url +
+            (url.includes("?")
+                ? "&"
+                : "?") +
+            "retry=" +
+            Date.now(),
+            {
+                method: "GET",
+                mode: "cors",
+                cache: "no-store",
+                credentials: "omit",
+                headers: {
+                    "Accept":
+                        "model/gltf-binary,application/octet-stream,*/*"
                 }
-            },
-            xhr => {
-                if (!xhr) return;
-
-                if (xhr.total > 0) {
-                    const percent = Math.round(xhr.loaded / xhr.total * 100);
-                    setViewerStatus(`Загрузка ${label}: ${percent}%`, true);
-                } else if (xhr.loaded > 0) {
-                    const mb = (xhr.loaded / 1024 / 1024).toFixed(1);
-                    setViewerStatus(`Загрузка ${label}: ${mb} MB`, true);
-                }
-            },
-            error => {
-                reject(error || new Error("GLTFLoader не смог загрузить GLB"));
             }
         );
-    });
-}
-
-async function loadModelFallback(url, token, label) {
-    // Fallback is used only after the normal GLTFLoader request fails.
-    // GLTFLoader.parse() accepts an ArrayBuffer according to the Three.js API.
-    const response = await fetch(url + (url.includes("?") ? "&" : "?") + "retry=" + Date.now(), {
-        method: "GET",
-        mode: "cors",
-        cache: "no-store",
-        credentials: "omit",
-        headers: { "Accept": "model/gltf-binary,application/octet-stream,*/*" }
-    });
 
     if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
+        throw new Error(
+            `HTTP ${response.status}`
+        );
     }
 
-    const contentType = (response.headers.get("content-type") || "").toLowerCase();
-    if (contentType.includes("text/html") || contentType.includes("application/json")) {
-        throw new Error(`Сервер вернул ${contentType}, а не GLB`);
+    const contentType =
+        (
+            response.headers.get(
+                "content-type"
+            ) || ""
+        ).toLowerCase();
+
+    if (
+        contentType.includes(
+            "text/html"
+        ) ||
+        contentType.includes(
+            "application/json"
+        )
+    ) {
+        throw new Error(
+            `Сервер вернул ${contentType}, а не GLB`
+        );
     }
 
-    const buffer = await response.arrayBuffer();
+    const buffer =
+        await response.arrayBuffer();
 
-    if (buffer.byteLength < 20) {
-        throw new Error("Файл GLB слишком маленький или пустой");
+    if (
+        buffer.byteLength < 20
+    ) {
+        throw new Error(
+            "Файл GLB слишком маленький или пустой"
+        );
     }
 
-    const magic = new DataView(buffer).getUint32(0, true);
-    if (magic !== 0x46546c67) {
-        throw new Error("Ответ сервера не является GLB (нет magic glTF)");
+    const magic =
+        new DataView(buffer)
+            .getUint32(0, true);
+
+    if (
+        magic !== 0x46546c67
+    ) {
+        throw new Error(
+            "Ответ сервера не является GLB (нет magic glTF)"
+        );
     }
 
-    if (token !== viewerLoadToken) return false;
+    if (
+        token !== viewerLoadToken
+    ) {
+        return false;
+    }
 
-    setViewerStatus(`Распаковка ${label}...`, true);
+    setViewerStatus(
+        `Распаковка ${label}...`,
+        true
+    );
 
-    const gltf = await loader.parseAsync(buffer, new URL(url).href.replace(/[^/]*$/, ""));
+    const gltf =
+        await loader.parseAsync(
+            buffer,
+            new URL(url)
+                .href
+                .replace(
+                    /[^/]*$/,
+                    ""
+                )
+        );
 
-    if (token !== viewerLoadToken) return false;
+    if (
+        token !== viewerLoadToken
+    ) {
+        return false;
+    }
 
     disposeModel();
-    model = prepareModel(gltf.scene);
+
+    model =
+        prepareModel(
+            gltf.scene
+        );
+
     scene.add(model);
+
     viewerReady = true;
+
     resetViewerCamera();
-    setViewerStatus("", false);
+
+    setViewerStatus(
+        "",
+        false
+    );
+
     return true;
 }
 
-async function loadModelIntoViewer(url, label) {
+async function loadModelIntoViewer(
+    url,
+    label
+) {
     if (!url) {
-        setViewerStatus("У модели отсутствует URL.", true);
+        setViewerStatus(
+            "У модели отсутствует URL.",
+            true
+        );
+
         return;
     }
 
-    const token = ++viewerLoadToken;
+    const token =
+        ++viewerLoadToken;
+
     viewerReady = false;
+
     disposeModel();
-    setViewerStatus(`Подготовка ${label}...`, true);
+
+    setViewerStatus(
+        `Подготовка ${label}...`,
+        true
+    );
 
     try {
-        await loadModelDirect(url, token, label);
+        await loadModelDirect(
+            url,
+            token,
+            label
+        );
+
         return;
     } catch (firstError) {
-        console.error("GLB direct load failed:", firstError);
+        console.error(
+            "GLB direct load failed:",
+            firstError
+        );
 
         try {
-            await loadModelFallback(url, token, label);
+            await loadModelFallback(
+                url,
+                token,
+                label
+            );
+
             return;
         } catch (secondError) {
-            console.error("GLB fallback load failed:", secondError);
+            console.error(
+                "GLB fallback load failed:",
+                secondError
+            );
 
-            if (token !== viewerLoadToken) return;
+            if (
+                token !== viewerLoadToken
+            ) {
+                return;
+            }
 
-            const message = secondError?.message || firstError?.message || "Неизвестная ошибка";
+            const message =
+                secondError?.message ||
+                firstError?.message ||
+                "Неизвестная ошибка";
+
             setViewerStatus(
                 `Не удалось загрузить GLB.\n${message}\n\nПроверьте CORS, доступность файла и память телефона.`,
                 true
@@ -3122,19 +3863,31 @@ async function loadModelIntoViewer(url, label) {
 function resolveArchiveUrl(item) {
     if (!item) return "";
 
-    if (typeof item.url === "string" && item.url.startsWith("http")) {
+    if (
+        typeof item.url === "string" &&
+        item.url.startsWith("http")
+    ) {
         return item.url;
     }
 
-    if (typeof item.download_url === "string" && item.download_url.startsWith("http")) {
+    if (
+        typeof item.download_url === "string" &&
+        item.download_url.startsWith("http")
+    ) {
         return item.download_url;
     }
 
-    if (typeof item.file_url === "string" && item.file_url.startsWith("http")) {
+    if (
+        typeof item.file_url === "string" &&
+        item.file_url.startsWith("http")
+    ) {
         return item.file_url;
     }
 
-    if (item.id !== undefined && item.id !== null) {
+    if (
+        item.id !== undefined &&
+        item.id !== null
+    ) {
         return `${ARCHIVE_API}/file/${encodeURIComponent(item.id)}`;
     }
 
@@ -3146,15 +3899,28 @@ function openViewer(index) {
 
     if (!requireAccess()) return;
 
-    const item = galleryItems[index];
+    const item =
+        galleryItems[index];
+
     if (!item) return;
 
-    viewerNumber.textContent = item.number;
+    viewerNumber.textContent =
+        item.number;
+
     showScreen(viewerScreen);
+
     initViewer();
 
-    const url = MODEL_BASE + encodeURIComponent(item.filename);
-    loadModelIntoViewer(url, item.filename);
+    const url =
+        MODEL_BASE +
+        encodeURIComponent(
+            item.filename
+        );
+
+    loadModelIntoViewer(
+        url,
+        item.filename
+    );
 }
 
 function openArchiveViewer(index) {
@@ -3162,21 +3928,60 @@ function openArchiveViewer(index) {
 
     if (!requireAccess()) return;
 
-    const item = archiveModels[index];
+    const item =
+        archiveModels[index];
+
     if (!item) return;
 
-    viewerNumber.textContent = item.filename || "3D";
+    viewerNumber.textContent =
+        item.filename ||
+        "3D";
+
     showScreen(viewerScreen);
+
     initViewer();
 
-    const url = resolveArchiveUrl(item);
+    const url =
+        resolveArchiveUrl(item);
+
     if (!url) {
-        setViewerStatus("У модели нет доступного URL.", true);
+        setViewerStatus(
+            "У модели нет доступного URL.",
+            true
+        );
+
         return;
     }
 
-    loadModelIntoViewer(url, item.filename || "3D модель");
+    loadModelIntoViewer(
+        url,
+        item.filename ||
+            "3D модель"
+    );
 }
+
+/* =============================================================
+   RESTORE
+============================================================= */
+
+tonConnectUI.connectionRestored
+    .then(
+        restored => {
+            console.log(
+                "TON connection restored:",
+                restored
+            );
+        }
+    )
+    .catch(
+        error => {
+            console.error(
+                "TON RESTORE ERROR:",
+                error
+            );
+        }
+    );
+
 
 /* =============================================================
    RESTORE
