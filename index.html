@@ -12,7 +12,8 @@
     <title>AR Gallery</title>
 
     <!-- TON CONNECT -->
-    <script src="https://unpkg.com/@tonconnect/ui@3.0.0/dist/tonconnect-ui.min.js"></script>
+    <script src="https://unpkg.com/@tonconnect/ui@3.0.0/dist/tonconnect-ui.min.js">
+</script>
 
     <style>
 
@@ -791,6 +792,269 @@
 
         }
 
+
+        /* =========================================================
+           CAM / WEBXR AR
+        ========================================================= */
+
+        #camScreen {
+            background: #000;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        #camSelection {
+            flex-direction: column;
+            padding: 14px 18px 18px 18px;
+            overflow: hidden;
+        }
+
+        .camGrid {
+            width: 100%;
+            max-width: 1100px;
+            margin: auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 10px;
+            overflow-y: auto;
+            padding-bottom: 10px;
+        }
+
+        .camModelItem {
+            aspect-ratio: 1;
+            background: #080808;
+            color: #fff;
+            border: 1px solid #202020;
+            overflow: hidden;
+            position: relative;
+            text-align: left;
+        }
+
+        .camModelItem:hover {
+            background: #111;
+            border-color: #444;
+        }
+
+        .camModelItem.selected {
+            border-color: #fff;
+        }
+
+        .camModelPreview {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #444;
+            font-size: 28px;
+        }
+
+        .camModelInfo {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            padding: 38px 12px 12px 12px;
+            background: linear-gradient(transparent, rgba(0,0,0,.94));
+        }
+
+        .camModelName {
+            font-size: 11px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .camModelFolder {
+            margin-top: 5px;
+            color: #777;
+            font-size: 8px;
+            letter-spacing: .5px;
+        }
+
+        .camBottom {
+            width: 100%;
+            max-width: 520px;
+            margin: 10px auto 0 auto;
+            flex-shrink: 0;
+        }
+
+        .camSelected {
+            min-height: 18px;
+            color: #888;
+            font-size: 11px;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        .camButton {
+            width: 100%;
+            height: 52px;
+            background: #fff;
+            color: #000;
+            border: 1px solid #fff;
+            font-size: 13px;
+        }
+
+        .camButton:disabled {
+            opacity: .25;
+            cursor: default;
+        }
+
+        #camARScreen {
+            background: #000;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        #camARContainer {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            background: #000;
+        }
+
+        #camARContainer canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+
+        #camVideo {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            background: #000;
+            display: none;
+            z-index: 0;
+        }
+
+        #camFallbackCanvas {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .camARHeader {
+            position: absolute;
+            z-index: 20;
+            top: 14px;
+            left: 14px;
+            right: 14px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+        }
+
+        .camARTitle {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 14px;
+            color: #fff;
+        }
+
+        .camARStatus {
+            position: absolute;
+            z-index: 20;
+            left: 50%;
+            top: 76px;
+            transform: translateX(-50%);
+            width: min(88vw, 520px);
+            padding: 12px 14px;
+            background: rgba(0,0,0,.76);
+            border: 1px solid rgba(255,255,255,.14);
+            color: #ddd;
+            text-align: center;
+            font-size: 11px;
+            line-height: 1.45;
+            white-space: pre-line;
+            pointer-events: none;
+        }
+
+        .camARBottom {
+            position: absolute;
+            z-index: 20;
+            left: 50%;
+            bottom: 24px;
+            transform: translateX(-50%);
+            width: min(88vw, 360px);
+            display: flex;
+            gap: 8px;
+        }
+
+        .camARBottom button {
+            flex: 1;
+            height: 50px;
+            background: rgba(0,0,0,.76);
+            color: #fff;
+            border: 1px solid #444;
+            font-size: 12px;
+        }
+
+        .camARBottom button.primary {
+            background: #fff;
+            color: #000;
+            border-color: #fff;
+        }
+
+        .camARBottom button:disabled {
+            opacity: .3;
+        }
+
+        #camReticle {
+            position: absolute;
+            z-index: 15;
+            left: 50%;
+            top: 50%;
+            width: 46px;
+            height: 46px;
+            margin-left: -23px;
+            margin-top: -23px;
+            border: 1px solid rgba(255,255,255,.9);
+            border-radius: 50%;
+            display: none;
+            pointer-events: none;
+        }
+
+        #camReticle::before,
+        #camReticle::after {
+            content: "";
+            position: absolute;
+            background: #fff;
+            opacity: .9;
+        }
+
+        #camReticle::before {
+            left: 50%;
+            top: 7px;
+            bottom: 7px;
+            width: 1px;
+            transform: translateX(-50%);
+        }
+
+        #camReticle::after {
+            top: 50%;
+            left: 7px;
+            right: 7px;
+            height: 1px;
+            transform: translateY(-50%);
+        }
+
+        @media (max-width: 500px) {
+            .camGrid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .camARBottom {
+                bottom: calc(18px + env(safe-area-inset-bottom));
+            }
+        }
+
     </style>
 
 </head>
@@ -872,6 +1136,14 @@
                 type="button"
             >
                 ГЕНЕРАЦИЯ
+            </button>
+
+            <button
+                id="openCam"
+                class="menuButton"
+                type="button"
+            >
+                CAM
             </button>
 
             <button
@@ -1010,6 +1282,126 @@
     </div>
 
     <button id="viewerReset" class="viewerReset" type="button">⟳</button>
+
+</section>
+
+
+<!-- =============================================================
+     CAM MODEL SELECTION
+============================================================= -->
+
+<section
+    id="camScreen"
+    class="screen page"
+>
+
+    <div class="header">
+        <button
+            id="camBack"
+            class="backButton"
+            type="button"
+        >
+            ←
+        </button>
+
+        <div class="pageTitle">
+            CAM
+        </div>
+    </div>
+
+    <div
+        id="camStatus"
+        class="archiveStatus"
+    >
+        Загрузка 3D моделей...
+    </div>
+
+    <div
+        id="camGrid"
+        class="camGrid"
+    ></div>
+
+    <div class="camBottom">
+        <div
+            id="camSelected"
+            class="camSelected"
+        >
+            Сначала выберите 3D модель
+        </div>
+
+        <button
+            id="camStart"
+            class="camButton"
+            type="button"
+            disabled
+        >
+            ВКЛЮЧИТЬ КАМЕРУ
+        </button>
+    </div>
+
+</section>
+
+
+<!-- =============================================================
+     CAM AR
+============================================================= -->
+
+<section
+    id="camARScreen"
+    class="screen"
+>
+
+    <div id="camARContainer">
+        <video
+            id="camVideo"
+            playsinline
+            muted
+            autoplay
+        ></video>
+    </div>
+
+    <div class="camARHeader">
+        <button
+            id="camARBack"
+            class="backButton"
+            type="button"
+        >
+            ←
+        </button>
+
+        <div class="camARTitle">
+            CAM
+        </div>
+    </div>
+
+    <div
+        id="camARStatus"
+        class="camARStatus"
+    >
+        Подготовка камеры...
+    </div>
+
+    <div id="camReticle"></div>
+
+    <div class="camARBottom">
+
+        <button
+            id="camPlace"
+            class="primary"
+            type="button"
+            disabled
+        >
+            ПОМЕСТИТЬ
+        </button>
+
+        <button
+            id="camARStop"
+            type="button"
+        >
+            ЗАКРЫТЬ
+        </button>
+
+    </div>
 
 </section>
 
@@ -1179,6 +1571,15 @@ const GENERATION_API =
 const ARCHIVE_API =
     "https://api.araicameragame.party/api/models";
 
+/*
+    CAM API.
+
+    Если на твоём PC/Flask сервере endpoint называется иначе,
+    меняется только эта строка.
+*/
+const CAM_API =
+    "https://api.araicameragame.party/api/cam";
+
 
 const MODEL_BASE =
     "https://raw.githubusercontent.com/Roman22022000/ArGameCam/main/models/";
@@ -1205,6 +1606,48 @@ const generationScreen =
 
 const userScreen =
     document.getElementById("userScreen");
+
+const camScreen =
+    document.getElementById("camScreen");
+
+const camGrid =
+    document.getElementById("camGrid");
+
+const camStatus =
+    document.getElementById("camStatus");
+
+const camSelected =
+    document.getElementById("camSelected");
+
+const camStart =
+    document.getElementById("camStart");
+
+const camBack =
+    document.getElementById("camBack");
+
+const camARScreen =
+    document.getElementById("camARScreen");
+
+const camARContainer =
+    document.getElementById("camARContainer");
+
+const camVideo =
+    document.getElementById("camVideo");
+
+const camARBack =
+    document.getElementById("camARBack");
+
+const camARStop =
+    document.getElementById("camARStop");
+
+const camARStatus =
+    document.getElementById("camARStatus");
+
+const camPlace =
+    document.getElementById("camPlace");
+
+const camReticle =
+    document.getElementById("camReticle");
 
 
 const connectWallet =
@@ -1912,6 +2355,1688 @@ document
 
         }
     );
+
+
+
+/* =============================================================
+   CAM
+============================================================= */
+
+let camSelectedModel = null;
+let camSelectedModelUrl = "";
+let camModelsLoaded = false;
+
+let camXRSession = null;
+let camXRReferenceSpace = null;
+let camXRViewerSpace = null;
+let camXRHitTestSource = null;
+let camXRRenderer = null;
+let camXRScene = null;
+let camXRCamera = null;
+let camXRModel = null;
+let camXRReticle = null;
+let camXRPlaced = false;
+let camCameraStream = null;
+let camFallbackMode = false;
+let camLastXRFrame = null;
+
+const camLoader =
+    new GLTFLoader();
+
+camLoader.setCrossOrigin("anonymous");
+
+function setCamStatus(text) {
+    camStatus.textContent =
+        text || "";
+}
+
+function setCamARStatus(text) {
+    camARStatus.textContent =
+        text || "";
+}
+
+function selectCamModel(item, index) {
+
+    if (!item) return;
+
+    const url =
+        resolveArchiveUrl(item);
+
+    if (!url) {
+        setCamStatus(
+            "У выбранной модели отсутствует URL."
+        );
+        return;
+    }
+
+    camSelectedModel =
+        item;
+
+    camSelectedModelUrl =
+        url;
+
+    document
+        .querySelectorAll(".camModelItem")
+        .forEach(
+            element => {
+                element.classList.remove(
+                    "selected"
+                );
+            }
+        );
+
+    const selected =
+        document.querySelector(
+            `.camModelItem[data-index="${index}"]`
+        );
+
+    if (selected) {
+        selected.classList.add(
+            "selected"
+        );
+    }
+
+    camSelected.textContent =
+        "Выбрано: " +
+        (
+            item.filename ||
+            "3D модель"
+        );
+
+    camStart.disabled =
+        false;
+}
+
+function buildCamModelList() {
+
+    camGrid.innerHTML =
+        "";
+
+    if (!archiveModels.length) {
+        setCamStatus(
+            "В архиве нет доступных 3D моделей."
+        );
+
+        camStart.disabled =
+            true;
+
+        return;
+    }
+
+    setCamStatus(
+        "Выберите 3D модель"
+    );
+
+    archiveModels.forEach(
+        (item, index) => {
+
+            const button =
+                document.createElement(
+                    "button"
+                );
+
+            button.type =
+                "button";
+
+            button.className =
+                "camModelItem";
+
+            button.dataset.index =
+                String(index);
+
+            const preview =
+                document.createElement(
+                    "div"
+                );
+
+            preview.className =
+                "camModelPreview";
+
+            preview.textContent =
+                "3D";
+
+            button.appendChild(
+                preview
+            );
+
+            const info =
+                document.createElement(
+                    "div"
+                );
+
+            info.className =
+                "camModelInfo";
+
+            const name =
+                document.createElement(
+                    "div"
+                );
+
+            name.className =
+                "camModelName";
+
+            name.textContent =
+                item.filename ||
+                "model";
+
+            const folder =
+                document.createElement(
+                    "div"
+                );
+
+            folder.className =
+                "camModelFolder";
+
+            folder.textContent =
+                (
+                    item.folder ||
+                    ""
+                ).toUpperCase();
+
+            info.appendChild(name);
+            info.appendChild(folder);
+            button.appendChild(info);
+
+            button.addEventListener(
+                "click",
+                () => {
+                    selectCamModel(
+                        item,
+                        index
+                    );
+                }
+            );
+
+            camGrid.appendChild(
+                button
+            );
+        }
+    );
+
+    camModelsLoaded =
+        true;
+}
+
+async function openCamScreen() {
+
+    if (!requireAccess()) {
+        return;
+    }
+
+    showScreen(
+        camScreen
+    );
+
+    if (
+        !camModelsLoaded ||
+        !archiveModels.length
+    ) {
+        await loadArchiveModels();
+
+        if (
+            archiveModels.length
+        ) {
+            buildCamModelList();
+        }
+    } else {
+        buildCamModelList();
+    }
+}
+
+function createCamReticle() {
+
+    if (!camXRScene) {
+        return null;
+    }
+
+    const geometry =
+        new THREE.RingGeometry(
+            0.07,
+            0.085,
+            32
+        );
+
+    const material =
+        new THREE.MeshBasicMaterial({
+            color: 0xffffff,
+            side: THREE.DoubleSide
+        });
+
+    const ring =
+        new THREE.Mesh(
+            geometry,
+            material
+        );
+
+    ring.rotation.x =
+        -Math.PI / 2;
+
+    ring.matrixAutoUpdate =
+        false;
+
+    ring.visible =
+        false;
+
+    camXRScene.add(
+        ring
+    );
+
+    return ring;
+}
+
+function disposeCamObject(object) {
+
+    if (!object) {
+        return;
+    }
+
+    object.traverse(
+        child => {
+
+            if (child.geometry) {
+                child.geometry.dispose();
+            }
+
+            if (child.material) {
+
+                const materials =
+                    Array.isArray(
+                        child.material
+                    )
+                        ? child.material
+                        : [
+                            child.material
+                        ];
+
+                materials.forEach(
+                    material => {
+
+                        if (!material) {
+                            return;
+                        }
+
+                        const textureKeys = [
+                            "map",
+                            "normalMap",
+                            "roughnessMap",
+                            "metalnessMap",
+                            "emissiveMap",
+                            "aoMap",
+                            "alphaMap",
+                            "bumpMap",
+                            "displacementMap",
+                            "clearcoatMap",
+                            "clearcoatNormalMap",
+                            "clearcoatRoughnessMap",
+                            "iridescenceThicknessMap",
+                            "sheenColorMap",
+                            "sheenRoughnessMap",
+                            "specularColorMap",
+                            "specularIntensityMap",
+                            "transmissionMap",
+                            "thicknessMap"
+                        ];
+
+                        textureKeys.forEach(
+                            key => {
+
+                                if (
+                                    material[key] &&
+                                    material[key].isTexture
+                                ) {
+                                    material[key].dispose();
+                                }
+                            }
+                        );
+
+                        material.dispose();
+                    }
+                );
+            }
+        }
+    );
+}
+
+function disposeCamModel() {
+
+    if (
+        camXRModel &&
+        camXRScene
+    ) {
+        camXRScene.remove(
+            camXRModel
+        );
+
+        disposeCamObject(
+            camXRModel
+        );
+    }
+
+    camXRModel =
+        null;
+
+    camXRPlaced =
+        false;
+
+    camPlace.disabled =
+        true;
+}
+
+async function loadCamModel(url, label) {
+
+    disposeCamModel();
+
+    setCamARStatus(
+        "Загрузка " +
+        label +
+        "..."
+    );
+
+    const finalUrl =
+        url +
+        (
+            url.includes("?")
+                ? "&"
+                : "?"
+        ) +
+        "cam=" +
+        Date.now();
+
+    return new Promise(
+        (resolve, reject) => {
+
+            camLoader.load(
+                finalUrl,
+
+                gltf => {
+
+                    try {
+
+                        const object =
+                            gltf.scene;
+
+                        const box =
+                            new THREE.Box3()
+                                .setFromObject(
+                                    object
+                                );
+
+                        const size =
+                            box.getSize(
+                                new THREE.Vector3()
+                            );
+
+                        const maxSize =
+                            Math.max(
+                                size.x,
+                                size.y,
+                                size.z
+                            );
+
+                        if (
+                            !Number.isFinite(
+                                maxSize
+                            ) ||
+                            maxSize <= 0
+                        ) {
+                            throw new Error(
+                                "GLB не содержит корректной геометрии"
+                            );
+                        }
+
+                        /*
+                            AR-ориентированный масштаб.
+
+                            Обычный viewer нормализует модель
+                            под свою сцену 7x7x7.
+
+                            Здесь 1 единица Three.js =
+                            примерно 1 метр AR-пространства.
+
+                            Максимальный размер модели
+                            ограничивается 1 метром.
+                        */
+                        const targetSize =
+                            1.0;
+
+                        object.scale.setScalar(
+                            targetSize /
+                            maxSize
+                        );
+
+                        object.position.set(
+                            0,
+                            0,
+                            0
+                        );
+
+                        object.traverse(
+                            child => {
+
+                                if (
+                                    !child.isMesh
+                                ) {
+                                    return;
+                                }
+
+                                child.castShadow =
+                                    false;
+
+                                child.receiveShadow =
+                                    false;
+
+                                if (
+                                    child.material
+                                ) {
+
+                                    const materials =
+                                        Array.isArray(
+                                            child.material
+                                        )
+                                            ? child.material
+                                            : [
+                                                child.material
+                                            ];
+
+                                    materials.forEach(
+                                        material => {
+
+                                            if (
+                                                material &&
+                                                "envMapIntensity"
+                                                in material
+                                            ) {
+                                                material.envMapIntensity =
+                                                    0.7;
+                                            }
+                                        }
+                                    );
+                                }
+                            }
+                        );
+
+                        camXRModel =
+                            object;
+
+                        camXRScene.add(
+                            camXRModel
+                        );
+
+                        camXRModel.visible =
+                            false;
+
+                        setCamARStatus(
+                            "Модель загружена. Наведите камеру на поверхность."
+                        );
+
+                        resolve(
+                            camXRModel
+                        );
+
+                    } catch (error) {
+
+                        reject(
+                            error
+                        );
+                    }
+                },
+
+                xhr => {
+
+                    if (
+                        xhr &&
+                        xhr.total > 0
+                    ) {
+
+                        const percent =
+                            Math.round(
+                                xhr.loaded /
+                                xhr.total *
+                                100
+                            );
+
+                        setCamARStatus(
+                            `Загрузка ${label}: ${percent}%`
+                        );
+                    }
+                },
+
+                error => {
+
+                    reject(
+                        error ||
+                        new Error(
+                            "Не удалось загрузить GLB"
+                        )
+                    );
+                }
+            );
+        }
+    );
+}
+
+async function sendCamRequest() {
+
+    if (!currentWallet) {
+        return null;
+    }
+
+    if (!camSelectedModel) {
+        return null;
+    }
+
+    /*
+        Это данные телефона/браузера,
+        которые можно принять на Flask-сервере.
+
+        Видео камеры сюда НЕ отправляется.
+        AR tracking выполняется на телефоне.
+    */
+    const payload = {
+
+        wallet:
+            currentWallet,
+
+        model: {
+
+            id:
+                camSelectedModel.id ??
+                null,
+
+            filename:
+                camSelectedModel.filename ??
+                null,
+
+            folder:
+                camSelectedModel.folder ??
+                null,
+
+            url:
+                camSelectedModelUrl
+        },
+
+        device: {
+
+            userAgent:
+                navigator.userAgent,
+
+            platform:
+                navigator.platform || "",
+
+            language:
+                navigator.language || "",
+
+            vendor:
+                navigator.vendor || "",
+
+            screen: {
+
+                width:
+                    window.screen.width,
+
+                height:
+                    window.screen.height,
+
+                pixelRatio:
+                    window.devicePixelRatio ||
+                    1
+            },
+
+            viewport: {
+
+                width:
+                    window.innerWidth,
+
+                height:
+                    window.innerHeight
+            },
+
+            touchPoints:
+                navigator.maxTouchPoints ||
+                0,
+
+            online:
+                navigator.onLine,
+
+            cameraSupported:
+                !!(
+                    navigator.mediaDevices &&
+                    navigator.mediaDevices.getUserMedia
+                ),
+
+            webXRSupported:
+                !!navigator.xr
+        },
+
+        camera: {
+
+            requested:
+                true,
+
+            facingMode:
+                "environment",
+
+            width:
+                window.innerWidth,
+
+            height:
+                window.innerHeight
+        },
+
+        timestamp:
+            new Date().toISOString()
+    };
+
+    try {
+
+        const response =
+            await fetch(
+                CAM_API,
+                {
+                    method:
+                        "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json",
+
+                        "Accept":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify(
+                            payload
+                        )
+                }
+            );
+
+        const contentType =
+            (
+                response.headers.get(
+                    "content-type"
+                ) || ""
+            ).toLowerCase();
+
+        if (!response.ok) {
+
+            let message =
+                "CAM API HTTP " +
+                response.status;
+
+            if (
+                contentType.includes(
+                    "application/json"
+                )
+            ) {
+
+                const errorData =
+                    await response.json();
+
+                message =
+                    errorData.error ||
+                    errorData.message ||
+                    message;
+            }
+
+            throw new Error(
+                message
+            );
+        }
+
+        if (
+            !contentType.includes(
+                "application/json"
+            )
+        ) {
+            return null;
+        }
+
+        return await response.json();
+
+    } catch (error) {
+
+        /*
+            Ошибка CAM API не блокирует
+            локальный WebXR AR.
+
+            Это важно: модель всё равно
+            может быть размещена на телефоне.
+        */
+        console.warn(
+            "CAM API ERROR:",
+            error
+        );
+
+        return {
+            success:
+                false,
+
+            error:
+                error.message ||
+                "CAM API недоступен"
+        };
+    }
+}
+
+async function applyCamServerResponse(data) {
+
+    if (!data) {
+        return;
+    }
+
+    /*
+        Сервер может вернуть новую модель:
+
+        {
+            success: true,
+            model_url: "https://..."
+        }
+
+        или:
+
+        {
+            success: true,
+            url: "https://..."
+        }
+    */
+
+    const returnedUrl =
+        data.model_url ||
+        data.url ||
+        data.file_url ||
+        data.download_url ||
+        "";
+
+    if (!returnedUrl) {
+        return;
+    }
+
+    if (
+        returnedUrl ===
+        camSelectedModelUrl
+    ) {
+        return;
+    }
+
+    try {
+
+        await loadCamModel(
+            returnedUrl,
+            "модель с сервера"
+        );
+
+        setCamARStatus(
+            "Сервер вернул модель. Наведите камеру на поверхность."
+        );
+
+    } catch (error) {
+
+        console.error(
+            "CAM SERVER MODEL ERROR:",
+            error
+        );
+
+        setCamARStatus(
+            "Не удалось загрузить модель, возвращённую сервером."
+        );
+    }
+}
+
+async function startWebXRAR() {
+
+    if (!navigator.xr) {
+
+        throw new Error(
+            "WebXR AR не поддерживается этим браузером."
+        );
+    }
+
+    const supported =
+        await navigator.xr.isSessionSupported(
+            "immersive-ar"
+        );
+
+    if (!supported) {
+
+        throw new Error(
+            "Этот телефон или браузер не поддерживает immersive-ar."
+        );
+    }
+
+    if (
+        !camSelectedModel ||
+        !camSelectedModelUrl
+    ) {
+
+        throw new Error(
+            "Сначала выберите 3D модель."
+        );
+    }
+
+    camFallbackMode =
+        false;
+
+    showScreen(
+        camARScreen
+    );
+
+    setCamARStatus(
+        "Запрос доступа к AR-камере..."
+    );
+
+    camXRScene =
+        new THREE.Scene();
+
+    camXRCamera =
+        new THREE.PerspectiveCamera();
+
+    camXRRenderer =
+        new THREE.WebGLRenderer({
+            alpha: true,
+            antialias:
+                !isMobileDevice(),
+            powerPreference:
+                "high-performance"
+        });
+
+    camXRRenderer.setPixelRatio(
+        Math.min(
+            window.devicePixelRatio ||
+            1,
+            1.5
+        )
+    );
+
+    camXRRenderer.setSize(
+        window.innerWidth,
+        window.innerHeight,
+        false
+    );
+
+    camXRRenderer.xr.enabled =
+        true;
+
+    camXRRenderer.outputColorSpace =
+        THREE.SRGBColorSpace;
+
+    camARContainer.appendChild(
+        camXRRenderer.domElement
+    );
+
+    /*
+        Мягкое освещение для модели.
+    */
+    camXRScene.add(
+        new THREE.HemisphereLight(
+            0xffffff,
+            0x444444,
+            2.0
+        )
+    );
+
+    const key =
+        new THREE.DirectionalLight(
+            0xffffff,
+            2.0
+        );
+
+    key.position.set(
+        3,
+        5,
+        2
+    );
+
+    camXRScene.add(
+        key
+    );
+
+    camXRReticle =
+        createCamReticle();
+
+    camXRPlaced =
+        false;
+
+    camPlace.disabled =
+        true;
+
+    await loadCamModel(
+        camSelectedModelUrl,
+        camSelectedModel.filename ||
+        "3D модель"
+    );
+
+    /*
+        Отправляем данные телефона
+        на PC/API параллельно с AR.
+    */
+    const serverResponse =
+        await sendCamRequest();
+
+    if (
+        serverResponse &&
+        serverResponse.success === true
+    ) {
+
+        await applyCamServerResponse(
+            serverResponse
+        );
+    }
+
+    const session =
+        await navigator.xr.requestSession(
+            "immersive-ar",
+            {
+                requiredFeatures: [
+                    "local",
+                    "hit-test"
+                ],
+                optionalFeatures: [
+                    "dom-overlay"
+                ],
+                domOverlay: {
+                    root:
+                        camARScreen
+                }
+            }
+        );
+
+    camXRSession =
+        session;
+
+    session.addEventListener(
+        "end",
+        onCamXRSessionEnded
+    );
+
+    camXRRenderer.xr.setReferenceSpaceType(
+        "local"
+    );
+
+    await camXRRenderer.xr.setSession(
+        session
+    );
+
+    camXRReferenceSpace =
+        await session.requestReferenceSpace(
+            "local"
+        );
+
+    camXRViewerSpace =
+        await session.requestReferenceSpace(
+            "viewer"
+        );
+
+    try {
+
+        camXRHitTestSource =
+            await session.requestHitTestSource({
+                space:
+                    camXRViewerSpace
+            });
+
+    } catch (error) {
+
+        console.warn(
+            "Hit-test source error:",
+            error
+        );
+
+        camXRHitTestSource =
+            null;
+    }
+
+    setCamARStatus(
+        "Наведите камеру на пол или другую поверхность."
+    );
+
+    camPlace.disabled =
+        true;
+
+    camXRRenderer.setAnimationLoop(
+        renderCamXR
+    );
+}
+
+function renderCamXR(
+    timestamp,
+    frame
+) {
+
+    if (
+        !camXRSession ||
+        !camXRRenderer ||
+        !camXRScene ||
+        !camXRReferenceSpace
+    ) {
+        return;
+    }
+
+    camLastXRFrame =
+        frame;
+
+    let hitFound =
+        false;
+
+    if (
+        frame &&
+        camXRHitTestSource
+    ) {
+
+        const hitResults =
+            frame.getHitTestResults(
+                camXRHitTestSource
+            );
+
+        if (
+            hitResults.length > 0
+        ) {
+
+            const hit =
+                hitResults[0];
+
+            const pose =
+                hit.getPose(
+                    camXRReferenceSpace
+                );
+
+            if (pose) {
+
+                hitFound =
+                    true;
+
+                if (
+                    camXRReticle
+                ) {
+
+                    camXRReticle.visible =
+                        true;
+
+                    camXRReticle.matrix
+                        .fromArray(
+                            pose.transform
+                                .matrix
+                        );
+                }
+
+                /*
+                    Кнопка становится доступной
+                    только когда реально найдена
+                    поверхность.
+                */
+                if (
+                    !camXRPlaced
+                ) {
+                    camPlace.disabled =
+                        false;
+                }
+            }
+        }
+    }
+
+    if (
+        !hitFound &&
+        camXRReticle
+    ) {
+
+        camXRReticle.visible =
+            false;
+
+        if (
+            !camXRPlaced
+        ) {
+            camPlace.disabled =
+                true;
+        }
+    }
+
+    camXRRenderer.render(
+        camXRScene,
+        camXRCamera
+    );
+}
+
+function placeCamModel() {
+
+    if (
+        !camXRModel ||
+        !camXRReticle ||
+        !camXRReticle.visible
+    ) {
+        return;
+    }
+
+    /*
+        Копируем transform reticle.
+        Reticle лежит на реальной поверхности.
+    */
+    camXRModel.position.setFromMatrixPosition(
+        camXRReticle.matrix
+    );
+
+    const quaternion =
+        new THREE.Quaternion();
+
+    quaternion.setFromRotationMatrix(
+        camXRReticle.matrix
+    );
+
+    camXRModel.quaternion.copy(
+        quaternion
+    );
+
+    camXRModel.visible =
+        true;
+
+    camXRPlaced =
+        true;
+
+    camPlace.disabled =
+        true;
+
+    camXRReticle.visible =
+        false;
+
+    setCamARStatus(
+        "Модель размещена."
+    );
+}
+
+async function startCameraFallback() {
+
+    /*
+        Fallback нужен для телефонов,
+        где WebXR immersive-ar недоступен.
+
+        Здесь используется обычная камера
+        как фон. Это не заменяет настоящий
+        spatial WebXR tracking.
+    */
+
+    if (
+        !navigator.mediaDevices ||
+        !navigator.mediaDevices.getUserMedia
+    ) {
+
+        throw new Error(
+            "Браузер не предоставляет доступ к камере."
+        );
+    }
+
+    camFallbackMode =
+        true;
+
+    showScreen(
+        camARScreen
+    );
+
+    setCamARStatus(
+        "Запрос доступа к камере..."
+    );
+
+    camCameraStream =
+        await navigator.mediaDevices.getUserMedia({
+            audio:
+                false,
+
+            video: {
+                facingMode: {
+                    ideal:
+                        "environment"
+                },
+
+                width: {
+                    ideal:
+                        1920
+                },
+
+                height: {
+                    ideal:
+                        1080
+                }
+            }
+        });
+
+    camVideo.srcObject =
+        camCameraStream;
+
+    camVideo.style.display =
+        "block";
+
+    await camVideo.play();
+
+    /*
+        В fallback модель отображается
+        перед камерой. Пространственный
+        hit-test здесь недоступен.
+    */
+    if (
+        !camXRScene
+    ) {
+
+        camXRScene =
+            new THREE.Scene();
+    }
+
+    if (
+        !camXRCamera
+    ) {
+
+        camXRCamera =
+            new THREE.PerspectiveCamera(
+                55,
+                window.innerWidth /
+                window.innerHeight,
+                0.01,
+                100
+            );
+
+        camXRCamera.position.set(
+            0,
+            0,
+            0
+        );
+    }
+
+    if (
+        !camXRRenderer
+    ) {
+
+        camXRRenderer =
+            new THREE.WebGLRenderer({
+                alpha:
+                    true,
+                antialias:
+                    !isMobileDevice()
+            });
+
+        camXRRenderer.setPixelRatio(
+            Math.min(
+                window.devicePixelRatio ||
+                1,
+                1.5
+            )
+        );
+
+        camXRRenderer.setSize(
+            window.innerWidth,
+            window.innerHeight,
+            false
+        );
+
+        camXRRenderer.outputColorSpace =
+            THREE.SRGBColorSpace;
+
+        camARContainer.appendChild(
+            camXRRenderer.domElement
+        );
+    }
+
+    if (
+        !camXRModel
+    ) {
+
+        await loadCamModel(
+            camSelectedModelUrl,
+            camSelectedModel.filename ||
+            "3D модель"
+        );
+    }
+
+    camXRModel.position.set(
+        0,
+        -0.2,
+        -2
+    );
+
+    camXRModel.rotation.set(
+        0,
+        0,
+        0
+    );
+
+    camXRModel.visible =
+        true;
+
+    camPlace.disabled =
+        false;
+
+    setCamARStatus(
+        "Камера включена. WebXR недоступен — используется режим совместимости."
+    );
+
+    function fallbackRender() {
+
+        if (
+            !camFallbackMode
+        ) {
+            return;
+        }
+
+        requestAnimationFrame(
+            fallbackRender
+        );
+
+        if (
+            camXRRenderer &&
+            camXRScene &&
+            camXRCamera
+        ) {
+
+            camXRRenderer.render(
+                camXRScene,
+                camXRCamera
+            );
+        }
+    }
+
+    fallbackRender();
+}
+
+async function startCamCamera() {
+
+    if (!requireAccess()) {
+        return;
+    }
+
+    if (
+        !camSelectedModel ||
+        !camSelectedModelUrl
+    ) {
+
+        setCamStatus(
+            "Сначала выберите 3D модель."
+        );
+
+        return;
+    }
+
+    camStart.disabled =
+        true;
+
+    try {
+
+        if (
+            navigator.xr &&
+            await navigator.xr.isSessionSupported(
+                "immersive-ar"
+            )
+        ) {
+
+            await startWebXRAR();
+
+        } else {
+
+            await startCameraFallback();
+        }
+
+    } catch (error) {
+
+        console.error(
+            "CAM START ERROR:",
+            error
+        );
+
+        /*
+            Если WebXR не запустился
+            после выбора модели, пробуем
+            обычную камеру.
+        */
+        try {
+
+            if (
+                !camFallbackMode
+            ) {
+
+                await startCameraFallback();
+
+                return;
+            }
+
+        } catch (fallbackError) {
+
+            console.error(
+                "CAM FALLBACK ERROR:",
+                fallbackError
+            );
+
+            setCamARStatus(
+                fallbackError.message ||
+                error.message ||
+                "Не удалось включить камеру."
+            );
+
+            showScreen(
+                camScreen
+            );
+        }
+
+    } finally {
+
+        camStart.disabled =
+            false;
+    }
+}
+
+function stopCamCamera() {
+
+    camFallbackMode =
+        false;
+
+    if (
+        camXRSession
+    ) {
+
+        try {
+            camXRSession.end();
+        } catch {}
+    }
+
+    camXRSession =
+        null;
+
+    camXRHitTestSource =
+        null;
+
+    camXRReferenceSpace =
+        null;
+
+    camXRViewerSpace =
+        null;
+
+    if (
+        camXRRenderer
+    ) {
+
+        camXRRenderer.setAnimationLoop(
+            null
+        );
+    }
+
+    if (
+        camCameraStream
+    ) {
+
+        camCameraStream
+            .getTracks()
+            .forEach(
+                track => {
+                    track.stop();
+                }
+            );
+
+        camCameraStream =
+            null;
+    }
+
+    camVideo.srcObject =
+        null;
+
+    camVideo.style.display =
+        "none";
+
+    disposeCamModel();
+
+    if (
+        camXRRenderer
+    ) {
+
+        if (
+            camXRRenderer.domElement
+        ) {
+            camXRRenderer.domElement.remove();
+        }
+
+        camXRRenderer.dispose();
+    }
+
+    camXRRenderer =
+        null;
+
+    camXRScene =
+        null;
+
+    camXRCamera =
+        null;
+
+    camXRReticle =
+        null;
+
+    camXRPlaced =
+        false;
+
+    camPlace.disabled =
+        true;
+
+    setCamARStatus(
+        "Камера остановлена."
+    );
+}
+
+function onCamXRSessionEnded() {
+
+    camXRSession =
+        null;
+
+    camXRHitTestSource =
+        null;
+
+    if (
+        camXRRenderer
+    ) {
+
+        camXRRenderer.setAnimationLoop(
+            null
+        );
+    }
+
+    camXRPlaced =
+        false;
+
+    camPlace.disabled =
+        true;
+}
+
+document
+    .getElementById("openCam")
+    .addEventListener(
+        "click",
+        async () => {
+
+            await openCamScreen();
+
+        }
+    );
+
+camBack.addEventListener(
+    "click",
+    () => {
+
+        stopCamCamera();
+
+        showScreen(
+            homeScreen
+        );
+    }
+);
+
+camStart.addEventListener(
+    "click",
+    async () => {
+
+        await startCamCamera();
+
+    }
+);
+
+camPlace.addEventListener(
+    "click",
+    () => {
+
+        if (
+            camFallbackMode
+        ) {
+
+            setCamARStatus(
+                "В режиме совместимости модель уже отображается в кадре."
+            );
+
+            return;
+        }
+
+        placeCamModel();
+
+    }
+);
+
+camARStop.addEventListener(
+    "click",
+    () => {
+
+        stopCamCamera();
+
+        showScreen(
+            camScreen
+        );
+    }
+);
+
+camARBack.addEventListener(
+    "click",
+    () => {
+
+        stopCamCamera();
+
+        showScreen(
+            camScreen
+        );
+    }
+);
+
+window.addEventListener(
+    "resize",
+    () => {
+
+        if (
+            camXRRenderer &&
+            camXRCamera &&
+            !camXRSession
+        ) {
+
+            camXRCamera.aspect =
+                window.innerWidth /
+                window.innerHeight;
+
+            camXRCamera.updateProjectionMatrix();
+
+            camXRRenderer.setSize(
+                window.innerWidth,
+                window.innerHeight,
+                false
+            );
+        }
+    }
+);
 
 
 /* =============================================================
@@ -4009,6 +6134,31 @@ tonConnectUI.connectionRestored
         }
     );
 
+
+window.addEventListener(
+    "pagehide",
+    () => {
+        stopCamCamera();
+    }
+);
+
+document.addEventListener(
+    "visibilitychange",
+    () => {
+
+        if (
+            document.hidden &&
+            camXRSession
+        ) {
+            /*
+                Не завершаем session автоматически:
+                некоторые браузеры временно скрывают
+                вкладку. Камера/AR может продолжиться
+                после возврата.
+            */
+        }
+    }
+);
 
 </script>
 
