@@ -6,7 +6,7 @@
 
     <meta
         name="viewport"
-        content="width=device-width, initial-scale=1.0"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     >
 
     <title>AR Gallery</title>
@@ -39,6 +39,165 @@
 
         body {
             -webkit-font-smoothing: antialiased;
+            overscroll-behavior: none;
+        }
+
+        #viewerScreen {
+            touch-action: none;
+            overflow: hidden;
+            background: #000;
+        }
+
+        #viewerCanvas {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        #viewerCanvas canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+
+        .viewerHint {
+            position: absolute;
+            left: 50%;
+            bottom: 92px;
+            transform: translateX(-50%);
+            width: min(92vw, 560px);
+            padding: 10px 14px;
+            background: rgba(0,0,0,.72);
+            border: 1px solid #242424;
+            color: #aaa;
+            text-align: center;
+            font-size: 11px;
+            line-height: 1.4;
+            pointer-events: none;
+            z-index: 20;
+            transition: opacity .4s ease;
+        }
+
+        .viewerControls {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            padding: 0 18px;
+            pointer-events: none;
+            z-index: 25;
+        }
+
+        .joystickZone,
+        .lookZone {
+            width: 112px;
+            height: 112px;
+            position: relative;
+            pointer-events: auto;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .joystickBase {
+            position: absolute;
+            inset: 12px;
+            border: 1px solid #444;
+            background: rgba(8,8,8,.68);
+            border-radius: 50%;
+        }
+
+        .joystickKnob {
+            position: absolute;
+            width: 44px;
+            height: 44px;
+            left: 50%;
+            top: 50%;
+            margin-left: -22px;
+            margin-top: -22px;
+            border: 1px solid #777;
+            background: rgba(255,255,255,.12);
+            border-radius: 50%;
+            transform: translate3d(0,0,0);
+        }
+
+        .lookZone {
+            border: 1px solid rgba(255,255,255,.12);
+            background: rgba(8,8,8,.28);
+            border-radius: 12px;
+        }
+
+        .lookLabel {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-size: 10px;
+            letter-spacing: .5px;
+            pointer-events: none;
+        }
+
+        .viewerReset {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            width: 40px;
+            height: 40px;
+            background: rgba(8,8,8,.82);
+            color: #fff;
+            border: 1px solid #242424;
+            font-size: 20px;
+            z-index: 30;
+            pointer-events: auto;
+        }
+
+        .viewerStatus {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: min(88vw, 520px);
+            padding: 14px 16px;
+            background: rgba(0,0,0,.86);
+            border: 1px solid #242424;
+            color: #bbb;
+            text-align: center;
+            font-size: 12px;
+            line-height: 1.5;
+            white-space: pre-line;
+            z-index: 28;
+            pointer-events: none;
+        }
+
+        @media (max-width: 700px) {
+            .viewerControls {
+                bottom: 14px;
+                padding: 0 10px;
+            }
+            .joystickZone,
+            .lookZone {
+                width: 100px;
+                height: 100px;
+            }
+            .viewerHint {
+                bottom: 126px;
+                font-size: 10px;
+            }
+        }
+
+        @media (min-width: 701px) {
+            .viewerControls {
+                opacity: .55;
+            }
         }
 
         button,
@@ -612,102 +771,6 @@
 
 
         /* =========================================================
-           3D WALKING VIEWER
-        ========================================================= */
-
-        .viewerHelp {
-            position: absolute;
-            z-index: 20;
-            left: 50%;
-            bottom: 18px;
-            transform: translateX(-50%);
-            padding: 9px 14px;
-            border: 1px solid #242424;
-            background: rgba(0, 0, 0, .72);
-            color: #aaa;
-            font-size: 11px;
-            text-align: center;
-            pointer-events: none;
-            white-space: nowrap;
-        }
-
-        .viewerError {
-            position: absolute;
-            z-index: 30;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-            width: min(520px, calc(100% - 30px));
-            padding: 18px;
-            border: 1px solid #333;
-            background: rgba(0, 0, 0, .9);
-            color: #fff;
-            font-size: 12px;
-            line-height: 1.5;
-            text-align: center;
-            display: none;
-            pointer-events: none;
-        }
-
-        .viewerLoading {
-            position: absolute;
-            z-index: 25;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-            padding: 10px 14px;
-            background: rgba(0, 0, 0, .75);
-            color: #aaa;
-            font-size: 11px;
-            display: none;
-            pointer-events: none;
-        }
-
-        .viewerCrosshair {
-            position: absolute;
-            z-index: 19;
-            left: 50%;
-            top: 50%;
-            width: 7px;
-            height: 7px;
-            margin: -3px 0 0 -3px;
-            border: 1px solid rgba(255,255,255,.8);
-            border-radius: 50%;
-            pointer-events: none;
-        }
-
-        .viewerLookPad {
-            position: absolute;
-            inset: 0;
-            z-index: 3;
-            touch-action: none;
-            pointer-events: none;
-        }
-
-        .viewerTouch {
-            position: absolute;
-            z-index: 25;
-            right: 14px;
-            bottom: 18px;
-            display: none;
-            grid-template-columns: repeat(3, 44px);
-            grid-template-rows: repeat(2, 44px);
-            gap: 6px;
-        }
-
-        .viewerTouch button {
-            background: rgba(10,10,10,.78);
-            color: #fff;
-            border: 1px solid #333;
-            font-size: 16px;
-        }
-
-        .viewerTouch .up { grid-column: 2; }
-        .viewerTouch .left { grid-column: 1; grid-row: 2; }
-        .viewerTouch .down { grid-column: 2; grid-row: 2; }
-        .viewerTouch .right { grid-column: 3; grid-row: 2; }
-
-        /* =========================================================
            MOBILE
         ========================================================= */
 
@@ -912,31 +975,6 @@
         id="viewerCanvas"
     ></div>
 
-    <div
-        id="viewerLoading"
-        class="viewerLoading"
-    >
-        ЗАГРУЗКА 3D МОДЕЛИ
-    </div>
-
-    <div
-        id="viewerError"
-        class="viewerError"
-    ></div>
-
-    <div class="viewerCrosshair"></div>
-
-    <div class="viewerHelp">ПК: WASD — движение · мышь — обзор · Shift — быстрее · Space — вверх · Ctrl — вниз. Телефон: кнопки — движение · свайп — обзор.</div>
-
-    <div class="viewerLookPad" id="viewerLookPad"></div>
-
-    <div class="viewerTouch" id="viewerTouch">
-        <button class="up" data-key="KeyW" type="button">▲</button>
-        <button class="left" data-key="KeyA" type="button">◀</button>
-        <button class="down" data-key="KeyS" type="button">▼</button>
-        <button class="right" data-key="KeyD" type="button">▶</button>
-    </div>
-
     <div class="viewerHeader">
 
         <button
@@ -955,6 +993,23 @@
         </div>
 
     </div>
+
+    <div id="viewerStatus" class="viewerStatus">Загрузка 3D сцены...</div>
+
+    <div id="viewerHint" class="viewerHint">Телефон: левый круг — движение, правое поле — обзор. ПК: WASD + мышь.</div>
+
+    <div class="viewerControls">
+        <div id="moveJoystick" class="joystickZone">
+            <div class="joystickBase"></div>
+            <div id="joystickKnob" class="joystickKnob"></div>
+        </div>
+
+        <div id="lookZone" class="lookZone">
+            <div class="lookLabel">ОБЗОР</div>
+        </div>
+    </div>
+
+    <button id="viewerReset" class="viewerReset" type="button">⟳</button>
 
 </section>
 
@@ -1101,22 +1156,6 @@ import {
     GLTFLoader
 } from "three/addons/loaders/GLTFLoader.js";
 
-import {
-    FBXLoader
-} from "three/addons/loaders/FBXLoader.js";
-
-import {
-    OBJLoader
-} from "three/addons/loaders/OBJLoader.js";
-
-import {
-    STLLoader
-} from "three/addons/loaders/STLLoader.js";
-
-import {
-    PointerLockControls
-} from "three/addons/controls/PointerLockControls.js";
-
 
 /* =============================================================
    CONFIG
@@ -1134,24 +1173,11 @@ const REQUIRED_COLLECTION_RAW =
     "0:fd9a6de1c7e42f1d8346d7c80369a26d4934d04d5558563eb38689d7a1c8f6";
 
 
-const API_BASE =
-    "https://api.araicameragame.party";
-
-
-const AUTH_API =
-    API_BASE + "/api/auth";
-
-
-const MODEL_REQUEST_API =
-    API_BASE + "/api/model/request";
-
-
 const GENERATION_API =
-    API_BASE + "/api/generation";
-
+    "https://api.araicameragame.party/api/generation";
 
 const ARCHIVE_API =
-    API_BASE + "/api/models";
+    "https://api.araicameragame.party/api/models";
 
 
 const MODEL_BASE =
@@ -1272,7 +1298,7 @@ const tonConnectUI =
             null,
 
         restoreConnection:
-            false
+            true
 
     });
 
@@ -1308,107 +1334,22 @@ tonConnectUI.uiOptions = {
     на desktop.
 */
 
-async function requestAuthChallenge() {
-
-    let response;
-
-    try {
-
-        response = await fetch(
-            AUTH_API + "/challenge",
-            {
-                method: "POST",
-                mode: "cors",
-                credentials: "omit",
-                cache: "no-store",
-                headers: {
-                    "Accept": "application/json",
-                    "Content-Type": "application/json"
-                },
-                body: "{}"
-            }
-        );
-
-    } catch (error) {
-
-        throw new Error(
-            "Не удалось подключиться к API авторизации. " +
-            "Проверьте Cloudflare Tunnel/Worker, адрес " +
-            AUTH_API + "/challenge и CORS. " +
-            (error?.message || String(error))
-        );
-
-    }
-
-    const data = await response.json().catch(() => ({}));
-
-    if (!response.ok || !data.success || !data.payload) {
-        throw new Error(
-            data.error ||
-            ("API авторизации HTTP " + response.status)
-        );
-    }
-
-    authChallenge = data.payload;
-
-    return authChallenge;
-}
-
-
-async function prepareTonProof() {
-
-    tonConnectUI.setConnectRequestParameters({
-        state: "loading"
-    });
-
-    const payload =
-        await requestAuthChallenge();
-
-    tonConnectUI.setConnectRequestParameters({
-        state: "ready",
-        value: {
-            tonProof: payload
-        }
-    });
-
-    return payload;
-}
-
-
 connectWallet.addEventListener(
     "click",
     async () => {
 
-        if (checkingNFT) {
-            return;
-        }
-
         try {
-
-            authStatus.textContent =
-                "Подготовка защищённого подключения...";
-
-            try {
-                await tonConnectUI.disconnect();
-            } catch (_) {}
-
-            await prepareTonProof();
 
             await tonConnectUI.openModal();
 
         } catch (error) {
 
             console.error(
-                "TON CONNECT AUTH:",
+                "TON Connect:",
                 error
             );
 
-            tonConnectUI.setConnectRequestParameters({
-                state: "loading"
-            });
-
             authStatus.textContent =
-                error?.message ||
                 "Ошибка открытия TON Connect";
 
         }
@@ -1583,77 +1524,93 @@ async function checkCollectionNFT(
 
     const url =
         "https://tonapi.io/v2/accounts/" +
-        encodeURIComponent(walletAddress) +
+        encodeURIComponent(
+            walletAddress
+        ) +
         "/nfts?limit=1000";
+
 
     const response =
         await fetch(url, {
+
             method: "GET",
+
             headers: {
-                "Accept": "application/json"
+                "Accept":
+                    "application/json"
             }
+
         });
 
+
     if (!response.ok) {
+
         throw new Error(
-            "TonAPI HTTP " + response.status
+            "TonAPI HTTP " +
+            response.status
         );
+
     }
 
-    const data = await response.json();
+
+    const data =
+        await response.json();
+
 
     const nftItems =
-        Array.isArray(data.nft_items)
+        Array.isArray(
+            data.nft_items
+        )
             ? data.nft_items
             : [];
 
-    for (const nft of nftItems) {
+
+    for (
+        const nft of nftItems
+    ) {
 
         const collectionAddress =
             nft.collection?.address ||
             nft.collection_address ||
             "";
 
+
         if (!collectionAddress) {
             continue;
         }
 
+
         const normalized =
-            normalizeTonAddress(collectionAddress);
+            normalizeTonAddress(
+                collectionAddress
+            );
+
 
         if (
-            normalized === normalizedRequiredCollection ||
-            normalized === normalizeTonAddress(REQUIRED_COLLECTION_RAW)
+            normalized ===
+                normalizedRequiredCollection
+            ||
+            normalized ===
+                REQUIRED_COLLECTION_RAW
         ) {
-            return {
-                address: String(
-                    nft.address ||
-                    nft.item_address ||
-                    ""
-                ),
-                collection: String(collectionAddress)
-            };
+
+            return true;
+
         }
+
     }
 
-    return null;
+
+    return false;
 
 }
+
 
 /* =============================================================
    WALLET
 ============================================================= */
 
 let currentWallet =
-    null;
-
-let currentNFT =
-    null;
-
-let accessToken =
-    null;
-
-let authChallenge =
     null;
 
 let accessGranted =
@@ -1669,190 +1626,145 @@ async function processWallet(
 
     if (!wallet) {
 
-        currentWallet = null;
-        currentNFT = null;
-        accessToken = null;
-        authChallenge = null;
-        accessGranted = false;
+        currentWallet =
+            null;
 
-        userWalletAddress.textContent = "";
-        userStatus.textContent = "";
-        authStatus.textContent = "Подключите TON-кошелёк";
-        showScreen(authScreen);
+        accessGranted =
+            false;
+
+        userWalletAddress.textContent =
+            "";
+
+        userStatus.textContent =
+            "";
+
+        authStatus.textContent =
+            "Подключите TON-кошелёк";
+
+        showScreen(
+            authScreen
+        );
+
         return;
+
     }
 
-    if (checkingNFT) {
+
+    if (
+        checkingNFT
+    ) {
+
         return;
+
     }
 
-    if (!wallet.account || !wallet.account.address) {
+
+    if (
+        !wallet.account ||
+        !wallet.account.address
+    ) {
+
         return;
+
     }
 
-    currentWallet = wallet.account.address;
-    accessGranted = false;
-    currentNFT = null;
-    accessToken = null;
-    checkingNFT = true;
+
+    currentWallet =
+        wallet.account.address;
+
+
+    accessGranted =
+        false;
+
+    checkingNFT =
+        true;
+
 
     authStatus.textContent =
-        "Проверка NFT и подписи кошелька...";
+        "Проверка NFT...";
 
-    loading.classList.add("active");
+
+    loading.classList.add(
+        "active"
+    );
+
 
     try {
 
-        const nft =
-            await checkCollectionNFT(currentWallet);
+        const hasNFT =
+            await checkCollectionNFT(
+                currentWallet
+            );
 
-        if (!nft || !nft.address) {
-            accessGranted = false;
-            currentNFT = null;
+
+        if (!hasNFT) {
+
+            accessGranted =
+                false;
+
+
             authStatus.textContent =
                 "NFT нужной коллекции не найден";
-            showScreen(authScreen);
-            return;
-        }
 
-        currentNFT = {
-            address: nft.address,
-            collection: nft.collection
-        };
 
-        let tonProof =
-            wallet.connectItems?.tonProof;
-
-        if (!tonProof && Array.isArray(wallet.connectItems)) {
-            tonProof = wallet.connectItems.find(
-                item =>
-                    item?.name === "ton_proof" ||
-                    item?.type === "ton_proof"
+            showScreen(
+                authScreen
             );
-        }
 
-        if (!tonProof) {
-            accessGranted = false;
-            authStatus.textContent =
-                "TON Proof не получен. Выполните новое подключение кошелька.";
-            try {
-                await tonConnectUI.disconnect();
-            } catch (_) {}
-            showScreen(authScreen);
+
             return;
+
         }
 
-        if (tonProof.error) {
-            accessGranted = false;
-            authStatus.textContent =
-                "Кошелёк не предоставил TON Proof: " +
-                (tonProof.error.message || "кошелёк не поддерживает TON Proof");
-            console.error("TON Proof error:", tonProof.error);
-            try {
-                await tonConnectUI.disconnect();
-            } catch (_) {}
-            showScreen(authScreen);
-            return;
-        }
 
-        if (!tonProof.proof) {
-            accessGranted = false;
-            authStatus.textContent =
-                "TON Proof отсутствует. Подключите кошелёк заново.";
-            try {
-                await tonConnectUI.disconnect();
-            } catch (_) {}
-            showScreen(authScreen);
-            return;
-        }
+        accessGranted =
+            true;
 
-        const proof = tonProof.proof;
 
-        if (
-            !proof.payload ||
-            !authChallenge ||
-            proof.payload !== authChallenge
-        ) {
-            accessGranted = false;
-            authStatus.textContent =
-                "Срок авторизации истёк. Подключите кошелёк заново.";
-            showScreen(authScreen);
-            return;
-        }
+        userWalletAddress.textContent =
+            currentWallet;
+
 
         authStatus.textContent =
-            "Проверка подписи TON Proof на сервере...";
+            "Доступ разрешён";
 
-        let verifyResponse;
 
-        try {
-            verifyResponse = await fetch(
-                AUTH_API + "/verify",
-                {
-                    method: "POST",
-                    mode: "cors",
-                    credentials: "omit",
-                    cache: "no-store",
-                    headers: {
-                        "Accept": "application/json",
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        wallet: currentWallet,
-                        nft: currentNFT,
-                        proof: proof,
-                        walletStateInit:
-                            wallet.account.walletStateInit || "",
-                        network:
-                            wallet.account.chain || "-239"
-                    })
-                }
-            );
-        } catch (error) {
-            throw new Error(
-                "Ошибка сети при серверной проверке кошелька: " +
-                (error?.message || String(error))
-            );
-        }
+        showScreen(
+            homeScreen
+        );
 
-        const verifyData =
-            await verifyResponse.json().catch(() => ({}));
-
-        if (
-            !verifyResponse.ok ||
-            !verifyData.success ||
-            !verifyData.token
-        ) {
-            throw new Error(
-                verifyData.error ||
-                ("Сервер авторизации HTTP " + verifyResponse.status)
-            );
-        }
-
-        accessToken = verifyData.token;
-        accessGranted = true;
-
-        userWalletAddress.textContent = currentWallet;
-        authStatus.textContent = "Доступ разрешён";
-        showScreen(homeScreen);
 
     } catch (error) {
 
-        console.error("WALLET AUTH ERROR:", error);
+        console.error(
+            "NFT CHECK ERROR:",
+            error
+        );
 
-        accessGranted = false;
-        accessToken = null;
+
+        accessGranted =
+            false;
+
 
         authStatus.textContent =
-            error?.message ||
-            "Ошибка проверки кошелька";
+            "Ошибка проверки NFT";
 
-        showScreen(authScreen);
+
+        showScreen(
+            authScreen
+        );
+
 
     } finally {
 
-        checkingNFT = false;
-        loading.classList.remove("active");
+        checkingNFT =
+            false;
+
+
+        loading.classList.remove(
+            "active"
+        );
+
     }
 
 }
@@ -1896,9 +1808,7 @@ function requireAccess() {
 
     if (
         !accessGranted ||
-        !currentWallet ||
-        !accessToken ||
-        !currentNFT
+        !currentWallet
     ) {
 
         showScreen(
@@ -1957,7 +1867,7 @@ document
                 archiveScreen
             );
 
-            startArchiveAutoRefresh();
+            await loadArchiveModels();
 
         }
     );
@@ -2270,57 +2180,21 @@ generationSubmit.addEventListener(
    BACK
 ============================================================= */
 
-document
-    .getElementById("galleryBack")
-    .addEventListener(
-        "click",
-        () => {
+document.getElementById("galleryBack").addEventListener("click", () => {
+    showScreen(homeScreen);
+});
 
-            showScreen(
-                homeScreen
-            );
+document.getElementById("archiveBack").addEventListener("click", () => {
+    showScreen(homeScreen);
+});
 
-        }
-    );
-
-
-document
-    .getElementById("archiveBack")
-    .addEventListener(
-        "click",
-        () => {
-            showScreen(
-                homeScreen
-            );
-        }
-    );
-
-
-document
-    .getElementById("viewerBack")
-    .addEventListener(
-        "click",
-        () => {
-
-            if (
-                viewerOpenedFromArchive
-            ) {
-
-                showScreen(
-                    archiveScreen
-                );
-
-            } else {
-
-                showScreen(
-                    galleryScreen
-                );
-
-            }
-
-        }
-    );
-
+document.getElementById("viewerBack").addEventListener("click", () => {
+    if (viewerOpenedFromArchive) {
+        showScreen(archiveScreen);
+    } else {
+        showScreen(galleryScreen);
+    }
+});
 
 /* =============================================================
    GENERATION BACK
@@ -2385,84 +2259,25 @@ generationBack.addEventListener(
 ============================================================= */
 
 let archiveModels = [];
-let archiveRefreshTimer = null;
-let lastArchiveSignature = "";
 
-function getArchiveModelUrl(item) {
+async function loadArchiveModels() {
 
-    if (!item) return "";
+    archiveStatus.textContent =
+        "Загрузка 3D моделей...";
 
-    // API возвращает /api/models/file/<id>.
-    // Всегда собираем полный URL на API-домене.
-    if (item.id !== undefined && item.id !== null) {
-        return (
-            ARCHIVE_API.replace(/\/$/, "") +
-            "/file/" +
-            encodeURIComponent(String(item.id))
-        );
-    }
-
-    if (item.url) {
-        const value = String(item.url);
-
-        if (/^https?:\/\//i.test(value)) {
-            return value;
-        }
-
-        return (
-            ARCHIVE_API.replace(/\/$/, "") +
-            "/" +
-            value.replace(/^\/+/, "")
-        );
-    }
-
-    return "";
-}
-
-function getModelExtension(item) {
-
-    const name = String(
-        item?.filename ||
-        item?.name ||
-        item?.file ||
-        ""
-    ).toLowerCase();
-
-    return name.split(".").pop();
-}
-
-function getArchiveSignature(items) {
-
-    return items.map(item => (
-        String(item.id ?? "") + "|" +
-        String(item.filename ?? item.name ?? "") + "|" +
-        String(item.url ?? "")
-    )).join("||");
-}
-
-async function loadArchiveModels(silent = false) {
-
-    if (!silent) {
-        archiveStatus.textContent =
-            "Загрузка 3D моделей...";
-    }
+    archiveGrid.innerHTML =
+        "";
 
     try {
 
-        const response = await fetch(
-            ARCHIVE_API,
-            {
-                method: "GET",
-                mode: "cors",
-                credentials: "omit",
-                cache: "no-store",
-                headers: {
-                    "Accept": "application/json",
-                    "Authorization":
-                        "Bearer " + (accessToken || "")
+        const response =
+            await fetch(
+                ARCHIVE_API,
+                {
+                    method: "GET",
+                    cache: "no-store"
                 }
-            }
-        );
+            );
 
         if (!response.ok) {
             throw new Error(
@@ -2470,122 +2285,129 @@ async function loadArchiveModels(silent = false) {
             );
         }
 
-        const data = await response.json();
+        const data =
+            await response.json();
 
-        const items = Array.isArray(data.items)
-            ? data.items
-            : Array.isArray(data)
-                ? data
+        archiveModels =
+            Array.isArray(data.items)
+                ? data.items
                 : [];
 
-        const signature = getArchiveSignature(items);
-
-        archiveModels = items;
-
         if (!archiveModels.length) {
+
             archiveStatus.textContent =
                 "В архиве пока нет 3D моделей.";
-            archiveGrid.innerHTML = "";
-            lastArchiveSignature = signature;
+
             return;
         }
-
-        if (silent && signature === lastArchiveSignature) {
-            return;
-        }
-
-        lastArchiveSignature = signature;
-        archiveGrid.innerHTML = "";
 
         archiveStatus.textContent =
-            "Моделей: " + archiveModels.length;
+            "Моделей: " +
+            archiveModels.length;
 
-        archiveModels.forEach((item, index) => {
+        archiveModels.forEach(
+            (item, index) => {
 
-            const button = document.createElement("button");
-            button.type = "button";
-            button.className = "archiveItem";
+                const button =
+                    document.createElement(
+                        "button"
+                    );
 
-            const preview = document.createElement("div");
-            preview.className = "archivePlaceholder";
-            preview.textContent =
-                getModelExtension(item).toUpperCase() || "3D";
-            button.appendChild(preview);
+                button.type =
+                    "button";
 
-            const info = document.createElement("div");
-            info.className = "archiveInfo";
+                button.className =
+                    "archiveItem";
 
-            const name = document.createElement("div");
-            name.className = "archiveName";
-            name.textContent =
-                item.filename || item.name || "model";
+                const preview =
+                    document.createElement(
+                        "div"
+                    );
 
-            const folder = document.createElement("div");
-            folder.className = "archiveFolder";
-            folder.textContent =
-                String(item.folder || getModelExtension(item) || "3D").toUpperCase();
+                preview.className =
+                    "archivePlaceholder";
 
-            info.appendChild(name);
-            info.appendChild(folder);
-            button.appendChild(info);
+                preview.textContent =
+                    "3D";
 
-            button.addEventListener("click", () => {
-                openArchiveViewer(index);
-            });
+                button.appendChild(
+                    preview
+                );
 
-            archiveGrid.appendChild(button);
-        });
+                const info =
+                    document.createElement(
+                        "div"
+                    );
+
+                info.className =
+                    "archiveInfo";
+
+                const name =
+                    document.createElement(
+                        "div"
+                    );
+
+                name.className =
+                    "archiveName";
+
+                name.textContent =
+                    item.filename || "model";
+
+                const folder =
+                    document.createElement(
+                        "div"
+                    );
+
+                folder.className =
+                    "archiveFolder";
+
+                folder.textContent =
+                    (
+                        item.folder || ""
+                    ).toUpperCase();
+
+                info.appendChild(
+                    name
+                );
+
+                info.appendChild(
+                    folder
+                );
+
+                button.appendChild(
+                    info
+                );
+
+                button.addEventListener(
+                    "click",
+                    () => {
+                        openArchiveViewer(
+                            index
+                        );
+                    }
+                );
+
+                archiveGrid.appendChild(
+                    button
+                );
+
+            }
+        );
 
     } catch (error) {
 
-        console.error("ARCHIVE ERROR:", error);
+        console.error(
+            "ARCHIVE ERROR:",
+            error
+        );
 
-        if (!silent || !archiveModels.length) {
-            archiveStatus.textContent =
-                "Не удалось получить архив: " +
-                (error.message || error);
-        }
-    }
-}
+        archiveStatus.textContent =
+            "Не удалось получить архив.";
 
-function startArchiveAutoRefresh() {
-
-    if (archiveRefreshTimer) {
-        return;
     }
 
-    loadArchiveModels(false);
-
-    archiveRefreshTimer = setInterval(() => {
-        loadArchiveModels(true);
-    }, 2000);
 }
 
-function stopArchiveAutoRefresh() {
-
-    if (archiveRefreshTimer) {
-        clearInterval(archiveRefreshTimer);
-        archiveRefreshTimer = null;
-    }
-}
-
-function openArchiveViewer(index) {
-
-    viewerOpenedFromArchive = true;
-
-    const item = archiveModels[index];
-
-    if (!item) {
-        return;
-    }
-
-    viewerNumber.textContent =
-        item.filename || item.name || "3D";
-
-    showScreen(viewerScreen);
-    initViewer();
-    loadArchiveModel(item);
-}
 
 /* =============================================================
    GALLERY DATA
@@ -2668,952 +2490,1070 @@ buildGallery();
 
 
 /* =============================================================
-   THREE.JS VIEWER + FIRST PERSON WALKING
+   THREE.JS VIEWER
 ============================================================= */
 
 let scene = null;
 let camera = null;
 let renderer = null;
-let walkControls = null;
 let model = null;
 let viewerOpenedFromArchive = false;
-let currentModelItem = null;
-let currentModelObjectUrl = null;
+let viewerReady = false;
+let viewerLoadToken = 0;
 
-const keys = Object.create(null);
-const clock = new THREE.Clock();
-const walkVelocity = new THREE.Vector3();
-const walkDirection = new THREE.Vector3();
-const modelCenter = new THREE.Vector3();
-const modelSize = new THREE.Vector3();
-const modelBox = new THREE.Box3();
+const loader = new GLTFLoader();
+loader.setCrossOrigin("anonymous");
 
-const viewerLoading =
-    document.getElementById("viewerLoading");
+const viewerStatus = document.getElementById("viewerStatus");
+const viewerHint = document.getElementById("viewerHint");
+const moveJoystick = document.getElementById("moveJoystick");
+const joystickKnob = document.getElementById("joystickKnob");
+const lookZone = document.getElementById("lookZone");
+const viewerReset = document.getElementById("viewerReset");
 
-const viewerError =
-    document.getElementById("viewerError");
+/*
+    СЦЕНА 7 x 7 x 7
 
-const viewerTouch =
-    document.getElementById("viewerTouch");
+    Центр сцены:
+        X = 0
+        Y = 0
+        Z = 0
 
-const gltfLoader =
-    new GLTFLoader();
+    Полный размер:
+        X = 7
+        Y = 7
+        Z = 7
 
-const fbxLoader =
-    new FBXLoader();
+    Периметр:
+        -3.5 ... +3.5 по каждой оси.
 
-const objLoader =
-    new OBJLoader();
+    Камере оставляется небольшой запас от стен,
+    чтобы её положение никогда не выходило за границы.
+*/
+const SCENE_SIZE = 7.0;
+const SCENE_HALF = SCENE_SIZE / 2;
+const CAMERA_MARGIN = 0.20;
 
-const stlLoader =
-    new STLLoader();
+const SCENE_MIN_X = -SCENE_HALF + CAMERA_MARGIN;
+const SCENE_MAX_X =  SCENE_HALF - CAMERA_MARGIN;
+const SCENE_MIN_Y = -SCENE_HALF + CAMERA_MARGIN;
+const SCENE_MAX_Y =  SCENE_HALF - CAMERA_MARGIN;
+const SCENE_MIN_Z = -SCENE_HALF + CAMERA_MARGIN;
+const SCENE_MAX_Z =  SCENE_HALF - CAMERA_MARGIN;
 
-function showViewerLoading(value) {
+/*
+    Начальная позиция камеры внутри сцены.
+    Камера не находится снаружи и не вращается вокруг модели.
+*/
+const CAMERA_SPAWN = {
+    x: 0,
+    y: 1.15,
+    z: 2.40
+};
 
-    viewerLoading.style.display =
-        value ? "block" : "none";
+const viewerState = {
+    yaw: Math.PI,
+    pitch: -0.08,
+
+    eyeHeight: 1.15,
+
+    moveSpeed: 2.2,
+    turnSpeed: 0.012,
+    pitchSpeed: 0.009,
+
+    moveX: 0,
+    moveZ: 0,
+
+    loadedSize: 2.0,
+    modelRadius: 1.0
+};
+
+const joystickState = {
+    pointerId: null,
+    x: 0,
+    y: 0,
+    max: 38
+};
+
+const lookState = {
+    pointerId: null,
+    lastX: 0,
+    lastY: 0
+};
+
+const mouseState = {
+    down: false,
+    lastX: 0,
+    lastY: 0
+};
+
+const keyboardState = new Set();
+let lastFrameTime = performance.now();
+
+function isMobileDevice() {
+    return window.matchMedia("(pointer: coarse)").matches ||
+        /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 }
 
-function showViewerError(message) {
-
-    viewerError.textContent = message || "Ошибка загрузки 3D модели.";
-    viewerError.style.display = "block";
+function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
 }
 
-function hideViewerError() {
-    viewerError.style.display = "none";
+function setViewerStatus(text, visible = true) {
+    viewerStatus.textContent = text || "";
+    viewerStatus.style.display = visible ? "block" : "none";
 }
 
-function disposeObject(object) {
+function updateJoystickVisual() {
+    joystickKnob.style.transform =
+        `translate3d(${joystickState.x}px, ${joystickState.y}px, 0)`;
+}
 
-    if (!object) {
-        return;
+function resetJoystick() {
+    joystickState.x = 0;
+    joystickState.y = 0;
+    joystickState.pointerId = null;
+
+    viewerState.moveX = 0;
+    viewerState.moveZ = 0;
+
+    updateJoystickVisual();
+}
+
+function updateJoystickFromPointer(clientX, clientY) {
+    const rect = moveJoystick.getBoundingClientRect();
+
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+
+    let dx = clientX - cx;
+    let dy = clientY - cy;
+
+    const length = Math.hypot(dx, dy);
+
+    if (length > joystickState.max) {
+        dx = dx / length * joystickState.max;
+        dy = dy / length * joystickState.max;
     }
 
-    object.traverse(child => {
+    joystickState.x = dx;
+    joystickState.y = dy;
 
-        if (child.geometry) {
-            child.geometry.dispose();
-        }
+    viewerState.moveX = dx / joystickState.max;
+    viewerState.moveZ = dy / joystickState.max;
 
-        if (child.material) {
-
-            const materials = Array.isArray(child.material)
-                ? child.material
-                : [child.material];
-
-            materials.forEach(material => {
-
-                if (material.map) {
-                    material.map.dispose();
-                }
-
-                if (material.normalMap) {
-                    material.normalMap.dispose();
-                }
-
-                if (material.roughnessMap) {
-                    material.roughnessMap.dispose();
-                }
-
-                if (material.metalnessMap) {
-                    material.metalnessMap.dispose();
-                }
-
-                if (material.emissiveMap) {
-                    material.emissiveMap.dispose();
-                }
-
-                material.dispose();
-            });
-        }
-    });
+    updateJoystickVisual();
 }
 
-function clearCurrentModel() {
+/*
+    Возвращает камеру строго внутрь куба 7x7x7.
+    Ограничиваются сразу все три координаты:
+        X
+        Y
+        Z
+*/
+function clampCameraToScene() {
+    if (!camera) return;
 
-    if (!model || !scene) {
-        model = null;
-        return;
-    }
-
-    scene.remove(model);
-    disposeObject(model);
-    model = null;
-}
-
-function prepareModel(object) {
-
-    if (!object) {
-        throw new Error("Модель не содержит объектов.");
-    }
-
-    // Сохраняем ВСЕ дочерние объекты сцены. Ничего не удаляем.
-    object.updateMatrixWorld(true);
-
-    modelBox.setFromObject(object);
-
-    if (modelBox.isEmpty()) {
-        throw new Error("У модели нет видимой геометрии.");
-    }
-
-    modelBox.getCenter(modelCenter);
-    modelBox.getSize(modelSize);
-
-    object.position.sub(modelCenter);
-    object.updateMatrixWorld(true);
-
-    const maxDimension = Math.max(
-        modelSize.x,
-        modelSize.y,
-        modelSize.z
+    camera.position.x = clamp(
+        camera.position.x,
+        SCENE_MIN_X,
+        SCENE_MAX_X
     );
 
-    if (maxDimension > 0 && Number.isFinite(maxDimension)) {
-        object.scale.setScalar(4 / maxDimension);
-    }
+    camera.position.y = clamp(
+        camera.position.y,
+        SCENE_MIN_Y,
+        SCENE_MAX_Y
+    );
 
-    object.updateMatrixWorld(true);
+    camera.position.z = clamp(
+        camera.position.z,
+        SCENE_MIN_Z,
+        SCENE_MAX_Z
+    );
+}
 
-    // После масштабирования получаем реальную границу для ходьбы.
-    modelBox.setFromObject(object);
+/*
+    Направление взгляда камеры.
+    Камера остаётся на своей позиции и только меняет направление.
+*/
+function updateCameraLook() {
+    if (!camera) return;
 
-    object.traverse(child => {
+    const direction = new THREE.Vector3();
 
-        if (child.isMesh) {
-            child.castShadow = true;
-            child.receiveShadow = true;
+    direction.x =
+        -Math.sin(viewerState.yaw) *
+        Math.cos(viewerState.pitch);
 
-            // Если материал полностью чёрный/без освещения, оставляем его,
-            // но добавляем базовую emissive только при необходимости.
-            if (child.material) {
-                const materials = Array.isArray(child.material)
-                    ? child.material
-                    : [child.material];
+    direction.y =
+        Math.sin(viewerState.pitch);
 
-                materials.forEach(material => {
-                    if (material.color) {
-                        material.color.set(material.color);
-                    }
-                    material.needsUpdate = true;
-                });
-            }
-        }
-    });
+    direction.z =
+        -Math.cos(viewerState.yaw) *
+        Math.cos(viewerState.pitch);
 
-    scene.add(object);
-    model = object;
+    const lookTarget =
+        camera.position.clone().add(direction);
 
-    // Ставим камеру перед моделью, а не внутри неё.
-    const size = modelBox.getSize(new THREE.Vector3());
-    const height = Math.max(size.y, 2);
+    camera.lookAt(lookTarget);
+}
+
+/*
+    Начальное положение:
+    пользователь появляется ВНУТРИ сцены 7x7x7.
+*/
+function resetViewerCamera() {
+    if (!camera) return;
+
+    viewerState.yaw = Math.PI;
+    viewerState.pitch = -0.08;
+
+    viewerState.moveX = 0;
+    viewerState.moveZ = 0;
+
+    resetJoystick();
 
     camera.position.set(
-        0,
-        Math.max(1.6, Math.min(height * 0.35, 3)),
-        Math.max(2.5, Math.min(height * 0.8, 6))
+        CAMERA_SPAWN.x,
+        CAMERA_SPAWN.y,
+        CAMERA_SPAWN.z
     );
 
-    // PointerLockControls работает непосредственно с камерой.
-    camera.position.set(
-        0,
-        Math.max(1.6, Math.min(height * 0.35, 3)),
-        Math.max(2.5, Math.min(height * 0.8, 6))
-    );
-
-    camera.rotation.set(0, 0, 0);
-
-    // Смотрим в сторону центра сцены.
-    camera.lookAt(
-        0,
-        Math.max(0, Math.min(height * 0.15, 1)),
-        0
-    );
+    clampCameraToScene();
+    updateCameraLook();
 }
 
-function getResourceBaseUrl(item) {
-
-    if (item?.id !== undefined && item?.id !== null) {
-        return (
-            ARCHIVE_API.replace(/\/$/, "") +
-            "/resource/" +
-            encodeURIComponent(item.id) +
-            "/"
-        );
-    }
-
-    return getArchiveModelUrl(item);
-}
-
-function makeResourceManager(item) {
-
-    const manager = new THREE.LoadingManager();
-    const resourceBase = getResourceBaseUrl(item);
-
-    manager.setURLModifier(url => {
-
-        // Встроенные ресурсы GLB/GLTF.
-        if (
-            url.startsWith("blob:") ||
-            url.startsWith("data:")
-        ) {
-            return url;
-        }
-
-        try {
-            const parsed = new URL(
-                url,
-                resourceBase
-            );
-
-            // Уже наш API resource URL.
-            if (
-                parsed.origin === new URL(resourceBase).origin &&
-                parsed.pathname.includes("/api/models/resource/")
-            ) {
-                return parsed.href;
-            }
-
-            const filename =
-                decodeURIComponent(
-                    parsed.pathname.split("/").pop() || ""
-                );
-
-            if (filename) {
-                return (
-                    resourceBase +
-                    encodeURIComponent(filename)
-                );
-            }
-        } catch (error) {
-            console.warn(
-                "RESOURCE URL ERROR:",
-                error
-            );
-        }
-
-        return url;
-    });
-
-    return manager;
-}
-
-async function fetchModelBytes(url) {
-
-    const requestUrl =
-        url + (url.includes("?") ? "&" : "?") +
-        "_3d=" + Date.now();
-
-    let response;
-
-    try {
-        response = await fetch(
-            requestUrl,
-            {
-                method: "GET",
-                mode: "cors",
-                credentials: "omit",
-                cache: "no-store",
-                redirect: "follow",
-                headers: {
-                    "Accept": "model/gltf-binary, model/gltf+json, application/octet-stream, */*",
-                    ...(accessToken
-                        ? {
-                            "Authorization":
-                                "Bearer " + accessToken
-                        }
-                        : {})
-                }
-            }
-        );
-    } catch (error) {
-        throw new Error(
-            "Ошибка CORS/сети при загрузке модели.\n" +
-            "API: " + url + "\n" +
-            "Проверь /api/cors-test и /api/models/file/<ID>.\n" +
-            "Браузер: " + (error?.message || String(error))
-        );
-    }
-
-    if (!response.ok) {
-        throw new Error(
-            "API вернул HTTP " + response.status + ".\n" +
-            "URL: " + url
-        );
-    }
-
-    const contentType =
-        response.headers.get("content-type") || "";
-
-    const contentLength = Number(
-        response.headers.get("content-length") || 0
-    );
-
-    console.log("3D RESPONSE:", {
-        status: response.status,
-        contentType,
-        contentLength,
-        cors: response.headers.get("access-control-allow-origin")
-    });
-
-    if (!response.body) {
-        const buffer = await response.arrayBuffer();
-        if (!buffer.byteLength) {
-            throw new Error("API вернул пустой файл модели.");
-        }
-        return buffer;
-    }
-
-    const reader = response.body.getReader();
-    const chunks = [];
-    let total = 0;
-
-    while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-
-        if (value && value.byteLength) {
-            chunks.push(value);
-            total += value.byteLength;
-
-            const expected = contentLength || 0;
-            if (expected > 0) {
-                const percent = Math.min(
-                    100,
-                    Math.round((total / expected) * 100)
-                );
-                viewerLoading.textContent =
-                    "ЗАГРУЗКА 3D МОДЕЛИ " + percent + "%";
-            }
-        }
-    }
-
-    if (!total) {
-        throw new Error("API вернул пустой файл модели.");
-    }
-
-    const buffer = new Uint8Array(total);
-    let offset = 0;
-
-    for (const chunk of chunks) {
-        buffer.set(chunk, offset);
-        offset += chunk.byteLength;
-    }
-
-    console.log("3D MODEL DOWNLOADED:", total, "bytes");
-
-    return buffer.buffer;
-}
-
-function parseOBJ(buffer) {
-
-    const text = new TextDecoder("utf-8").decode(buffer);
-    return objLoader.parse(text);
-}
-
-function parseSTL(buffer) {
-
-    const geometry = stlLoader.parse(buffer);
-
-    geometry.computeVertexNormals();
-
-    const material = new THREE.MeshStandardMaterial({
-        color: 0xbcbcbc,
-        metalness: 0.05,
-        roughness: 0.75,
-        side: THREE.DoubleSide
-    });
-
-    return new THREE.Mesh(
-        geometry,
-        material
-    );
-}
-
-async function parseModelByExtension(item, url, buffer) {
-
-    const extension = getModelExtension(item);
-
-    if (extension === "glb" || extension === "gltf") {
-
-        const manager = makeResourceManager(item);
-        const loader = new GLTFLoader(manager);
-
-        return await new Promise((resolve, reject) => {
-
-            const basePath = url.substring(
-                0,
-                url.lastIndexOf("/") + 1
-            );
-
-            loader.parse(
-                buffer,
-                basePath,
-                gltf => resolve(gltf.scene),
-                error => reject(error || new Error("GLTF parse error"))
-            );
-        });
-    }
-
-    if (extension === "fbx") {
-
-        const manager = makeResourceManager(item);
-        const loader = new FBXLoader(manager);
-        return loader.parse(buffer, getResourceBaseUrl(item));
-    }
-
-    if (extension === "obj") {
-
-        // OBJ geometry загружается без MTL, поэтому объект отображается
-        // даже если рядом пока нет файла материалов/текстур.
-        return parseOBJ(buffer);
-    }
-
-    if (extension === "stl") {
-        return parseSTL(buffer);
-    }
-
-    // Попытка GLTF для неизвестного расширения.
-    const manager = makeResourceManager(item);
-    const loader = new GLTFLoader(manager);
-
-    return await new Promise((resolve, reject) => {
-        loader.parse(
-            buffer,
-            url.substring(0, url.lastIndexOf("/") + 1),
-            gltf => resolve(gltf.scene),
-            error => reject(error || new Error("Unknown 3D format"))
-        );
-    });
-}
-
-async function fetchGalleryModel(filename) {
-
-    if (!accessToken || !currentWallet || !currentNFT) {
-        throw new Error("Нет активной серверной авторизации.");
-    }
-
-    let response;
-
-    try {
-        response = await fetch(
-            MODEL_REQUEST_API,
-            {
-                method: "POST",
-                mode: "cors",
-                credentials: "omit",
-                cache: "no-store",
-                headers: {
-                    "Accept": "model/gltf-binary, application/octet-stream, */*",
-                    "Content-Type": "application/json",
-                    "Authorization": "Bearer " + accessToken
-                },
-                body: JSON.stringify({
-                    wallet: currentWallet,
-                    nft: currentNFT,
-                    filename: filename
-                })
-            }
-        );
-    } catch (error) {
-        throw new Error(
-            "Ошибка сети при запросе 3D модели: " +
-            (error?.message || String(error))
-        );
-    }
-
-    if (!response.ok) {
-        let message = "HTTP " + response.status;
-        try {
-            const data = await response.json();
-            if (data?.error) message = data.error;
-        } catch (_) {}
-        throw new Error(message);
-    }
-
-    const buffer = await response.arrayBuffer();
-
-    if (!buffer.byteLength) {
-        throw new Error("Сервер вернул пустую 3D модель.");
-    }
-
-    return buffer;
-}
-
-
-async function loadGalleryModel(item) {
-
-    currentModelItem = item;
-    hideViewerError();
-    showViewerLoading(true);
-    clearCurrentModel();
-
-    if (!item?.filename) {
-        showViewerLoading(false);
-        showViewerError("У модели отсутствует имя файла.");
-        return;
-    }
-
-    try {
-        viewerLoading.textContent = "ЗАГРУЗКА 3D МОДЕЛИ...";
-
-        const buffer =
-            await fetchGalleryModel(item.filename);
-
-        const object =
-            await parseModelByExtension(
-                item,
-                MODEL_REQUEST_API,
-                buffer
-            );
-
-        prepareModel(object);
-        showViewerLoading(false);
-
-    } catch (error) {
-
-        console.error("PROTECTED MODEL ERROR:", error);
-
-        showViewerLoading(false);
-        showViewerError(
-            "Не удалось получить защищённую 3D модель.\n" +
-            (error?.message || String(error))
-        );
-
-        if (
-            String(error?.message || "").includes("401") ||
-            String(error?.message || "").toLowerCase().includes("авториза")
-        ) {
-            accessGranted = false;
-            accessToken = null;
-        }
-    }
-}
-
-
-async function loadArchiveModel(item) {
-
-    currentModelItem = item;
-    hideViewerError();
-    showViewerLoading(true);
-    clearCurrentModel();
-
-    const url = getArchiveModelUrl(item);
-
-    if (!url) {
-        showViewerLoading(false);
-        showViewerError("У модели отсутствует URL загрузки.");
-        return;
-    }
-
-    console.log("LOAD 3D MODEL:", url);
-
-    try {
-
-        const buffer = await fetchModelBytes(url);
-        const object = await parseModelByExtension(
-            item,
-            url,
-            buffer
-        );
-
-        prepareModel(object);
-
-        showViewerLoading(false);
-
-    } catch (error) {
-
-        console.error(
-            "ARCHIVE MODEL ERROR:",
-            error
-        );
-
-        showViewerLoading(false);
-
-        showViewerError(
-            "Не удалось отобразить 3D модель.\n" +
-            (error?.message || String(error))
-        );
-    }
-}
-
-function initViewer() {
-
-    if (renderer) {
-        return;
-    }
-
-    scene = new THREE.Scene();
-
-    scene.background = new THREE.Color(0x000000);
-
-    camera = new THREE.PerspectiveCamera(
-        70,
-        window.innerWidth / window.innerHeight,
-        0.01,
-        2000
-    );
-
-    camera.position.set(0, 1.7, 4);
-
-    renderer = new THREE.WebGLRenderer({
-        antialias: true,
-        alpha: false,
-        powerPreference: "high-performance",
-        preserveDrawingBuffer: false
-    });
-
-    renderer.domElement.setAttribute(
-        "aria-label",
-        "3D viewer"
-    );
-
-    renderer.domElement.addEventListener(
-        "webglcontextlost",
-        event => {
-            event.preventDefault();
-            showViewerError(
-                "WebGL контекст телефона был потерян. " +
-                "Обновите страницу и откройте модель снова."
-            );
-        },
-        false
-    );
-
-    renderer.setPixelRatio(
-        Math.min(window.devicePixelRatio, 2)
-    );
-
-    renderer.setSize(
-        window.innerWidth,
-        window.innerHeight
-    );
-
-    renderer.outputColorSpace = THREE.SRGBColorSpace;
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-
-    viewerCanvas.appendChild(renderer.domElement);
-
-    walkControls = new PointerLockControls(
-        camera,
-        renderer.domElement
-    );
-
-    // PointerLockControls управляет камерой напрямую.
-    scene.add(walkControls.getObject());
-
-    walkControls.addEventListener("lock", () => {
-        viewerHelp.style.display = "none";
-    });
-
-    walkControls.addEventListener("unlock", () => {
-        viewerHelp.style.display = "block";
-    });
-
-    renderer.domElement.addEventListener("click", () => {
-        if (window.innerWidth > 700 && !walkControls.isLocked) {
-            walkControls.lock();
-        }
-    });
-
-    const ambient = new THREE.HemisphereLight(
-        0xffffff,
-        0x333333,
-        2.4
-    );
-
-    scene.add(ambient);
-
-    const keyLight = new THREE.DirectionalLight(
-        0xffffff,
-        4
-    );
-
-    keyLight.position.set(5, 8, 5);
-    keyLight.castShadow = true;
-    keyLight.shadow.mapSize.set(2048, 2048);
-
-    scene.add(keyLight);
-
-    const fillLight = new THREE.DirectionalLight(
-        0xffffff,
-        1.5
-    );
-
-    fillLight.position.set(-5, 4, -4);
-    scene.add(fillLight);
-
-    // Небольшая сетка пола даёт ощущение пространства, но не меняет модель.
-    const grid = new THREE.GridHelper(
-        100,
-        100,
-        0x333333,
-        0x161616
-    );
-
-    grid.position.y = -0.001;
-    scene.add(grid);
-
-    window.addEventListener(
-        "resize",
-        resizeViewer
-    );
-
-    window.addEventListener(
-        "keydown",
-        onViewerKeyDown
-    );
-
-    window.addEventListener(
-        "keyup",
-        onViewerKeyUp
-    );
-
-    // Сенсорные кнопки для мобильного движения.
-    viewerTouch.querySelectorAll("button").forEach(button => {
-
-        const code = button.dataset.key;
-
-        const press = event => {
-            event.preventDefault();
-            keys[code] = true;
-        };
-
-        const release = event => {
-            event.preventDefault();
-            keys[code] = false;
-        };
-
-        button.addEventListener("pointerdown", press);
-        button.addEventListener("pointerup", release);
-        button.addEventListener("pointercancel", release);
-        button.addEventListener("pointerleave", release);
-    });
-
-    if (window.innerWidth <= 700) {
-        viewerTouch.style.display = "grid";
-    }
-
-    setupMobileLook();
-
-    animateViewer();
-}
-
-let mobileLookActive = false;
-let mobileLookPointerId = null;
-let mobileLastX = 0;
-let mobileLastY = 0;
-
-function setupMobileLook() {
-
-    const pad = document.getElementById("viewerLookPad");
-    if (!pad) return;
-
-    pad.style.pointerEvents = window.innerWidth <= 700 ? "auto" : "none";
-
-    pad.addEventListener("pointerdown", event => {
-        if (window.innerWidth > 700) return;
-        if (event.target.closest("button")) return;
-
-        mobileLookActive = true;
-        mobileLookPointerId = event.pointerId;
-        mobileLastX = event.clientX;
-        mobileLastY = event.clientY;
-
-        try {
-            pad.setPointerCapture(event.pointerId);
-        } catch (_) {}
-
-        event.preventDefault();
-    }, { passive: false });
-
-    pad.addEventListener("pointermove", event => {
-        if (!mobileLookActive) return;
-        if (event.pointerId !== mobileLookPointerId) return;
-        if (!camera) return;
-
-        const dx = event.clientX - mobileLastX;
-        const dy = event.clientY - mobileLastY;
-
-        mobileLastX = event.clientX;
-        mobileLastY = event.clientY;
-
-        camera.rotation.y -= dx * 0.004;
-        camera.rotation.x -= dy * 0.004;
-        camera.rotation.x = Math.max(
-            -Math.PI * 0.48,
-            Math.min(Math.PI * 0.48, camera.rotation.x)
-        );
-
-        event.preventDefault();
-    }, { passive: false });
-
-    const stop = event => {
-        if (event.pointerId !== mobileLookPointerId) return;
-        mobileLookActive = false;
-        mobileLookPointerId = null;
-        event.preventDefault();
-    };
-
-    pad.addEventListener("pointerup", stop, { passive: false });
-    pad.addEventListener("pointercancel", stop, { passive: false });
-    pad.addEventListener("lostpointercapture", () => {
-        mobileLookActive = false;
-        mobileLookPointerId = null;
-    });
-}
-
-
-function onViewerKeyDown(event) {
-
-    if (event.code === "Escape") {
-        return;
-    }
-
-    keys[event.code] = true;
+/*
+    Движение камеры внутри ограниченного пространства.
+
+    WASD / стрелки на ПК.
+    Джойстик на телефоне.
+
+    Камера НЕ может:
+        X < -3.3
+        X >  3.3
+        Y < -3.3
+        Y >  3.3
+        Z < -3.3
+        Z >  3.3
+*/
+function moveViewer(dt) {
+    if (!camera || !viewerReady) return;
+
+    let strafe = viewerState.moveX;
+    let forward = -viewerState.moveZ;
 
     if (
-        [
-            "KeyW",
-            "KeyA",
-            "KeyS",
-            "KeyD",
-            "Space",
-            "ControlLeft",
-            "ControlRight",
-            "ShiftLeft",
-            "ShiftRight"
-        ].includes(event.code)
+        keyboardState.has("KeyW") ||
+        keyboardState.has("ArrowUp")
     ) {
-        event.preventDefault();
+        forward += 1;
     }
-}
 
-function onViewerKeyUp(event) {
-    keys[event.code] = false;
-}
+    if (
+        keyboardState.has("KeyS") ||
+        keyboardState.has("ArrowDown")
+    ) {
+        forward -= 1;
+    }
 
-function updateWalking(delta) {
+    if (
+        keyboardState.has("KeyA") ||
+        keyboardState.has("ArrowLeft")
+    ) {
+        strafe -= 1;
+    }
 
-    if (!walkControls) {
+    if (
+        keyboardState.has("KeyD") ||
+        keyboardState.has("ArrowRight")
+    ) {
+        strafe += 1;
+    }
+
+    const length = Math.hypot(strafe, forward);
+
+    if (length > 1) {
+        strafe /= length;
+        forward /= length;
+    }
+
+    if (
+        Math.abs(strafe) < 0.001 &&
+        Math.abs(forward) < 0.001
+    ) {
+        clampCameraToScene();
+        updateCameraLook();
         return;
     }
 
     const speed =
-        (keys.ShiftLeft || keys.ShiftRight)
-            ? 8
-            : 4;
+        viewerState.moveSpeed * dt;
 
-    walkDirection.set(0, 0, 0);
+    /*
+        Направление вперёд относительно yaw.
+    */
+    const forwardX = -Math.sin(viewerState.yaw);
+    const forwardZ = -Math.cos(viewerState.yaw);
 
-    if (keys.KeyW) walkDirection.z -= 1;
-    if (keys.KeyS) walkDirection.z += 1;
-    if (keys.KeyA) walkDirection.x -= 1;
-    if (keys.KeyD) walkDirection.x += 1;
+    /*
+        Направление вправо относительно yaw.
+    */
+    const rightX = Math.cos(viewerState.yaw);
+    const rightZ = -Math.sin(viewerState.yaw);
 
-    if (walkDirection.lengthSq() > 0) {
-        walkDirection.normalize();
-        walkControls.moveRight(
-            walkDirection.x * speed * delta
-        );
-        walkControls.moveForward(
-            -walkDirection.z * speed * delta
-        );
-    }
+    let x =
+        camera.position.x +
+        (forwardX * forward + rightX * strafe) * speed;
 
-    if (keys.Space) {
-        walkControls.getObject().position.y +=
-            speed * delta;
-    }
+    let z =
+        camera.position.z +
+        (forwardZ * forward + rightZ * strafe) * speed;
 
-    if (keys.ControlLeft || keys.ControlRight) {
-        walkControls.getObject().position.y -=
-            speed * delta;
-    }
+    /*
+        По высоте камера остаётся на уровне глаз.
+        Это обычное перемещение по полу сцены.
+    */
+    let y = viewerState.eyeHeight;
 
-    // Минимальная высота камеры.
-    walkControls.getObject().position.y = Math.max(
-        0.25,
-        walkControls.getObject().position.y
+    /*
+        Жёсткое ограничение 7x7x7.
+    */
+    x = clamp(
+        x,
+        SCENE_MIN_X,
+        SCENE_MAX_X
     );
+
+    z = clamp(
+        z,
+        SCENE_MIN_Z,
+        SCENE_MAX_Z
+    );
+
+    y = clamp(
+        y,
+        SCENE_MIN_Y,
+        SCENE_MAX_Y
+    );
+
+    camera.position.set(x, y, z);
+
+    clampCameraToScene();
+    updateCameraLook();
+}
+
+function disposeMaterial(material) {
+    if (!material) return;
+
+    const materials =
+        Array.isArray(material)
+            ? material
+            : [material];
+
+    for (const mat of materials) {
+        if (!mat) continue;
+
+        const textureKeys = [
+            "map",
+            "normalMap",
+            "roughnessMap",
+            "metalnessMap",
+            "emissiveMap",
+            "aoMap",
+            "alphaMap",
+            "bumpMap",
+            "displacementMap",
+            "clearcoatMap",
+            "clearcoatNormalMap",
+            "clearcoatRoughnessMap",
+            "iridescenceThicknessMap",
+            "sheenColorMap",
+            "sheenRoughnessMap",
+            "specularColorMap",
+            "specularIntensityMap",
+            "transmissionMap",
+            "thicknessMap"
+        ];
+
+        for (const key of textureKeys) {
+            if (
+                mat[key] &&
+                mat[key].isTexture
+            ) {
+                mat[key].dispose();
+            }
+        }
+
+        mat.dispose();
+    }
+}
+
+function disposeModel() {
+    if (!model || !scene) return;
+
+    scene.remove(model);
+
+    model.traverse(object => {
+        if (object.geometry) {
+            object.geometry.dispose();
+        }
+
+        if (object.material) {
+            disposeMaterial(object.material);
+        }
+    });
+
+    model = null;
+    viewerReady = false;
+}
+
+function prepareModel(loadedModel) {
+    const box =
+        new THREE.Box3().setFromObject(loadedModel);
+
+    const center =
+        box.getCenter(new THREE.Vector3());
+
+    const size =
+        box.getSize(new THREE.Vector3());
+
+    const maxSize =
+        Math.max(
+            size.x,
+            size.y,
+            size.z
+        );
+
+    if (
+        !Number.isFinite(maxSize) ||
+        maxSize <= 0
+    ) {
+        throw new Error(
+            "GLB не содержит корректной геометрии"
+        );
+    }
+
+    loadedModel.position.sub(center);
+
+    /*
+        Модель остаётся прежнего нормализованного размера.
+        Меняется только управление камерой.
+    */
+    loadedModel.scale.setScalar(
+        2 / maxSize
+    );
+
+    loadedModel.updateMatrixWorld(true);
+
+    const normalizedBox =
+        new THREE.Box3().setFromObject(
+            loadedModel
+        );
+
+    const normalizedSize =
+        normalizedBox.getSize(
+            new THREE.Vector3()
+        );
+
+    const normalizedCenter =
+        normalizedBox.getCenter(
+            new THREE.Vector3()
+        );
+
+    const sphere =
+        new THREE.Sphere();
+
+    normalizedBox.getBoundingSphere(sphere);
+
+    loadedModel.position.y -=
+        normalizedCenter.y;
+
+    loadedModel.updateMatrixWorld(true);
+
+    viewerState.loadedSize =
+        Math.max(
+            normalizedSize.x,
+            normalizedSize.y,
+            normalizedSize.z
+        );
+
+    viewerState.modelRadius =
+        Math.max(
+            0.65,
+            sphere.radius
+        );
+
+    viewerState.eyeHeight =
+        clamp(
+            normalizedSize.y * 0.35,
+            0.65,
+            1.15
+        );
+
+    /*
+        Высота появления пользователя.
+    */
+    CAMERA_SPAWN.y =
+        viewerState.eyeHeight;
+
+    loadedModel.traverse(object => {
+        if (!object.isMesh) return;
+
+        object.castShadow = false;
+        object.receiveShadow = false;
+
+        if (object.material) {
+            const mats =
+                Array.isArray(object.material)
+                    ? object.material
+                    : [object.material];
+
+            for (const mat of mats) {
+                if (!mat) continue;
+
+                if ("envMapIntensity" in mat) {
+                    mat.envMapIntensity = 0.7;
+                }
+            }
+        }
+    });
+
+    return loadedModel;
+}
+
+function createSceneBoundary() {
+    /*
+        Видимая граница 7x7x7.
+        Она не влияет на загрузку GLB и не мешает камере.
+        Прозрачная линия показывает пользователю предел сцены.
+    */
+
+    if (!scene) return;
+
+    const geometry =
+        new THREE.BoxGeometry(
+            SCENE_SIZE,
+            SCENE_SIZE,
+            SCENE_SIZE
+        );
+
+    const edges =
+        new THREE.EdgesGeometry(
+            geometry
+        );
+
+    const material =
+        new THREE.LineBasicMaterial({
+            color: 0x303030,
+            transparent: true,
+            opacity: 0.35
+        });
+
+    const boundary =
+        new THREE.LineSegments(
+            edges,
+            material
+        );
+
+    boundary.name =
+        "SCENE_BOUNDARY_7x7x7";
+
+    scene.add(boundary);
+
+    geometry.dispose();
+}
+
+function initViewer() {
+    if (renderer) return;
+
+    scene = new THREE.Scene();
+
+    scene.background =
+        new THREE.Color(0x000000);
+
+    camera =
+        new THREE.PerspectiveCamera(
+            55,
+            1,
+            0.03,
+            200
+        );
+
+    renderer =
+        new THREE.WebGLRenderer({
+            antialias: !isMobileDevice(),
+            alpha: false,
+            powerPreference: "high-performance",
+            precision:
+                isMobileDevice()
+                    ? "mediump"
+                    : "highp"
+        });
+
+    const pixelRatio =
+        isMobileDevice()
+            ? Math.min(
+                window.devicePixelRatio || 1,
+                1.35
+            )
+            : Math.min(
+                window.devicePixelRatio || 1,
+                1.75
+            );
+
+    renderer.setPixelRatio(
+        pixelRatio
+    );
+
+    renderer.setSize(
+        viewerCanvas.clientWidth ||
+            window.innerWidth,
+        viewerCanvas.clientHeight ||
+            window.innerHeight,
+        false
+    );
+
+    renderer.outputColorSpace =
+        THREE.SRGBColorSpace;
+
+    renderer.toneMapping =
+        THREE.ACESFilmicToneMapping;
+
+    renderer.toneMappingExposure =
+        1.0;
+
+    renderer.domElement.setAttribute(
+        "aria-label",
+        "3D сцена"
+    );
+
+    viewerCanvas.appendChild(
+        renderer.domElement
+    );
+
+    const ambient =
+        new THREE.HemisphereLight(
+            0xffffff,
+            0x222222,
+            2.2
+        );
+
+    scene.add(ambient);
+
+    const key =
+        new THREE.DirectionalLight(
+            0xffffff,
+            2.2
+        );
+
+    key.position.set(
+        4,
+        7,
+        5
+    );
+
+    scene.add(key);
+
+    const fill =
+        new THREE.DirectionalLight(
+            0xffffff,
+            0.8
+        );
+
+    fill.position.set(
+        -4,
+        3,
+        -4
+    );
+
+    scene.add(fill);
+
+    /*
+        Создаём ограничивающий куб 7x7x7.
+    */
+    createSceneBoundary();
+
+    window.addEventListener(
+        "resize",
+        resizeViewer,
+        { passive: true }
+    );
+
+    /*
+        ПК: мышь вращает камеру.
+        Позиция камеры при этом не меняется.
+    */
+    renderer.domElement.addEventListener(
+        "pointerdown",
+        event => {
+            if (event.pointerType !== "mouse") {
+                return;
+            }
+
+            mouseState.down = true;
+
+            mouseState.lastX =
+                event.clientX;
+
+            mouseState.lastY =
+                event.clientY;
+
+            renderer.domElement.setPointerCapture?.(
+                event.pointerId
+            );
+        }
+    );
+
+    renderer.domElement.addEventListener(
+        "pointermove",
+        event => {
+            if (
+                !mouseState.down ||
+                event.pointerType !== "mouse"
+            ) {
+                return;
+            }
+
+            const dx =
+                event.clientX -
+                mouseState.lastX;
+
+            const dy =
+                event.clientY -
+                mouseState.lastY;
+
+            mouseState.lastX =
+                event.clientX;
+
+            mouseState.lastY =
+                event.clientY;
+
+            viewerState.yaw +=
+                dx * 0.008;
+
+            viewerState.pitch =
+                clamp(
+                    viewerState.pitch -
+                        dy * 0.006,
+                    -0.95,
+                    0.55
+                );
+
+            updateCameraLook();
+        }
+    );
+
+    renderer.domElement.addEventListener(
+        "pointerup",
+        () => {
+            mouseState.down = false;
+        }
+    );
+
+    renderer.domElement.addEventListener(
+        "pointercancel",
+        () => {
+            mouseState.down = false;
+        }
+    );
+
+    /*
+        Колесо мыши больше не выносит камеру
+        на другой радиус.
+        Оно не нужно для FPS-камеры.
+    */
+    renderer.domElement.addEventListener(
+        "wheel",
+        event => {
+            event.preventDefault();
+        },
+        { passive: false }
+    );
+
+    /*
+        ТЕЛЕФОН:
+        левый круг — движение.
+    */
+    moveJoystick.addEventListener(
+        "pointerdown",
+        event => {
+            event.preventDefault();
+
+            joystickState.pointerId =
+                event.pointerId;
+
+            moveJoystick.setPointerCapture?.(
+                event.pointerId
+            );
+
+            updateJoystickFromPointer(
+                event.clientX,
+                event.clientY
+            );
+        }
+    );
+
+    moveJoystick.addEventListener(
+        "pointermove",
+        event => {
+            if (
+                event.pointerId !==
+                joystickState.pointerId
+            ) {
+                return;
+            }
+
+            event.preventDefault();
+
+            updateJoystickFromPointer(
+                event.clientX,
+                event.clientY
+            );
+        }
+    );
+
+    moveJoystick.addEventListener(
+        "pointerup",
+        event => {
+            if (
+                event.pointerId ===
+                joystickState.pointerId
+            ) {
+                resetJoystick();
+            }
+        }
+    );
+
+    moveJoystick.addEventListener(
+        "pointercancel",
+        event => {
+            if (
+                event.pointerId ===
+                joystickState.pointerId
+            ) {
+                resetJoystick();
+            }
+        }
+    );
+
+    /*
+        ТЕЛЕФОН:
+        правое поле — обзор.
+    */
+    lookZone.addEventListener(
+        "pointerdown",
+        event => {
+            event.preventDefault();
+
+            lookState.pointerId =
+                event.pointerId;
+
+            lookState.lastX =
+                event.clientX;
+
+            lookState.lastY =
+                event.clientY;
+
+            lookZone.setPointerCapture?.(
+                event.pointerId
+            );
+        }
+    );
+
+    lookZone.addEventListener(
+        "pointermove",
+        event => {
+            if (
+                event.pointerId !==
+                lookState.pointerId
+            ) {
+                return;
+            }
+
+            event.preventDefault();
+
+            const dx =
+                event.clientX -
+                lookState.lastX;
+
+            const dy =
+                event.clientY -
+                lookState.lastY;
+
+            lookState.lastX =
+                event.clientX;
+
+            lookState.lastY =
+                event.clientY;
+
+            viewerState.yaw +=
+                dx * viewerState.turnSpeed;
+
+            viewerState.pitch =
+                clamp(
+                    viewerState.pitch -
+                        dy * viewerState.pitchSpeed,
+                    -0.95,
+                    0.55
+                );
+
+            updateCameraLook();
+        }
+    );
+
+    const releaseLook =
+        event => {
+            if (
+                event.pointerId ===
+                lookState.pointerId
+            ) {
+                lookState.pointerId =
+                    null;
+            }
+        };
+
+    lookZone.addEventListener(
+        "pointerup",
+        releaseLook
+    );
+
+    lookZone.addEventListener(
+        "pointercancel",
+        releaseLook
+    );
+
+    viewerReset.addEventListener(
+        "click",
+        resetViewerCamera
+    );
+
+    /*
+        КЛАВИАТУРА ПК.
+    */
+    window.addEventListener(
+        "keydown",
+        event => {
+            if (
+                [
+                    "KeyW",
+                    "KeyA",
+                    "KeyS",
+                    "KeyD",
+                    "ArrowUp",
+                    "ArrowDown",
+                    "ArrowLeft",
+                    "ArrowRight"
+                ].includes(event.code)
+            ) {
+                keyboardState.add(
+                    event.code
+                );
+
+                event.preventDefault();
+            }
+        },
+        { passive: false }
+    );
+
+    window.addEventListener(
+        "keyup",
+        event => {
+            keyboardState.delete(
+                event.code
+            );
+        }
+    );
+
+    window.addEventListener(
+        "blur",
+        () => {
+            keyboardState.clear();
+
+            mouseState.down = false;
+
+            resetJoystick();
+        }
+    );
+
+    setViewerStatus(
+        "Готово",
+        false
+    );
+
+    resizeViewer();
+
+    resetViewerCamera();
+
+    animateViewer();
 }
 
 function resizeViewer() {
-
-    const pad = document.getElementById("viewerLookPad");
-    if (pad) {
-        pad.style.pointerEvents = window.innerWidth <= 700 ? "auto" : "none";
-    }
-
     if (!camera || !renderer) {
         return;
     }
 
+    const width =
+        Math.max(
+            1,
+            viewerCanvas.clientWidth ||
+                window.innerWidth
+        );
+
+    const height =
+        Math.max(
+            1,
+            viewerCanvas.clientHeight ||
+                window.innerHeight
+        );
+
     camera.aspect =
-        window.innerWidth / window.innerHeight;
+        width / height;
 
     camera.updateProjectionMatrix();
 
     renderer.setSize(
-        window.innerWidth,
-        window.innerHeight
+        width,
+        height,
+        false
     );
+
+    /*
+        Дополнительная страховка
+        после изменения окна.
+    */
+    clampCameraToScene();
+    updateCameraLook();
 }
 
-function animateViewer() {
-
-    requestAnimationFrame(animateViewer);
-
-    const delta = Math.min(
-        clock.getDelta(),
-        0.05
+function animateViewer(
+    now = performance.now()
+) {
+    requestAnimationFrame(
+        animateViewer
     );
 
-    updateWalking(delta);
+    const dt =
+        Math.min(
+            0.05,
+            Math.max(
+                0,
+                (now - lastFrameTime) /
+                    1000
+            )
+        );
 
-    if (renderer && scene && camera) {
+    lastFrameTime = now;
+
+    moveViewer(dt);
+
+    if (
+        renderer &&
+        scene &&
+        camera
+    ) {
         renderer.render(
             scene,
             camera
@@ -3621,30 +3561,427 @@ function animateViewer() {
     }
 }
 
-/* =============================================================
-   OPEN GALLERY MODEL
-============================================================= */
+async function loadModelDirect(
+    url,
+    token,
+    label
+) {
+    return new Promise(
+        (resolve, reject) => {
+            const finalUrl =
+                url +
+                (url.includes("?")
+                    ? "&"
+                    : "?") +
+                "v=" +
+                Date.now();
+
+            setViewerStatus(
+                `Загрузка ${label}...`,
+                true
+            );
+
+            loader.load(
+                finalUrl,
+                gltf => {
+                    if (
+                        token !==
+                        viewerLoadToken
+                    ) {
+                        resolve(false);
+                        return;
+                    }
+
+                    try {
+                        disposeModel();
+
+                        model =
+                            prepareModel(
+                                gltf.scene
+                            );
+
+                        scene.add(model);
+
+                        viewerReady =
+                            true;
+
+                        resetViewerCamera();
+
+                        setViewerStatus(
+                            "",
+                            false
+                        );
+
+                        resolve(true);
+                    } catch (error) {
+                        reject(error);
+                    }
+                },
+                xhr => {
+                    if (!xhr) return;
+
+                    if (xhr.total > 0) {
+                        const percent =
+                            Math.round(
+                                xhr.loaded /
+                                    xhr.total *
+                                    100
+                            );
+
+                        setViewerStatus(
+                            `Загрузка ${label}: ${percent}%`,
+                            true
+                        );
+                    } else if (
+                        xhr.loaded > 0
+                    ) {
+                        const mb =
+                            (
+                                xhr.loaded /
+                                1024 /
+                                1024
+                            ).toFixed(1);
+
+                        setViewerStatus(
+                            `Загрузка ${label}: ${mb} MB`,
+                            true
+                        );
+                    }
+                },
+                error => {
+                    reject(
+                        error ||
+                        new Error(
+                            "GLTFLoader не смог загрузить GLB"
+                        )
+                    );
+                }
+            );
+        }
+    );
+}
+
+async function loadModelFallback(
+    url,
+    token,
+    label
+) {
+    /*
+        Fallback is used only after the
+        normal GLTFLoader request fails.
+    */
+    const response =
+        await fetch(
+            url +
+            (url.includes("?")
+                ? "&"
+                : "?") +
+            "retry=" +
+            Date.now(),
+            {
+                method: "GET",
+                mode: "cors",
+                cache: "no-store",
+                credentials: "omit",
+                headers: {
+                    "Accept":
+                        "model/gltf-binary,application/octet-stream,*/*"
+                }
+            }
+        );
+
+    if (!response.ok) {
+        throw new Error(
+            `HTTP ${response.status}`
+        );
+    }
+
+    const contentType =
+        (
+            response.headers.get(
+                "content-type"
+            ) || ""
+        ).toLowerCase();
+
+    if (
+        contentType.includes(
+            "text/html"
+        ) ||
+        contentType.includes(
+            "application/json"
+        )
+    ) {
+        throw new Error(
+            `Сервер вернул ${contentType}, а не GLB`
+        );
+    }
+
+    const buffer =
+        await response.arrayBuffer();
+
+    if (
+        buffer.byteLength < 20
+    ) {
+        throw new Error(
+            "Файл GLB слишком маленький или пустой"
+        );
+    }
+
+    const magic =
+        new DataView(buffer)
+            .getUint32(0, true);
+
+    if (
+        magic !== 0x46546c67
+    ) {
+        throw new Error(
+            "Ответ сервера не является GLB (нет magic glTF)"
+        );
+    }
+
+    if (
+        token !== viewerLoadToken
+    ) {
+        return false;
+    }
+
+    setViewerStatus(
+        `Распаковка ${label}...`,
+        true
+    );
+
+    const gltf =
+        await loader.parseAsync(
+            buffer,
+            new URL(url)
+                .href
+                .replace(
+                    /[^/]*$/,
+                    ""
+                )
+        );
+
+    if (
+        token !== viewerLoadToken
+    ) {
+        return false;
+    }
+
+    disposeModel();
+
+    model =
+        prepareModel(
+            gltf.scene
+        );
+
+    scene.add(model);
+
+    viewerReady = true;
+
+    resetViewerCamera();
+
+    setViewerStatus(
+        "",
+        false
+    );
+
+    return true;
+}
+
+async function loadModelIntoViewer(
+    url,
+    label
+) {
+    if (!url) {
+        setViewerStatus(
+            "У модели отсутствует URL.",
+            true
+        );
+
+        return;
+    }
+
+    const token =
+        ++viewerLoadToken;
+
+    viewerReady = false;
+
+    disposeModel();
+
+    setViewerStatus(
+        `Подготовка ${label}...`,
+        true
+    );
+
+    try {
+        await loadModelDirect(
+            url,
+            token,
+            label
+        );
+
+        return;
+    } catch (firstError) {
+        console.error(
+            "GLB direct load failed:",
+            firstError
+        );
+
+        try {
+            await loadModelFallback(
+                url,
+                token,
+                label
+            );
+
+            return;
+        } catch (secondError) {
+            console.error(
+                "GLB fallback load failed:",
+                secondError
+            );
+
+            if (
+                token !== viewerLoadToken
+            ) {
+                return;
+            }
+
+            const message =
+                secondError?.message ||
+                firstError?.message ||
+                "Неизвестная ошибка";
+
+            setViewerStatus(
+                `Не удалось загрузить GLB.\n${message}\n\nПроверьте CORS, доступность файла и память телефона.`,
+                true
+            );
+        }
+    }
+}
+
+function resolveArchiveUrl(item) {
+    if (!item) return "";
+
+    if (
+        typeof item.url === "string" &&
+        item.url.startsWith("http")
+    ) {
+        return item.url;
+    }
+
+    if (
+        typeof item.download_url === "string" &&
+        item.download_url.startsWith("http")
+    ) {
+        return item.download_url;
+    }
+
+    if (
+        typeof item.file_url === "string" &&
+        item.file_url.startsWith("http")
+    ) {
+        return item.file_url;
+    }
+
+    if (
+        item.id !== undefined &&
+        item.id !== null
+    ) {
+        return `${ARCHIVE_API}/file/${encodeURIComponent(item.id)}`;
+    }
+
+    return "";
+}
 
 function openViewer(index) {
-
     viewerOpenedFromArchive = false;
 
-    if (!requireAccess()) {
-        return;
-    }
+    if (!requireAccess()) return;
 
-    const item = galleryItems[index];
+    const item =
+        galleryItems[index];
 
-    if (!item) {
-        return;
-    }
+    if (!item) return;
 
-    viewerNumber.textContent = item.number;
+    viewerNumber.textContent =
+        item.number;
+
     showScreen(viewerScreen);
+
     initViewer();
 
-    loadGalleryModel(item);
+    const url =
+        MODEL_BASE +
+        encodeURIComponent(
+            item.filename
+        );
+
+    loadModelIntoViewer(
+        url,
+        item.filename
+    );
 }
+
+function openArchiveViewer(index) {
+    viewerOpenedFromArchive = true;
+
+    if (!requireAccess()) return;
+
+    const item =
+        archiveModels[index];
+
+    if (!item) return;
+
+    viewerNumber.textContent =
+        item.filename ||
+        "3D";
+
+    showScreen(viewerScreen);
+
+    initViewer();
+
+    const url =
+        resolveArchiveUrl(item);
+
+    if (!url) {
+        setViewerStatus(
+            "У модели нет доступного URL.",
+            true
+        );
+
+        return;
+    }
+
+    loadModelIntoViewer(
+        url,
+        item.filename ||
+            "3D модель"
+    );
+}
+
+/* =============================================================
+   RESTORE
+============================================================= */
+
+tonConnectUI.connectionRestored
+    .then(
+        restored => {
+            console.log(
+                "TON connection restored:",
+                restored
+            );
+        }
+    )
+    .catch(
+        error => {
+            console.error(
+                "TON RESTORE ERROR:",
+                error
+            );
+        }
+    );
+
 
 /* =============================================================
    RESTORE
