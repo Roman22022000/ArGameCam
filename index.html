@@ -1309,6 +1309,11 @@ const tonConnectUI =
         buttonRootId:
             null,
 
+        /*
+            Кошелёк подключается с tonProof, но JWT доступа
+            на этом этапе НЕ запрашивается. JWT будет получен
+            только после успешной проверки NFT.
+        */
         restoreConnection:
             true
 
@@ -1352,6 +1357,26 @@ connectWallet.addEventListener(
 
         try {
 
+            /*
+                Получаем только одноразовый challenge для TON Proof.
+                Это НЕ токен доступа и не даёт права на модели.
+                Серверный JWT будет запрошен только после NFT CHECK.
+            */
+            authStatus.textContent =
+                "Подготовка проверки кошелька...";
+
+            await requestAuthChallenge();
+
+            tonConnectUI.setConnectRequestParameters({
+                state: "ready",
+                value: {
+                    tonProof: authChallenge
+                }
+            });
+
+            authStatus.textContent =
+                "Подключите TON-кошелёк...";
+
             await tonConnectUI.openModal();
 
         } catch (error) {
@@ -1362,7 +1387,8 @@ connectWallet.addEventListener(
             );
 
             authStatus.textContent =
-                "Ошибка открытия TON Connect";
+                error?.message ||
+                "Ошибка подготовки TON Connect";
 
         }
 
@@ -1779,25 +1805,34 @@ async function issueAccessToken(wallet) {
     const walletAddress =
         wallet.account.address;
 
-    let tonProof =
+    /*
+        TON Connect UI v3 возвращает connectItems как объект:
+        wallet.connectItems.tonProof
+    */
+    const proofItem =
+        wallet.connectItems?.tonProof ||
         null;
 
-    if (Array.isArray(wallet.connectItems)) {
-        const proofItem =
-            wallet.connectItems.find(
-                item =>
-                    item?.name === "tonProof"
-            );
-
-        if (proofItem?.proof) {
-            tonProof =
-                proofItem.proof;
-        }
-    }
+    const tonProof =
+        proofItem &&
+        typeof proofItem === "object" &&
+        "proof" in proofItem
+            ? proofItem.proof
+            : null;
 
     if (!tonProof) {
         throw new Error(
-            "TON Proof не получен от кошелька"
+            "Кошелёк не вернул TON Proof. Отключите кошелёк и подключите его заново."
+        );
+    }
+
+    /* Защита от proof с другим payload. */
+    if (
+        !authChallenge ||
+        tonProof.payload !== authChallenge
+    ) {
+        throw new Error(
+            "TON Proof не соответствует challenge сервера"
         );
     }
 
@@ -1924,9 +1959,17 @@ async function verifyServerAccess(wallet) {
 
 async function authorizeWalletOnServer(wallet) {
 
+    /*
+        Эта функция вызывается только после успешной проверки NFT.
+        Здесь происходит обмен уже полученного TON Proof на JWT.
+    */
     clearAccessToken();
 
-    await requestAuthChallenge();
+    if (!authChallenge) {
+        throw new Error(
+            "Отсутствует challenge для TON Proof"
+        );
+    }
 
     const tokenData =
         await issueAccessToken(
@@ -2276,6 +2319,10 @@ async function processWallet(
         accessGranted =
             false;
 
+        clearAccessToken();
+        authChallenge =
+            null;
+
         userWalletAddress.textContent =
             "";
 
@@ -2325,7 +2372,7 @@ async function processWallet(
 
 
     authStatus.textContent =
-        "Проверка NFT...";
+        "Проверка NFT подключённого кошелька...";
 
 
     loading.classList.add(
@@ -2346,6 +2393,7 @@ async function processWallet(
             accessGranted =
                 false;
 
+            clearAccessToken();
 
             authStatus.textContent =
                 "NFT нужной коллекции не найден";
@@ -2361,8 +2409,16 @@ async function processWallet(
         }
 
 
+        /*
+            Строгий порядок:
+            1. Кошелёк подключён.
+            2. Проверяем NFT.
+            3. Только после NFT CHECK отправляем TON Proof серверу.
+            4. Сервер повторно проверяет NFT и выдаёт JWT.
+            5. Только JWT используется для получения GLB.
+        */
         authStatus.textContent =
-            "NFT найден. Подтверждение доступа сервером...";
+            "NFT найден. Получение серверного токена...";
 
         try {
             await authorizeWalletOnServer(
@@ -2664,6 +2720,18 @@ disconnectWallet.addEventListener(
                 false;
 
             clearAccessToken();
+
+            authChallenge =
+                null;
+
+            try {
+                tonConnectUI.setConnectRequestParameters(null);
+            } catch (proofResetError) {
+                console.warn(
+                    "TON Proof reset error:",
+                    proofResetError
+                );
+            }
 
             userWalletAddress.textContent =
                 "";
