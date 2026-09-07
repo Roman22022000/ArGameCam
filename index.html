@@ -1272,7 +1272,7 @@ const tonConnectUI =
             null,
 
         restoreConnection:
-            true
+            false
 
     });
 
@@ -1387,6 +1387,10 @@ connectWallet.addEventListener(
 
             authStatus.textContent =
                 "Подготовка защищённого подключения...";
+
+            try {
+                await tonConnectUI.disconnect();
+            } catch (_) {}
 
             await prepareTonProof();
 
@@ -1727,10 +1731,37 @@ async function processWallet(
             );
         }
 
-        if (!tonProof || !tonProof.proof) {
+        if (!tonProof) {
             accessGranted = false;
             authStatus.textContent =
-                "Кошелёк подключён без TON Proof. Отключите его и подключите снова.";
+                "TON Proof не получен. Выполните новое подключение кошелька.";
+            try {
+                await tonConnectUI.disconnect();
+            } catch (_) {}
+            showScreen(authScreen);
+            return;
+        }
+
+        if (tonProof.error) {
+            accessGranted = false;
+            authStatus.textContent =
+                "Кошелёк не предоставил TON Proof: " +
+                (tonProof.error.message || "кошелёк не поддерживает TON Proof");
+            console.error("TON Proof error:", tonProof.error);
+            try {
+                await tonConnectUI.disconnect();
+            } catch (_) {}
+            showScreen(authScreen);
+            return;
+        }
+
+        if (!tonProof.proof) {
+            accessGranted = false;
+            authStatus.textContent =
+                "TON Proof отсутствует. Подключите кошелёк заново.";
+            try {
+                await tonConnectUI.disconnect();
+            } catch (_) {}
             showScreen(authScreen);
             return;
         }
