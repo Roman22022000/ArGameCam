@@ -1137,17 +1137,21 @@ const REQUIRED_COLLECTION_RAW =
 const API_BASE =
     "https://api.araicameragame.party";
 
+
 const AUTH_API =
     API_BASE + "/api/auth";
+
 
 const MODEL_REQUEST_API =
     API_BASE + "/api/model/request";
 
+
 const GENERATION_API =
     API_BASE + "/api/generation";
 
+
 const ARCHIVE_API =
-    "https://api.araicameragame.party/api/models";
+    API_BASE + "/api/models";
 
 
 const MODEL_BASE =
@@ -1306,33 +1310,68 @@ tonConnectUI.uiOptions = {
 
 async function requestAuthChallenge() {
 
-    const response = await fetch(
-        AUTH_API + "/challenge",
-        {
-            method: "POST",
-            headers: {
-                "Accept": "application/json"
-            },
-            cache: "no-store"
-        }
-    );
+    let response;
 
-    if (!response.ok) {
+    try {
+
+        response = await fetch(
+            AUTH_API + "/challenge",
+            {
+                method: "POST",
+                mode: "cors",
+                credentials: "omit",
+                cache: "no-store",
+                headers: {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                body: "{}"
+            }
+        );
+
+    } catch (error) {
+
         throw new Error(
-            "Сервер авторизации HTTP " + response.status
+            "Не удалось подключиться к API авторизации. " +
+            "Проверьте Cloudflare Tunnel/Worker, адрес " +
+            AUTH_API + "/challenge и CORS. " +
+            (error?.message || String(error))
+        );
+
+    }
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok || !data.success || !data.payload) {
+        throw new Error(
+            data.error ||
+            ("API авторизации HTTP " + response.status)
         );
     }
 
-    const data = await response.json();
+    authChallenge = data.payload;
 
-    if (!data.success || !data.payload) {
-        throw new Error(
-            data.error || "Сервер не выдал challenge"
-        );
-    }
-
-    authChallenge = String(data.payload);
     return authChallenge;
+}
+
+
+async function prepareTonProof() {
+
+    tonConnectUI.setConnectRequestParameters({
+        state: "loading"
+    });
+
+    const payload =
+        await requestAuthChallenge();
+
+    tonConnectUI.setConnectRequestParameters({
+        state: "ready",
+        value: {
+            tonProof: payload
+        }
+    });
+
+    return payload;
 }
 
 
@@ -1340,35 +1379,38 @@ connectWallet.addEventListener(
     "click",
     async () => {
 
+        if (checkingNFT) {
+            return;
+        }
+
         try {
 
             authStatus.textContent =
-                "Подготовка проверки кошелька...";
+                "Подготовка защищённого подключения...";
 
-            await requestAuthChallenge();
-
-            tonConnectUI.setConnectRequestParameters({
-                state: "ready",
-                value: {
-                    tonProof: authChallenge
-                }
-            });
-
-            authStatus.textContent =
-                "Подключите TON-кошелёк...";
+            await prepareTonProof();
 
             await tonConnectUI.openModal();
 
         } catch (error) {
 
-            console.error("TON Connect:", error);
+            console.error(
+                "TON CONNECT AUTH:",
+                error
+            );
+
+            tonConnectUI.setConnectRequestParameters({
+                state: "loading"
+            });
+
             authStatus.textContent =
-                error?.message || "Ошибка открытия TON Connect";
+                error?.message ||
+                "Ошибка открытия TON Connect";
 
         }
+
     }
 );
-
 
 
 /* =============================================================
@@ -1537,87 +1579,62 @@ async function checkCollectionNFT(
 
     const url =
         "https://tonapi.io/v2/accounts/" +
-        encodeURIComponent(
-            walletAddress
-        ) +
+        encodeURIComponent(walletAddress) +
         "/nfts?limit=1000";
-
 
     const response =
         await fetch(url, {
-
             method: "GET",
-
             headers: {
-                "Accept":
-                    "application/json"
+                "Accept": "application/json"
             }
-
         });
 
-
     if (!response.ok) {
-
         throw new Error(
-            "TonAPI HTTP " +
-            response.status
+            "TonAPI HTTP " + response.status
         );
-
     }
 
-
-    const data =
-        await response.json();
-
+    const data = await response.json();
 
     const nftItems =
-        Array.isArray(
-            data.nft_items
-        )
+        Array.isArray(data.nft_items)
             ? data.nft_items
             : [];
 
-
-    for (
-        const nft of nftItems
-    ) {
+    for (const nft of nftItems) {
 
         const collectionAddress =
             nft.collection?.address ||
             nft.collection_address ||
             "";
 
-
         if (!collectionAddress) {
             continue;
         }
 
-
         const normalized =
-            normalizeTonAddress(
-                collectionAddress
-            );
-
+            normalizeTonAddress(collectionAddress);
 
         if (
-            normalized ===
-                normalizedRequiredCollection
-            ||
-            normalized ===
-                REQUIRED_COLLECTION_RAW
+            normalized === normalizedRequiredCollection ||
+            normalized === normalizeTonAddress(REQUIRED_COLLECTION_RAW)
         ) {
-
-            return nft;
-
+            return {
+                address: String(
+                    nft.address ||
+                    nft.item_address ||
+                    ""
+                ),
+                collection: String(collectionAddress)
+            };
         }
-
     }
-
 
     return null;
 
 }
-
 
 /* =============================================================
    WALLET
@@ -1657,7 +1674,6 @@ async function processWallet(
         userWalletAddress.textContent = "";
         userStatus.textContent = "";
         authStatus.textContent = "Подключите TON-кошелёк";
-
         showScreen(authScreen);
         return;
     }
@@ -1676,15 +1692,19 @@ async function processWallet(
     accessToken = null;
     checkingNFT = true;
 
-    authStatus.textContent = "Проверка NFT...";
+    authStatus.textContent =
+        "Проверка NFT и подписи кошелька...";
+
     loading.classList.add("active");
 
     try {
 
-        const nft = await checkCollectionNFT(currentWallet);
+        const nft =
+            await checkCollectionNFT(currentWallet);
 
-        if (!nft) {
-
+        if (!nft || !nft.address) {
+            accessGranted = false;
+            currentNFT = null;
             authStatus.textContent =
                 "NFT нужной коллекции не найден";
             showScreen(authScreen);
@@ -1692,60 +1712,97 @@ async function processWallet(
         }
 
         currentNFT = {
-            address: String(nft.address || ""),
-            collection: String(
-                nft.collection?.address ||
-                nft.collection_address ||
-                REQUIRED_COLLECTION
-            )
+            address: nft.address,
+            collection: nft.collection
         };
 
-        const proofItem = wallet.connectItems?.tonProof;
+        let tonProof =
+            wallet.connectItems?.tonProof;
 
-        if (!proofItem || !proofItem.proof) {
-            throw new Error(
-                "TON Proof не получен. Отключите кошелёк и подключите его заново."
+        if (!tonProof && Array.isArray(wallet.connectItems)) {
+            tonProof = wallet.connectItems.find(
+                item =>
+                    item?.name === "ton_proof" ||
+                    item?.type === "ton_proof"
             );
         }
 
-        authStatus.textContent =
-            "NFT найден. Сервер проверяет подключённый кошелёк...";
+        if (!tonProof || !tonProof.proof) {
+            accessGranted = false;
+            authStatus.textContent =
+                "Кошелёк подключён без TON Proof. Отключите его и подключите снова.";
+            showScreen(authScreen);
+            return;
+        }
 
-        const verifyResponse = await fetch(
-            AUTH_API + "/verify",
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Accept": "application/json"
-                },
-                body: JSON.stringify({
-                    wallet: currentWallet,
-                    nft: currentNFT,
-                    proof: proofItem.proof,
-                    walletStateInit: wallet.account.walletStateInit || "",
-                    network: wallet.account.chain || "-239"
-                })
-            }
-        );
+        const proof = tonProof.proof;
+
+        if (
+            !proof.payload ||
+            !authChallenge ||
+            proof.payload !== authChallenge
+        ) {
+            accessGranted = false;
+            authStatus.textContent =
+                "Срок авторизации истёк. Подключите кошелёк заново.";
+            showScreen(authScreen);
+            return;
+        }
+
+        authStatus.textContent =
+            "Проверка подписи TON Proof на сервере...";
+
+        let verifyResponse;
+
+        try {
+            verifyResponse = await fetch(
+                AUTH_API + "/verify",
+                {
+                    method: "POST",
+                    mode: "cors",
+                    credentials: "omit",
+                    cache: "no-store",
+                    headers: {
+                        "Accept": "application/json",
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        wallet: currentWallet,
+                        nft: currentNFT,
+                        proof: proof,
+                        walletStateInit:
+                            wallet.account.walletStateInit || "",
+                        network:
+                            wallet.account.chain || "-239"
+                    })
+                }
+            );
+        } catch (error) {
+            throw new Error(
+                "Ошибка сети при серверной проверке кошелька: " +
+                (error?.message || String(error))
+            );
+        }
 
         const verifyData =
             await verifyResponse.json().catch(() => ({}));
 
-        if (!verifyResponse.ok || !verifyData.success || !verifyData.token) {
+        if (
+            !verifyResponse.ok ||
+            !verifyData.success ||
+            !verifyData.token
+        ) {
             throw new Error(
                 verifyData.error ||
-                "Сервер не подтвердил подключённый кошелёк"
+                ("Сервер авторизации HTTP " + verifyResponse.status)
             );
         }
 
-        accessToken = String(verifyData.token);
+        accessToken = verifyData.token;
         accessGranted = true;
 
         userWalletAddress.textContent = currentWallet;
-        authStatus.textContent =
-            "Кошелёк и NFT подтверждены сервером";
-
+        authStatus.textContent = "Доступ разрешён";
         showScreen(homeScreen);
 
     } catch (error) {
@@ -1753,11 +1810,11 @@ async function processWallet(
         console.error("WALLET AUTH ERROR:", error);
 
         accessGranted = false;
-        currentNFT = null;
         accessToken = null;
 
         authStatus.textContent =
-            error?.message || "Ошибка проверки кошелька";
+            error?.message ||
+            "Ошибка проверки кошелька";
 
         showScreen(authScreen);
 
@@ -1766,8 +1823,8 @@ async function processWallet(
         checkingNFT = false;
         loading.classList.remove("active");
     }
-}
 
+}
 
 
 /*
@@ -1808,7 +1865,9 @@ function requireAccess() {
 
     if (
         !accessGranted ||
-        !currentWallet
+        !currentWallet ||
+        !accessToken ||
+        !currentNFT
     ) {
 
         showScreen(
@@ -1990,10 +2049,6 @@ disconnectWallet.addEventListener(
 
             currentWallet =
                 null;
-
-            currentNFT = null;
-            accessToken = null;
-            authChallenge = null;
 
             accessGranted =
                 false;
@@ -2367,7 +2422,14 @@ async function loadArchiveModels(silent = false) {
             ARCHIVE_API,
             {
                 method: "GET",
-                cache: "no-store"
+                mode: "cors",
+                credentials: "omit",
+                cache: "no-store",
+                headers: {
+                    "Accept": "application/json",
+                    "Authorization":
+                        "Bearer " + (accessToken || "")
+                }
             }
         );
 
@@ -2864,7 +2926,13 @@ async function fetchModelBytes(url) {
                 cache: "no-store",
                 redirect: "follow",
                 headers: {
-                    "Accept": "model/gltf-binary, model/gltf+json, application/octet-stream, */*"
+                    "Accept": "model/gltf-binary, model/gltf+json, application/octet-stream, */*",
+                    ...(accessToken
+                        ? {
+                            "Authorization":
+                                "Bearer " + accessToken
+                        }
+                        : {})
                 }
             }
         );
@@ -3028,6 +3096,110 @@ async function parseModelByExtension(item, url, buffer) {
         );
     });
 }
+
+async function fetchGalleryModel(filename) {
+
+    if (!accessToken || !currentWallet || !currentNFT) {
+        throw new Error("Нет активной серверной авторизации.");
+    }
+
+    let response;
+
+    try {
+        response = await fetch(
+            MODEL_REQUEST_API,
+            {
+                method: "POST",
+                mode: "cors",
+                credentials: "omit",
+                cache: "no-store",
+                headers: {
+                    "Accept": "model/gltf-binary, application/octet-stream, */*",
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer " + accessToken
+                },
+                body: JSON.stringify({
+                    wallet: currentWallet,
+                    nft: currentNFT,
+                    filename: filename
+                })
+            }
+        );
+    } catch (error) {
+        throw new Error(
+            "Ошибка сети при запросе 3D модели: " +
+            (error?.message || String(error))
+        );
+    }
+
+    if (!response.ok) {
+        let message = "HTTP " + response.status;
+        try {
+            const data = await response.json();
+            if (data?.error) message = data.error;
+        } catch (_) {}
+        throw new Error(message);
+    }
+
+    const buffer = await response.arrayBuffer();
+
+    if (!buffer.byteLength) {
+        throw new Error("Сервер вернул пустую 3D модель.");
+    }
+
+    return buffer;
+}
+
+
+async function loadGalleryModel(item) {
+
+    currentModelItem = item;
+    hideViewerError();
+    showViewerLoading(true);
+    clearCurrentModel();
+
+    if (!item?.filename) {
+        showViewerLoading(false);
+        showViewerError("У модели отсутствует имя файла.");
+        return;
+    }
+
+    try {
+        viewerLoading.textContent = "ЗАГРУЗКА 3D МОДЕЛИ...";
+
+        const buffer =
+            await fetchGalleryModel(item.filename);
+
+        const object =
+            await parseModelByExtension(
+                item,
+                MODEL_REQUEST_API,
+                buffer
+            );
+
+        prepareModel(object);
+        showViewerLoading(false);
+
+    } catch (error) {
+
+        console.error("PROTECTED MODEL ERROR:", error);
+
+        showViewerLoading(false);
+        showViewerError(
+            "Не удалось получить защищённую 3D модель.\n" +
+            (error?.message || String(error))
+        );
+
+        if (
+            String(error?.message || "").includes("401") ||
+            String(error?.message || "").toLowerCase().includes("авториза")
+        ) {
+            accessGranted = false;
+            accessToken = null;
+        }
+    }
+}
+
 
 async function loadArchiveModel(item) {
 
@@ -3422,18 +3594,11 @@ function animateViewer() {
    OPEN GALLERY MODEL
 ============================================================= */
 
-async function openViewer(index) {
+function openViewer(index) {
 
     viewerOpenedFromArchive = false;
 
     if (!requireAccess()) {
-        return;
-    }
-
-    if (!accessToken || !currentNFT || !currentWallet) {
-        authStatus.textContent =
-            "Серверная авторизация отсутствует";
-        showScreen(authScreen);
         return;
     }
 
@@ -3447,74 +3612,7 @@ async function openViewer(index) {
     showScreen(viewerScreen);
     initViewer();
 
-    currentModelItem = {
-        ...item,
-        extension: "glb"
-    };
-
-    hideViewerError();
-    showViewerLoading(true);
-    viewerLoading.textContent =
-        "ПРОВЕРКА ДОСТУПА И ЗАГРУЗКА 3D МОДЕЛИ...";
-    clearCurrentModel();
-
-    try {
-
-        const response = await fetch(
-            MODEL_REQUEST_API,
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Accept": "model/gltf-binary, application/octet-stream, application/json",
-                    "Authorization": "Bearer " + accessToken
-                },
-                cache: "no-store",
-                body: JSON.stringify({
-                    wallet: currentWallet,
-                    nft: currentNFT,
-                    filename: item.filename
-                })
-            }
-        );
-
-        if (!response.ok) {
-            let message = "Сервер не вернул 3D модель";
-            try {
-                const errorData = await response.json();
-                message = errorData.error || message;
-            } catch (_) {}
-            throw new Error(
-                "HTTP " + response.status + ": " + message
-            );
-        }
-
-        const buffer = await response.arrayBuffer();
-
-        if (!buffer.byteLength) {
-            throw new Error("Сервер вернул пустую 3D модель");
-        }
-
-        viewerLoading.textContent = "ОБРАБОТКА 3D МОДЕЛИ...";
-
-        const object = await parseModelByExtension(
-            currentModelItem,
-            API_BASE + "/api/model/request",
-            buffer
-        );
-
-        prepareModel(object);
-        showViewerLoading(false);
-
-    } catch (error) {
-
-        console.error("PROTECTED MODEL ERROR:", error);
-        showViewerLoading(false);
-        showViewerError(
-            "Не удалось получить 3D модель.\n" +
-            (error?.message || String(error))
-        );
-    }
+    loadGalleryModel(item);
 }
 
 /* =============================================================
