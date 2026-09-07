@@ -912,13 +912,18 @@
             inset: 0;
             overflow: hidden;
             background: #000;
+            touch-action: none;
         }
 
         #camARContainer canvas {
+            position: absolute !important;
+            inset: 0 !important;
             display: block;
-            width: 100%;
-            height: 100%;
+            width: 100% !important;
+            height: 100% !important;
             touch-action: none;
+            z-index: 2;
+            pointer-events: auto;
         }
 
         #camVideo {
@@ -930,6 +935,7 @@
             background: #000;
             display: none;
             z-index: 0;
+            pointer-events: none;
         }
 
         #camFallbackCanvas {
@@ -2375,6 +2381,31 @@ let camXRScene = null;
 let camXRCamera = null;
 let camXRModel = null;
 let camXRReticle = null;
+
+/*
+    Compatibility-mode orbit controls.
+
+    Один палец:
+        вращение камеры вокруг GLB.
+
+    Два пальца:
+        изменение расстояния до модели.
+
+    Это работает только в режиме совместимости,
+    WebXR tracking при этом не изменяется.
+*/
+let camFallbackOrbit = {
+    yaw: 0,
+    pitch: -0.08,
+    distance: 2.4,
+    targetY: 0.0,
+    pointerId: null,
+    lastX: 0,
+    lastY: 0,
+    pinchDistance: 0,
+    activePointers: new Map()
+};
+
 let camXRPlaced = false;
 let camCameraStream = null;
 let camFallbackMode = false;
@@ -2732,6 +2763,10 @@ async function loadCamModel(url, label) {
         "..."
     );
 
+    if (!url) {
+        throw new Error("У GLB отсутствует URL.");
+    }
+
     const finalUrl =
         url +
         (
@@ -2755,46 +2790,71 @@ async function loadCamModel(url, label) {
                         const object =
                             gltf.scene;
 
-                        const box =
-                            new THREE.Box3()
-                                .setFromObject(
-                                    object
-                                );
+                        if (!object) {
+                            throw new Error(
+                                "GLB не содержит scene."
+                            );
+                        }
 
-                        const size =
-                            box.getSize(
+                        /*
+                            Сначала обновляем мировые матрицы,
+                            затем вычисляем реальный bounding box.
+
+                            Это важно для GLB, у которых origin
+                            находится далеко от геометрии.
+                        */
+                        object.updateMatrixWorld(true);
+
+                        const originalBox =
+                            new THREE.Box3()
+                                .setFromObject(object);
+
+                        if (
+                            originalBox.isEmpty()
+                        ) {
+                            throw new Error(
+                                "GLB не содержит видимой геометрии."
+                            );
+                        }
+
+                        const originalSize =
+                            originalBox.getSize(
+                                new THREE.Vector3()
+                            );
+
+                        const originalCenter =
+                            originalBox.getCenter(
                                 new THREE.Vector3()
                             );
 
                         const maxSize =
                             Math.max(
-                                size.x,
-                                size.y,
-                                size.z
+                                originalSize.x,
+                                originalSize.y,
+                                originalSize.z
                             );
 
                         if (
-                            !Number.isFinite(
-                                maxSize
-                            ) ||
+                            !Number.isFinite(maxSize) ||
                             maxSize <= 0
                         ) {
                             throw new Error(
-                                "GLB не содержит корректной геометрии"
+                                "GLB содержит некорректный размер."
                             );
                         }
 
                         /*
-                            AR-ориентированный масштаб.
+                            Центрируем модель независимо от её
+                            исходного origin.
+                        */
+                        object.position.sub(
+                            originalCenter
+                        );
 
-                            Обычный viewer нормализует модель
-                            под свою сцену 7x7x7.
-
-                            Здесь 1 единица Three.js =
-                            примерно 1 метр AR-пространства.
-
-                            Максимальный размер модели
-                            ограничивается 1 метром.
+                        /*
+                            В compatibility mode модель примерно
+                            1 метр по максимальной стороне.
+                            Она гарантированно помещается в кадр.
                         */
                         const targetSize =
                             1.0;
@@ -2804,11 +2864,25 @@ async function loadCamModel(url, label) {
                             maxSize
                         );
 
-                        object.position.set(
-                            0,
-                            0,
-                            0
-                        );
+                        object.updateMatrixWorld(true);
+
+                        /*
+                            После нормализации ещё раз вычисляем
+                            bounding box и ставим низ модели на y=0.
+                        */
+                        const normalizedBox =
+                            new THREE.Box3()
+                                .setFromObject(object);
+
+                        const normalizedCenter =
+                            normalizedBox.getCenter(
+                                new THREE.Vector3()
+                            );
+
+                        object.position.y -=
+                            normalizedCenter.y;
+
+                        object.updateMatrixWorld(true);
 
                         object.traverse(
                             child => {
@@ -2841,13 +2915,19 @@ async function loadCamModel(url, label) {
                                     materials.forEach(
                                         material => {
 
+                                            if (!material) {
+                                                return;
+                                            }
+
+                                            material.needsUpdate =
+                                                true;
+
                                             if (
-                                                material &&
                                                 "envMapIntensity"
                                                 in material
                                             ) {
                                                 material.envMapIntensity =
-                                                    0.7;
+                                                    1.0;
                                             }
                                         }
                                     );
@@ -2862,11 +2942,16 @@ async function loadCamModel(url, label) {
                             camXRModel
                         );
 
+                        /*
+                            Пока модель не размещена,
+                            WebXR скрывает её.
+                            Fallback сам включает visible=true.
+                        */
                         camXRModel.visible =
                             false;
 
                         setCamARStatus(
-                            "Модель загружена. Наведите камеру на поверхность."
+                            "GLB загружен. Наведите камеру на поверхность."
                         );
 
                         resolve(
@@ -2911,6 +2996,350 @@ async function loadCamModel(url, label) {
                     );
                 }
             );
+        }
+    );
+}
+
+function setFallbackOrbitCamera() {
+
+    if (
+        !camXRCamera ||
+        !camXRModel
+    ) {
+        return;
+    }
+
+    const orbit =
+        camFallbackOrbit;
+
+    const maxPitch =
+        Math.PI * 0.42;
+
+    orbit.pitch =
+        Math.max(
+            -maxPitch,
+            Math.min(
+                maxPitch,
+                orbit.pitch
+            )
+        );
+
+    orbit.distance =
+        Math.max(
+            0.9,
+            Math.min(
+                8.0,
+                orbit.distance
+            )
+        );
+
+    const cosPitch =
+        Math.cos(
+            orbit.pitch
+        );
+
+    const x =
+        Math.sin(
+            orbit.yaw
+        ) *
+        cosPitch *
+        orbit.distance;
+
+    const y =
+        orbit.targetY +
+        Math.sin(
+            orbit.pitch
+        ) *
+        orbit.distance;
+
+    const z =
+        Math.cos(
+            orbit.yaw
+        ) *
+        cosPitch *
+        orbit.distance;
+
+    camXRCamera.position.set(
+        x,
+        y,
+        z
+    );
+
+    camXRCamera.lookAt(
+        0,
+        orbit.targetY,
+        0
+    );
+
+    camXRCamera.updateMatrixWorld(
+        true
+    );
+}
+
+function getPointerDistance() {
+
+    const points =
+        Array.from(
+            camFallbackOrbit.activePointers.values()
+        );
+
+    if (points.length < 2) {
+        return 0;
+    }
+
+    const a =
+        points[0];
+
+    const b =
+        points[1];
+
+    return Math.hypot(
+        b.x - a.x,
+        b.y - a.y
+    );
+}
+
+function bindFallbackOrbitControls() {
+
+    if (
+        !camARContainer ||
+        camARContainer.dataset.orbitBound === "1"
+    ) {
+        return;
+    }
+
+    camARContainer.dataset.orbitBound =
+        "1";
+
+    const canvas =
+        () =>
+            camXRRenderer &&
+            camXRRenderer.domElement;
+
+    camARContainer.addEventListener(
+        "pointerdown",
+        event => {
+
+            if (
+                !camFallbackMode
+            ) {
+                return;
+            }
+
+            const target =
+                canvas();
+
+            if (
+                target &&
+                event.target !== target
+            ) {
+                return;
+            }
+
+            camFallbackOrbit.activePointers.set(
+                event.pointerId,
+                {
+                    x: event.clientX,
+                    y: event.clientY
+                }
+            );
+
+            try {
+                event.target.setPointerCapture(
+                    event.pointerId
+                );
+            } catch {}
+
+            if (
+                camFallbackOrbit.activePointers.size === 1
+            ) {
+
+                camFallbackOrbit.pointerId =
+                    event.pointerId;
+
+                camFallbackOrbit.lastX =
+                    event.clientX;
+
+                camFallbackOrbit.lastY =
+                    event.clientY;
+            }
+
+            if (
+                camFallbackOrbit.activePointers.size === 2
+            ) {
+
+                camFallbackOrbit.pinchDistance =
+                    getPointerDistance();
+            }
+        },
+        {
+            passive: false
+        }
+    );
+
+    camARContainer.addEventListener(
+        "pointermove",
+        event => {
+
+            if (
+                !camFallbackMode
+            ) {
+                return;
+            }
+
+            if (
+                !camFallbackOrbit.activePointers.has(
+                    event.pointerId
+                )
+            ) {
+                return;
+            }
+
+            event.preventDefault();
+
+            camFallbackOrbit.activePointers.set(
+                event.pointerId,
+                {
+                    x: event.clientX,
+                    y: event.clientY
+                }
+            );
+
+            const count =
+                camFallbackOrbit.activePointers.size;
+
+            if (
+                count === 1 &&
+                camFallbackOrbit.pointerId === event.pointerId
+            ) {
+
+                const dx =
+                    event.clientX -
+                    camFallbackOrbit.lastX;
+
+                const dy =
+                    event.clientY -
+                    camFallbackOrbit.lastY;
+
+                /*
+                    Горизонтальное движение —
+                    полноценный оборот вокруг GLB.
+
+                    Вертикальное движение —
+                    подъём/опускание точки обзора.
+                */
+                camFallbackOrbit.yaw -=
+                    dx *
+                    0.008;
+
+                camFallbackOrbit.pitch -=
+                    dy *
+                    0.006;
+
+                camFallbackOrbit.lastX =
+                    event.clientX;
+
+                camFallbackOrbit.lastY =
+                    event.clientY;
+
+                setFallbackOrbitCamera();
+            }
+
+            if (
+                count >= 2
+            ) {
+
+                const distance =
+                    getPointerDistance();
+
+                if (
+                    distance > 0 &&
+                    camFallbackOrbit.pinchDistance > 0
+                ) {
+
+                    const delta =
+                        distance -
+                        camFallbackOrbit.pinchDistance;
+
+                    camFallbackOrbit.distance *=
+                        Math.exp(
+                            -delta *
+                            0.004
+                        );
+
+                    camFallbackOrbit.pinchDistance =
+                        distance;
+
+                    setFallbackOrbitCamera();
+                }
+            }
+        },
+        {
+            passive: false
+        }
+    );
+
+    const releasePointer =
+        event => {
+
+            camFallbackOrbit.activePointers.delete(
+                event.pointerId
+            );
+
+            if (
+                camFallbackOrbit.pointerId ===
+                event.pointerId
+            ) {
+                camFallbackOrbit.pointerId =
+                    null;
+            }
+
+            if (
+                camFallbackOrbit.activePointers.size === 1
+            ) {
+
+                const remaining =
+                    Array.from(
+                        camFallbackOrbit.activePointers.entries()
+                    )[0];
+
+                camFallbackOrbit.pointerId =
+                    remaining[0];
+
+                camFallbackOrbit.lastX =
+                    remaining[1].x;
+
+                camFallbackOrbit.lastY =
+                    remaining[1].y;
+            }
+
+            if (
+                camFallbackOrbit.activePointers.size < 2
+            ) {
+                camFallbackOrbit.pinchDistance =
+                    0;
+            }
+        };
+
+    camARContainer.addEventListener(
+        "pointerup",
+        releasePointer
+    );
+
+    camARContainer.addEventListener(
+        "pointercancel",
+        releasePointer
+    );
+
+    camARContainer.addEventListener(
+        "pointerleave",
+        event => {
+
+            if (
+                event.buttons === 0
+            ) {
+                releasePointer(event);
+            }
         }
     );
 }
@@ -3545,12 +3974,11 @@ function placeCamModel() {
 async function startCameraFallback() {
 
     /*
-        Fallback нужен для телефонов,
-        где WebXR immersive-ar недоступен.
+        Режим совместимости:
+        реальная камера телефона = video background,
+        Three.js canvas = прозрачный слой сверху.
 
-        Здесь используется обычная камера
-        как фон. Это не заменяет настоящий
-        spatial WebXR tracking.
+        WebXR здесь не требуется.
     */
 
     if (
@@ -3573,6 +4001,18 @@ async function startCameraFallback() {
     setCamARStatus(
         "Запрос доступа к камере..."
     );
+
+    /*
+        Загружаем GLB ДО запуска цикла,
+        чтобы точно знать, что объект существует.
+    */
+    if (
+        !camSelectedModelUrl
+    ) {
+        throw new Error(
+            "Сначала выберите GLB модель."
+        );
+    }
 
     camCameraStream =
         await navigator.mediaDevices.getUserMedia({
@@ -3606,87 +4046,178 @@ async function startCameraFallback() {
     await camVideo.play();
 
     /*
-        В fallback модель отображается
-        перед камерой. Пространственный
-        hit-test здесь недоступен.
+        Создаём отдельную Three.js сцену.
     */
-    if (
-        !camXRScene
-    ) {
+    camXRScene =
+        new THREE.Scene();
 
-        camXRScene =
-            new THREE.Scene();
-    }
-
-    if (
-        !camXRCamera
-    ) {
-
-        camXRCamera =
-            new THREE.PerspectiveCamera(
-                55,
-                window.innerWidth /
-                window.innerHeight,
-                0.01,
-                100
-            );
-
-        camXRCamera.position.set(
-            0,
-            0,
-            0
-        );
-    }
-
-    if (
-        !camXRRenderer
-    ) {
-
-        camXRRenderer =
-            new THREE.WebGLRenderer({
-                alpha:
-                    true,
-                antialias:
-                    !isMobileDevice()
-            });
-
-        camXRRenderer.setPixelRatio(
-            Math.min(
-                window.devicePixelRatio ||
-                1,
-                1.5
-            )
-        );
-
-        camXRRenderer.setSize(
-            window.innerWidth,
+    camXRCamera =
+        new THREE.PerspectiveCamera(
+            55,
+            window.innerWidth /
             window.innerHeight,
-            false
+            0.01,
+            100
         );
 
-        camXRRenderer.outputColorSpace =
-            THREE.SRGBColorSpace;
+    camXRRenderer =
+        new THREE.WebGLRenderer({
+            alpha:
+                true,
 
-        camARContainer.appendChild(
-            camXRRenderer.domElement
+            antialias:
+                !isMobileDevice(),
+
+            powerPreference:
+                "high-performance"
+        });
+
+    camXRRenderer.setPixelRatio(
+        Math.min(
+            window.devicePixelRatio ||
+            1,
+            1.5
+        )
+    );
+
+    camXRRenderer.setSize(
+        window.innerWidth,
+        window.innerHeight,
+        false
+    );
+
+    /*
+        Критично:
+        прозрачный фон, чтобы video был виден.
+    */
+    camXRRenderer.setClearColor(
+        0x000000,
+        0
+    );
+
+    camXRRenderer.outputColorSpace =
+        THREE.SRGBColorSpace;
+
+    camXRRenderer.domElement.style.position =
+        "absolute";
+
+    camXRRenderer.domElement.style.left =
+        "0";
+
+    camXRRenderer.domElement.style.top =
+        "0";
+
+    camXRRenderer.domElement.style.width =
+        "100%";
+
+    camXRRenderer.domElement.style.height =
+        "100%";
+
+    camXRRenderer.domElement.style.zIndex =
+        "2";
+
+    camXRRenderer.domElement.style.pointerEvents =
+        "auto";
+
+    /*
+        Добавляем canvas только один раз.
+    */
+    camARContainer.appendChild(
+        camXRRenderer.domElement
+    );
+
+    /*
+        Освещение для GLB.
+    */
+    camXRScene.add(
+        new THREE.HemisphereLight(
+            0xffffff,
+            0x555555,
+            2.2
+        )
+    );
+
+    const key =
+        new THREE.DirectionalLight(
+            0xffffff,
+            2.5
         );
-    }
 
-    if (
-        !camXRModel
-    ) {
+    key.position.set(
+        2,
+        4,
+        3
+    );
 
-        await loadCamModel(
-            camSelectedModelUrl,
-            camSelectedModel.filename ||
-            "3D модель"
+    camXRScene.add(
+        key
+    );
+
+    const fill =
+        new THREE.DirectionalLight(
+            0xffffff,
+            1.0
         );
-    }
+
+    fill.position.set(
+        -3,
+        2,
+        -2
+    );
+
+    camXRScene.add(
+        fill
+    );
+
+    /*
+        GLB всегда загружается заново в fallback,
+        чтобы он точно принадлежал этой сцене.
+    */
+    await loadCamModel(
+        camSelectedModelUrl,
+        camSelectedModel.filename ||
+        "3D модель"
+    );
+
+    /*
+        Начальная позиция:
+        камера смотрит на центр GLB,
+        GLB находится на расстоянии 2.4 м.
+    */
+    camFallbackOrbit =
+        {
+            yaw:
+                0,
+
+            pitch:
+                -0.08,
+
+            distance:
+                2.4,
+
+            targetY:
+                0.0,
+
+            pointerId:
+                null,
+
+            lastX:
+                0,
+
+            lastY:
+                0,
+
+            pinchDistance:
+                0,
+
+            activePointers:
+                new Map()
+        };
 
     camXRModel.position.set(
         0,
-        -0.2,
-        -2
+        0,
+        0
     );
 
     camXRModel.rotation.set(
@@ -3698,12 +4229,22 @@ async function startCameraFallback() {
     camXRModel.visible =
         true;
 
+    setFallbackOrbitCamera();
+
+    bindFallbackOrbitControls();
+
     camPlace.disabled =
-        false;
+        true;
 
     setCamARStatus(
-        "Камера включена. WebXR недоступен — используется режим совместимости."
+        "Совместимость: 1 палец — вращение вокруг модели, 2 пальца — приближение/отдаление."
     );
+
+    let lastWidth =
+        window.innerWidth;
+
+    let lastHeight =
+        window.innerHeight;
 
     function fallbackRender() {
 
@@ -3722,6 +4263,37 @@ async function startCameraFallback() {
             camXRScene &&
             camXRCamera
         ) {
+
+            /*
+                Поддержка поворота телефона.
+                Сохраняем правильное соотношение
+                сторон canvas/camera.
+            */
+            if (
+                lastWidth !==
+                    window.innerWidth ||
+                lastHeight !==
+                    window.innerHeight
+            ) {
+
+                lastWidth =
+                    window.innerWidth;
+
+                lastHeight =
+                    window.innerHeight;
+
+                camXRCamera.aspect =
+                    window.innerWidth /
+                    window.innerHeight;
+
+                camXRCamera.updateProjectionMatrix();
+
+                camXRRenderer.setSize(
+                    window.innerWidth,
+                    window.innerHeight,
+                    false
+                );
+            }
 
             camXRRenderer.render(
                 camXRScene,
@@ -6134,6 +6706,47 @@ tonConnectUI.connectionRestored
         }
     );
 
+
+window.addEventListener(
+    "resize",
+    () => {
+
+        if (
+            camXRCamera &&
+            !camFallbackMode
+        ) {
+            camXRCamera.aspect =
+                window.innerWidth /
+                window.innerHeight;
+
+            camXRCamera.updateProjectionMatrix();
+        }
+
+        if (
+            camXRCamera &&
+            camFallbackMode
+        ) {
+            camXRCamera.aspect =
+                window.innerWidth /
+                window.innerHeight;
+
+            camXRCamera.updateProjectionMatrix();
+        }
+
+        if (
+            camXRRenderer
+        ) {
+            camXRRenderer.setSize(
+                window.innerWidth,
+                window.innerHeight,
+                false
+            );
+        }
+    },
+    {
+        passive: true
+    }
+);
 
 window.addEventListener(
     "pagehide",
