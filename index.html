@@ -2406,6 +2406,41 @@ let camFallbackOrbit = {
     activePointers: new Map()
 };
 
+/*
+    Датчики ориентации телефона.
+
+    alpha  = поворот вокруг Z;
+    beta   = наклон вперёд/назад;
+    gamma  = наклон влево/вправо.
+
+    В compatibility mode датчик управляет ВИРТУАЛЬНОЙ
+    камерой Three.js, которая вращается вокруг GLB.
+*/
+let camPhoneOrientation = {
+    supported: false,
+    permissionGranted: false,
+    enabled: false,
+    initialized: false,
+
+    alpha: 0,
+    beta: 0,
+    gamma: 0,
+
+    baseAlpha: 0,
+    baseBeta: 0,
+    baseGamma: 0,
+
+    baseYaw: 0,
+    basePitch: -0.08,
+
+    touchYawOffset: 0,
+    touchPitchOffset: 0,
+
+    lastEventTime: 0
+};
+
+let camPhoneOrientationListenerAttached = false;
+
 let camXRPlaced = false;
 let camCameraStream = null;
 let camFallbackMode = false;
@@ -3000,6 +3035,473 @@ async function loadCamModel(url, label) {
     );
 }
 
+
+function normalizeAngleRadians(angle) {
+
+    while (angle > Math.PI) {
+        angle -= Math.PI * 2;
+    }
+
+    while (angle < -Math.PI) {
+        angle += Math.PI * 2;
+    }
+
+    return angle;
+}
+
+function degreesToRadians(value) {
+
+    return (
+        Number(value || 0) *
+        Math.PI /
+        180
+    );
+}
+
+function getCamScreenAngleRadians() {
+
+    let degrees = 0;
+
+    try {
+
+        if (
+            window.screen &&
+            window.screen.orientation &&
+            Number.isFinite(
+                Number(
+                    window.screen.orientation.angle
+                )
+            )
+        ) {
+
+            degrees =
+                Number(
+                    window.screen.orientation.angle
+                );
+
+        } else if (
+            typeof window.orientation === "number"
+        ) {
+
+            degrees =
+                Number(
+                    window.orientation
+                );
+
+        }
+
+    } catch {}
+
+    return degreesToRadians(
+        degrees
+    );
+}
+
+function resetCamPhoneOrientation() {
+
+    camPhoneOrientation.initialized =
+        false;
+
+    camPhoneOrientation.alpha =
+        0;
+
+    camPhoneOrientation.beta =
+        0;
+
+    camPhoneOrientation.gamma =
+        0;
+
+    camPhoneOrientation.baseAlpha =
+        0;
+
+    camPhoneOrientation.baseBeta =
+        0;
+
+    camPhoneOrientation.baseGamma =
+        0;
+
+    camPhoneOrientation.baseYaw =
+        camFallbackOrbit.yaw;
+
+    camPhoneOrientation.basePitch =
+        camFallbackOrbit.pitch;
+
+    camPhoneOrientation.touchYawOffset =
+        0;
+
+    camPhoneOrientation.touchPitchOffset =
+        0;
+
+    camPhoneOrientation.lastEventTime =
+        0;
+}
+
+function handleCamDeviceOrientation(event) {
+
+    if (
+        !camFallbackMode ||
+        !camXRCamera ||
+        !camXRModel
+    ) {
+        return;
+    }
+
+    const alpha =
+        Number(event.alpha);
+
+    const beta =
+        Number(event.beta);
+
+    const gamma =
+        Number(event.gamma);
+
+    if (
+        !Number.isFinite(alpha) ||
+        !Number.isFinite(beta) ||
+        !Number.isFinite(gamma)
+    ) {
+        return;
+    }
+
+    const alphaRadians =
+        degreesToRadians(alpha);
+
+    const betaRadians =
+        degreesToRadians(beta);
+
+    const gammaRadians =
+        degreesToRadians(gamma);
+
+    camPhoneOrientation.alpha =
+        alpha;
+
+    camPhoneOrientation.beta =
+        beta;
+
+    camPhoneOrientation.gamma =
+        gamma;
+
+    camPhoneOrientation.lastEventTime =
+        performance.now();
+
+    /*
+        Первое значение является нулевой точкой.
+
+        Это важно: пользователь может открыть камеру
+        в любом положении телефона. Мы не телепортируем
+        модель в другое положение, а считаем текущий
+        ракурс исходным.
+    */
+    if (
+        !camPhoneOrientation.initialized
+    ) {
+
+        camPhoneOrientation.baseAlpha =
+            alphaRadians;
+
+        camPhoneOrientation.baseBeta =
+            betaRadians;
+
+        camPhoneOrientation.baseGamma =
+            gammaRadians;
+
+        camPhoneOrientation.baseYaw =
+            camFallbackOrbit.yaw;
+
+        camPhoneOrientation.basePitch =
+            camFallbackOrbit.pitch;
+
+        camPhoneOrientation.initialized =
+            true;
+
+        return;
+    }
+
+    /*
+        Разница alpha — вращение телефона вокруг
+        вертикальной оси.
+
+        Нормализация нужна, чтобы переход
+        359° -> 0° не превращался в скачок на 359°.
+    */
+    const deltaAlpha =
+        normalizeAngleRadians(
+            alphaRadians -
+            camPhoneOrientation.baseAlpha
+        );
+
+    /*
+        Beta и gamma используются для вертикального
+        наклона виртуальной камеры.
+
+        Gamma особенно хорошо подходит для поворота
+        телефона влево/вправо.
+    */
+    const deltaBeta =
+        betaRadians -
+        camPhoneOrientation.baseBeta;
+
+    const deltaGamma =
+        gammaRadians -
+        camPhoneOrientation.baseGamma;
+
+    /*
+        Основной горизонтальный поворот:
+
+        alpha + gamma.
+
+        Небольшая доля gamma добавляется, чтобы
+        телефон можно было наклонять влево/вправо
+        и получать естественный поворот вокруг GLB.
+    */
+    const horizontalRotation =
+        deltaAlpha +
+        deltaGamma * 0.65;
+
+    /*
+        Вертикальный наклон:
+
+        beta + небольшая доля gamma.
+
+        Ограничение выполняется далее в
+        setFallbackOrbitCamera().
+    */
+    const verticalRotation =
+        deltaBeta * 0.65 +
+        deltaGamma * 0.20;
+
+    /*
+        Учитываем ориентацию экрана.
+
+        Для обычного portrait режима коэффициент
+        остаётся естественным. При повороте экрана
+        часть осей меняется местами, поэтому добавляем
+        поправку по screen.orientation.angle.
+    */
+    const screenAngle =
+        getCamScreenAngleRadians();
+
+    let yawCorrection =
+        horizontalRotation;
+
+    let pitchCorrection =
+        verticalRotation;
+
+    const quarterTurn =
+        Math.PI / 2;
+
+    const normalizedScreen =
+        Math.round(
+            screenAngle /
+            quarterTurn
+        ) *
+        quarterTurn;
+
+    const screenCos =
+        Math.cos(
+            normalizedScreen
+        );
+
+    const screenSin =
+        Math.sin(
+            normalizedScreen
+        );
+
+    /*
+        Для landscape оси устройства должны работать
+        предсказуемо. Пересчитываем горизонтальную
+        и вертикальную составляющие.
+    */
+    const correctedYaw =
+        yawCorrection *
+        screenCos -
+        pitchCorrection *
+        screenSin;
+
+    const correctedPitch =
+        yawCorrection *
+        screenSin +
+        pitchCorrection *
+        screenCos;
+
+    /*
+        Сглаживание.
+
+        Датчики могут давать небольшие колебания.
+        Вместо резкого изменения камеры применяем
+        интерполяцию.
+    */
+    const targetYaw =
+        camPhoneOrientation.baseYaw +
+        correctedYaw +
+        camPhoneOrientation.touchYawOffset;
+
+    const targetPitch =
+        camPhoneOrientation.basePitch +
+        correctedPitch +
+        camPhoneOrientation.touchPitchOffset;
+
+    camFallbackOrbit.yaw +=
+        normalizeAngleRadians(
+            targetYaw -
+            camFallbackOrbit.yaw
+        ) *
+        0.35;
+
+    camFallbackOrbit.pitch +=
+        (
+            targetPitch -
+            camFallbackOrbit.pitch
+        ) *
+        0.35;
+
+    setFallbackOrbitCamera();
+}
+
+async function enableCamPhoneOrientation() {
+
+    if (
+        typeof window.DeviceOrientationEvent ===
+        "undefined"
+    ) {
+
+        camPhoneOrientation.supported =
+            false;
+
+        camPhoneOrientation.enabled =
+            false;
+
+        return false;
+    }
+
+    camPhoneOrientation.supported =
+        true;
+
+    /*
+        На iPhone/iPad некоторые браузеры требуют
+        отдельное разрешение, причём вызов должен
+        произойти непосредственно после нажатия
+        пользователем кнопки.
+    */
+    if (
+        typeof window.DeviceOrientationEvent
+            .requestPermission ===
+        "function"
+    ) {
+
+        try {
+
+            let permission =
+                "denied";
+
+            /*
+                Сначала просим абсолютную ориентацию.
+                Если браузер не принимает параметр,
+                повторяем обычный запрос.
+            */
+            try {
+
+                permission =
+                    await window
+                        .DeviceOrientationEvent
+                        .requestPermission(true);
+
+            } catch {
+
+                permission =
+                    await window
+                        .DeviceOrientationEvent
+                        .requestPermission();
+            }
+
+            if (
+                permission !==
+                "granted"
+            ) {
+
+                camPhoneOrientation.permissionGranted =
+                    false;
+
+                camPhoneOrientation.enabled =
+                    false;
+
+                return false;
+            }
+
+            camPhoneOrientation.permissionGranted =
+                true;
+
+        } catch (error) {
+
+            console.warn(
+                "DEVICE ORIENTATION PERMISSION ERROR:",
+                error
+            );
+
+            camPhoneOrientation.permissionGranted =
+                false;
+
+            camPhoneOrientation.enabled =
+                false;
+
+            return false;
+        }
+
+    } else {
+
+        /*
+            Браузеры без requestPermission()
+            обычно разрешают подписку напрямую.
+        */
+        camPhoneOrientation.permissionGranted =
+            true;
+    }
+
+    if (
+        !camPhoneOrientationListenerAttached
+    ) {
+
+        window.addEventListener(
+            "deviceorientation",
+            handleCamDeviceOrientation,
+            true
+        );
+
+        camPhoneOrientationListenerAttached =
+            true;
+    }
+
+    resetCamPhoneOrientation();
+
+    camPhoneOrientation.enabled =
+        true;
+
+    return true;
+}
+
+function disableCamPhoneOrientation() {
+
+    if (
+        camPhoneOrientationListenerAttached
+    ) {
+
+        window.removeEventListener(
+            "deviceorientation",
+            handleCamDeviceOrientation,
+            true
+        );
+
+        camPhoneOrientationListenerAttached =
+            false;
+    }
+
+    camPhoneOrientation.enabled =
+        false;
+
+    camPhoneOrientation.initialized =
+        false;
+}
+
 function setFallbackOrbitCamera() {
 
     if (
@@ -3228,13 +3730,36 @@ function bindFallbackOrbitControls() {
                     Вертикальное движение —
                     подъём/опускание точки обзора.
                 */
-                camFallbackOrbit.yaw -=
-                    dx *
+                const touchYawDelta =
+                    -dx *
                     0.008;
 
-                camFallbackOrbit.pitch -=
-                    dy *
+                const touchPitchDelta =
+                    -dy *
                     0.006;
+
+                camFallbackOrbit.yaw +=
+                    touchYawDelta;
+
+                camFallbackOrbit.pitch +=
+                    touchPitchDelta;
+
+                /*
+                    Если одновременно работают датчики,
+                    ручное движение пальцем становится
+                    дополнительным offset, а не ломает
+                    базовую точку датчика.
+                */
+                if (
+                    camPhoneOrientation.enabled
+                ) {
+
+                    camPhoneOrientation.touchYawOffset +=
+                        touchYawDelta;
+
+                    camPhoneOrientation.touchPitchOffset +=
+                        touchPitchDelta;
+                }
 
                 camFallbackOrbit.lastX =
                     event.clientX;
@@ -3450,6 +3975,42 @@ async function sendCamRequest() {
 
             height:
                 window.innerHeight
+        },
+
+        orientation: {
+
+            supported:
+                camPhoneOrientation.supported,
+
+            permissionGranted:
+                camPhoneOrientation.permissionGranted,
+
+            enabled:
+                camPhoneOrientation.enabled,
+
+            initialized:
+                camPhoneOrientation.initialized,
+
+            absolute:
+                null,
+
+            alpha:
+                camPhoneOrientation.alpha,
+
+            beta:
+                camPhoneOrientation.beta,
+
+            gamma:
+                camPhoneOrientation.gamma,
+
+            yaw:
+                camFallbackOrbit.yaw,
+
+            pitch:
+                camFallbackOrbit.pitch,
+
+            distance:
+                camFallbackOrbit.distance
         },
 
         timestamp:
@@ -4236,9 +4797,20 @@ async function startCameraFallback() {
     camPlace.disabled =
         true;
 
-    setCamARStatus(
-        "Совместимость: 1 палец — вращение вокруг модели, 2 пальца — приближение/отдаление."
-    );
+    if (
+        camPhoneOrientation.enabled
+    ) {
+
+        setCamARStatus(
+            "Датчики включены. Поворачивайте телефон — камера вращается вокруг GLB. 1 палец — ручной обзор, 2 пальца — масштаб."
+        );
+
+    } else {
+
+        setCamARStatus(
+            "Датчик телефона недоступен. 1 палец — вращение вокруг GLB, 2 пальца — приближение/отдаление."
+        );
+    }
 
     let lastWidth =
         window.innerWidth;
@@ -4326,6 +4898,32 @@ async function startCamCamera() {
     camStart.disabled =
         true;
 
+    /*
+        Запрашиваем доступ к датчику СРАЗУ внутри
+        пользовательского click-события.
+
+        Это особенно важно для iOS/Safari:
+        requestPermission() требует transient user activation.
+    */
+    let phoneOrientationReady =
+        false;
+
+    try {
+
+        phoneOrientationReady =
+            await enableCamPhoneOrientation();
+
+    } catch (orientationError) {
+
+        console.warn(
+            "DEVICE ORIENTATION ERROR:",
+            orientationError
+        );
+
+        phoneOrientationReady =
+            false;
+    }
+
     try {
 
         if (
@@ -4394,6 +4992,10 @@ function stopCamCamera() {
 
     camFallbackMode =
         false;
+
+    disableCamPhoneOrientation();
+
+    resetCamPhoneOrientation();
 
     if (
         camXRSession
@@ -4486,6 +5088,8 @@ function stopCamCamera() {
 }
 
 function onCamXRSessionEnded() {
+
+    disableCamPhoneOrientation();
 
     camXRSession =
         null;
