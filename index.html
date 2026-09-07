@@ -1176,6 +1176,18 @@ const REQUIRED_COLLECTION_RAW =
 const GENERATION_API =
     "https://api.araicameragame.party/api/generation";
 
+const AUTH_API =
+    "https://api.araicameragame.party/api/auth";
+
+const MODEL_API =
+    "https://api.araicameragame.party/api/models";
+
+const AUTH_TOKEN_STORAGE_KEY =
+    "araicameragame_access_token";
+
+const AUTH_TOKEN_EXPIRY_SKEW_SECONDS =
+    30;
+
 const ARCHIVE_API =
     "https://api.araicameragame.party/api/models";
 
@@ -1616,9 +1628,641 @@ let currentWallet =
 let accessGranted =
     false;
 
+let accessToken =
+    null;
+
+let authTokenExpiresAt =
+    0;
+
+let authChallenge =
+    null;
+
 let checkingNFT =
     false;
 
+
+function clearAccessToken() {
+
+    accessToken =
+        null;
+
+    authTokenExpiresAt =
+        0;
+
+    try {
+        sessionStorage.removeItem(
+            AUTH_TOKEN_STORAGE_KEY
+        );
+    } catch (error) {
+        console.warn(
+            "AUTH TOKEN STORAGE CLEAR ERROR:",
+            error
+        );
+    }
+}
+
+function saveAccessToken(token, expiresAt) {
+
+    accessToken =
+        String(token || "").trim();
+
+    authTokenExpiresAt =
+        Number(expiresAt || 0);
+
+    try {
+        sessionStorage.setItem(
+            AUTH_TOKEN_STORAGE_KEY,
+            accessToken
+        );
+    } catch (error) {
+        console.warn(
+            "AUTH TOKEN STORAGE ERROR:",
+            error
+        );
+    }
+}
+
+function getStoredAccessToken() {
+
+    if (accessToken) {
+        return accessToken;
+    }
+
+    try {
+        const stored =
+            sessionStorage.getItem(
+                AUTH_TOKEN_STORAGE_KEY
+            );
+
+        if (stored) {
+            accessToken =
+                stored;
+
+            return accessToken;
+        }
+    } catch (error) {
+        console.warn(
+            "AUTH TOKEN STORAGE READ ERROR:",
+            error
+        );
+    }
+
+    return null;
+}
+
+function tokenIsLocallyUsable() {
+
+    if (!getStoredAccessToken()) {
+        return false;
+    }
+
+    if (!authTokenExpiresAt) {
+        return true;
+    }
+
+    return (
+        authTokenExpiresAt >
+        Math.floor(Date.now() / 1000) +
+        AUTH_TOKEN_EXPIRY_SKEW_SECONDS
+    );
+}
+
+async function requestAuthChallenge() {
+
+    const response =
+        await fetch(
+            AUTH_API + "/challenge",
+            {
+                method: "GET",
+                cache: "no-store",
+                headers: {
+                    "Accept":
+                        "application/json"
+                }
+            }
+        );
+
+    if (!response.ok) {
+        throw new Error(
+            "Auth challenge HTTP " +
+            response.status
+        );
+    }
+
+    const data =
+        await response.json();
+
+    if (
+        data.success !== true ||
+        !data.payload
+    ) {
+        throw new Error(
+            data.error ||
+            "Сервер не выдал challenge"
+        );
+    }
+
+    authChallenge =
+        data.payload;
+
+    return data;
+}
+
+async function issueAccessToken(wallet) {
+
+    if (!wallet || !wallet.account) {
+        throw new Error(
+            "TON-кошелёк не подключён"
+        );
+    }
+
+    const walletAddress =
+        wallet.account.address;
+
+    let tonProof =
+        null;
+
+    if (Array.isArray(wallet.connectItems)) {
+        const proofItem =
+            wallet.connectItems.find(
+                item =>
+                    item?.name === "tonProof"
+            );
+
+        if (proofItem?.proof) {
+            tonProof =
+                proofItem.proof;
+        }
+    }
+
+    if (!tonProof) {
+        throw new Error(
+            "TON Proof не получен от кошелька"
+        );
+    }
+
+    const response =
+        await fetch(
+            AUTH_API + "/token",
+            {
+                method: "POST",
+                cache: "no-store",
+                headers: {
+                    "Content-Type":
+                        "application/json",
+                    "Accept":
+                        "application/json"
+                },
+                body: JSON.stringify({
+                    wallet:
+                        walletAddress,
+                    proof:
+                        tonProof,
+                    challenge:
+                        authChallenge
+                })
+            }
+        );
+
+    const data =
+        await response.json().catch(
+            () => ({})
+        );
+
+    if (
+        !response.ok ||
+        data.success !== true ||
+        !data.access_token
+    ) {
+        throw new Error(
+            data.error ||
+            "Авторизация NFT не подтверждена"
+        );
+    }
+
+    saveAccessToken(
+        data.access_token,
+        data.expires_at
+    );
+
+    return data;
+}
+
+async function verifyServerAccess(wallet) {
+
+    if (!wallet || !wallet.account) {
+        clearAccessToken();
+        return false;
+    }
+
+    const token =
+        getStoredAccessToken();
+
+    if (!token) {
+        return false;
+    }
+
+    try {
+        const response =
+            await fetch(
+                AUTH_API + "/status",
+                {
+                    method: "GET",
+                    cache: "no-store",
+                    headers: {
+                        "Accept":
+                            "application/json",
+                        "Authorization":
+                            "Bearer " + token
+                    }
+                }
+            );
+
+        if (!response.ok) {
+            clearAccessToken();
+            return false;
+        }
+
+        const data =
+            await response.json();
+
+        if (
+            data.success !== true ||
+            data.authorized !== true
+        ) {
+            clearAccessToken();
+            return false;
+        }
+
+        if (
+            normalizeTonAddress(
+                data.wallet
+            ) !==
+            normalizeTonAddress(
+                wallet.account.address
+            )
+        ) {
+            clearAccessToken();
+            return false;
+        }
+
+        authTokenExpiresAt =
+            Number(data.expires_at || 0);
+
+        return tokenIsLocallyUsable();
+
+    } catch (error) {
+        console.error(
+            "SERVER AUTH STATUS ERROR:",
+            error
+        );
+
+        clearAccessToken();
+        return false;
+    }
+}
+
+async function authorizeWalletOnServer(wallet) {
+
+    clearAccessToken();
+
+    await requestAuthChallenge();
+
+    const tokenData =
+        await issueAccessToken(
+            wallet
+        );
+
+    const authorized =
+        await verifyServerAccess(
+            wallet
+        );
+
+    if (!authorized) {
+        clearAccessToken();
+        throw new Error(
+            "Сервер не подтвердил доступ"
+        );
+    }
+
+    return tokenData;
+}
+
+function getModelRequestHeaders() {
+
+    const token =
+        getStoredAccessToken();
+
+    if (!token) {
+        throw new Error(
+            "Нет токена доступа к модели"
+        );
+    }
+
+    return {
+        "Accept":
+            "application/json",
+        "Authorization":
+            "Bearer " + token
+    };
+}
+
+async function fetchProtectedModelList() {
+
+    const response =
+        await fetch(
+            MODEL_API,
+            {
+                method: "GET",
+                cache: "no-store",
+                headers:
+                    getModelRequestHeaders()
+            }
+        );
+
+    if (response.status === 401 || response.status === 403) {
+        clearAccessToken();
+        accessGranted = false;
+        throw new Error(
+            "Доступ к моделям запрещён"
+        );
+    }
+
+    if (!response.ok) {
+        throw new Error(
+            "Models HTTP " +
+            response.status
+        );
+    }
+
+    return response.json();
+}
+
+async function fetchProtectedModelInfo(modelId) {
+
+    const response =
+        await fetch(
+            MODEL_API +
+            "/file/" +
+            encodeURIComponent(modelId) +
+            "/info",
+            {
+                method: "GET",
+                cache: "no-store",
+                headers:
+                    getModelRequestHeaders()
+            }
+        );
+
+    if (response.status === 401 || response.status === 403) {
+        clearAccessToken();
+        accessGranted = false;
+        throw new Error(
+            "Доступ к модели запрещён"
+        );
+    }
+
+    if (!response.ok) {
+        throw new Error(
+            "Model info HTTP " +
+            response.status
+        );
+    }
+
+    return response.json();
+}
+
+async function fetchProtectedModelBlob(url) {
+
+    const token =
+        getStoredAccessToken();
+
+    if (!token) {
+        throw new Error(
+            "Нет токена доступа к модели"
+        );
+    }
+
+    const response =
+        await fetch(
+            url,
+            {
+                method: "GET",
+                mode: "cors",
+                cache: "no-store",
+                credentials: "omit",
+                headers: {
+                    "Accept":
+                        "model/gltf-binary,application/octet-stream,*/*",
+                    "Authorization":
+                        "Bearer " + token
+                }
+            }
+        );
+
+    if (response.status === 401 || response.status === 403) {
+        clearAccessToken();
+        accessGranted = false;
+        throw new Error(
+            "Доступ к GLB запрещён"
+        );
+    }
+
+    if (!response.ok) {
+        throw new Error(
+            "GLB HTTP " +
+            response.status
+        );
+    }
+
+    const contentType =
+        (
+            response.headers.get(
+                "content-type"
+            ) || ""
+        ).toLowerCase();
+
+    if (
+        contentType.includes("text/html") ||
+        contentType.includes("application/json")
+    ) {
+        throw new Error(
+            "Сервер вернул не GLB"
+        );
+    }
+
+    return response.arrayBuffer();
+}
+
+async function loadProtectedModelDirect(
+    url,
+    token,
+    label
+) {
+
+    return new Promise(
+        (resolve, reject) => {
+
+            const controller =
+                new AbortController();
+
+            const finalUrl =
+                url +
+                (url.includes("?")
+                    ? "&"
+                    : "?") +
+                "v=" +
+                Date.now();
+
+            setViewerStatus(
+                `Загрузка ${label}...`,
+                true
+            );
+
+            fetch(
+                finalUrl,
+                {
+                    method: "GET",
+                    mode: "cors",
+                    cache: "no-store",
+                    credentials: "omit",
+                    headers: {
+                        "Accept":
+                            "model/gltf-binary,application/octet-stream,*/*",
+                        "Authorization":
+                            "Bearer " + token
+                    },
+                    signal:
+                        controller.signal
+                }
+            )
+                .then(
+                    async response => {
+
+                        if (
+                            response.status === 401 ||
+                            response.status === 403
+                        ) {
+                            clearAccessToken();
+                            accessGranted = false;
+                            throw new Error(
+                                "Доступ к GLB запрещён"
+                            );
+                        }
+
+                        if (!response.ok) {
+                            throw new Error(
+                                `HTTP ${response.status}`
+                            );
+                        }
+
+                        const contentType =
+                            (
+                                response.headers.get(
+                                    "content-type"
+                                ) || ""
+                            ).toLowerCase();
+
+                        if (
+                            contentType.includes("text/html") ||
+                            contentType.includes("application/json")
+                        ) {
+                            throw new Error(
+                                `Сервер вернул ${contentType}, а не GLB`
+                            );
+                        }
+
+                        const reader =
+                            response.body?.getReader();
+
+                        if (!reader) {
+                            const buffer =
+                                await response.arrayBuffer();
+
+                            resolve(buffer);
+                            return;
+                        }
+
+                        const chunks = [];
+                        let loaded = 0;
+                        const total =
+                            Number(
+                                response.headers.get(
+                                    "content-length"
+                                ) || 0
+                            );
+
+                        while (true) {
+                            const result =
+                                await reader.read();
+
+                            if (result.done) {
+                                break;
+                            }
+
+                            chunks.push(
+                                result.value
+                            );
+
+                            loaded +=
+                                result.value.byteLength;
+
+                            if (total > 0) {
+                                const percent =
+                                    Math.round(
+                                        loaded /
+                                        total *
+                                        100
+                                    );
+
+                                setViewerStatus(
+                                    `Загрузка ${label}: ${percent}%`,
+                                    true
+                                );
+                            } else {
+                                const mb =
+                                    (
+                                        loaded /
+                                        1024 /
+                                        1024
+                                    ).toFixed(1);
+
+                                setViewerStatus(
+                                    `Загрузка ${label}: ${mb} MB`,
+                                    true
+                                );
+                            }
+                        }
+
+                        const buffer =
+                            new Uint8Array(
+                                loaded
+                            );
+
+                        let offset =
+                            0;
+
+                        for (const chunk of chunks) {
+                            buffer.set(
+                                chunk,
+                                offset
+                            );
+
+                            offset +=
+                                chunk.byteLength;
+                        }
+
+                        resolve(
+                            buffer.buffer
+                        );
+                    }
+                )
+                .catch(
+                    reject
+                );
+        }
+    );
+}
 
 async function processWallet(
     wallet
@@ -1717,17 +2361,42 @@ async function processWallet(
         }
 
 
+        authStatus.textContent =
+            "NFT найден. Подтверждение доступа сервером...";
+
+        try {
+            await authorizeWalletOnServer(
+                wallet
+            );
+        } catch (serverError) {
+            console.error(
+                "SERVER AUTH ERROR:",
+                serverError
+            );
+
+            accessGranted =
+                false;
+
+            clearAccessToken();
+
+            authStatus.textContent =
+                "Сервер не подтвердил право доступа";
+
+            showScreen(
+                authScreen
+            );
+
+            return;
+        }
+
         accessGranted =
             true;
-
 
         userWalletAddress.textContent =
             currentWallet;
 
-
         authStatus.textContent =
             "Доступ разрешён";
-
 
         showScreen(
             homeScreen
@@ -1994,6 +2663,8 @@ disconnectWallet.addEventListener(
             accessGranted =
                 false;
 
+            clearAccessToken();
+
             userWalletAddress.textContent =
                 "";
 
@@ -2110,7 +2781,9 @@ generationSubmit.addEventListener(
 
                         headers: {
                             "Content-Type":
-                                "application/json"
+                                "application/json",
+                            "Authorization":
+                                "Bearer " + getStoredAccessToken()
                         },
 
                         body:
@@ -2275,9 +2948,19 @@ async function loadArchiveModels() {
                 ARCHIVE_API,
                 {
                     method: "GET",
-                    cache: "no-store"
+                    cache: "no-store",
+                    headers:
+                        getModelRequestHeaders()
                 }
             );
+
+        if (response.status === 401 || response.status === 403) {
+            clearAccessToken();
+            accessGranted = false;
+            throw new Error(
+                "Доступ к архиву запрещён"
+            );
+        }
 
         if (!response.ok) {
             throw new Error(
@@ -3792,9 +4475,19 @@ async function loadModelIntoViewer(
     url,
     label
 ) {
+
     if (!url) {
         setViewerStatus(
             "У модели отсутствует URL.",
+            true
+        );
+
+        return;
+    }
+
+    if (!accessGranted || !getStoredAccessToken()) {
+        setViewerStatus(
+            "Доступ к модели отсутствует.",
             true
         );
 
@@ -3814,114 +4507,176 @@ async function loadModelIntoViewer(
     );
 
     try {
-        await loadModelDirect(
-            url,
-            token,
-            label
-        );
-
-        return;
-    } catch (firstError) {
-        console.error(
-            "GLB direct load failed:",
-            firstError
-        );
-
-        try {
-            await loadModelFallback(
+        const buffer =
+            await loadProtectedModelDirect(
                 url,
-                token,
+                getStoredAccessToken(),
                 label
             );
 
+        if (token !== viewerLoadToken) {
             return;
-        } catch (secondError) {
-            console.error(
-                "GLB fallback load failed:",
-                secondError
-            );
+        }
 
-            if (
-                token !== viewerLoadToken
-            ) {
-                return;
-            }
-
-            const message =
-                secondError?.message ||
-                firstError?.message ||
-                "Неизвестная ошибка";
-
-            setViewerStatus(
-                `Не удалось загрузить GLB.\n${message}\n\nПроверьте CORS, доступность файла и память телефона.`,
-                true
+        if (buffer.byteLength < 20) {
+            throw new Error(
+                "Файл GLB слишком маленький или пустой"
             );
         }
+
+        const magic =
+            new DataView(buffer)
+                .getUint32(0, true);
+
+        if (magic !== 0x46546c67) {
+            throw new Error(
+                "Ответ сервера не является GLB"
+            );
+        }
+
+        setViewerStatus(
+            `Распаковка ${label}...`,
+            true
+        );
+
+        const gltf =
+            await loader.parseAsync(
+                buffer,
+                new URL(url)
+                    .href
+                    .replace(
+                        /[^/]*$/,
+                        ""
+                    )
+            );
+
+        if (token !== viewerLoadToken) {
+            return;
+        }
+
+        disposeModel();
+
+        model =
+            prepareModel(
+                gltf.scene
+            );
+
+        scene.add(model);
+
+        viewerReady = true;
+
+        resetViewerCamera();
+
+        setViewerStatus(
+            "",
+            false
+        );
+
+    } catch (error) {
+        console.error(
+            "PROTECTED GLB LOAD ERROR:",
+            error
+        );
+
+        if (
+            token !== viewerLoadToken
+        ) {
+            return;
+        }
+
+        setViewerStatus(
+            `Не удалось загрузить защищённую GLB.\n${error?.message || "Неизвестная ошибка"}`,
+            true
+        );
     }
 }
 
+
 function resolveArchiveUrl(item) {
-    if (!item) return "";
 
-    if (
-        typeof item.url === "string" &&
-        item.url.startsWith("http")
-    ) {
-        return item.url;
-    }
-
-    if (
-        typeof item.download_url === "string" &&
-        item.download_url.startsWith("http")
-    ) {
-        return item.download_url;
-    }
-
-    if (
-        typeof item.file_url === "string" &&
-        item.file_url.startsWith("http")
-    ) {
-        return item.file_url;
+    if (!item) {
+        return "";
     }
 
     if (
         item.id !== undefined &&
         item.id !== null
     ) {
-        return `${ARCHIVE_API}/file/${encodeURIComponent(item.id)}`;
+        return `${MODEL_API}/file/${encodeURIComponent(item.id)}`;
     }
 
     return "";
 }
 
-function openViewer(index) {
+
+async function openViewer(index) {
+
     viewerOpenedFromArchive = false;
 
-    if (!requireAccess()) return;
+    if (!requireAccess()) {
+        return;
+    }
 
     const item =
         galleryItems[index];
 
-    if (!item) return;
+    if (!item) {
+        return;
+    }
 
     viewerNumber.textContent =
         item.number;
 
-    showScreen(viewerScreen);
+    showScreen(
+        viewerScreen
+    );
 
     initViewer();
 
-    const url =
-        MODEL_BASE +
-        encodeURIComponent(
-            item.filename
+    try {
+        const data =
+            await fetchProtectedModelList();
+
+        const models =
+            Array.isArray(data.items)
+                ? data.items
+                : [];
+
+        const found =
+            models.find(
+                modelItem =>
+                    modelItem.filename ===
+                    item.filename
+            );
+
+        if (!found) {
+            throw new Error(
+                "Модель отсутствует в защищённом архиве"
+            );
+        }
+
+        const url =
+            `${MODEL_API}/file/${encodeURIComponent(found.id)}`;
+
+        await loadModelIntoViewer(
+            url,
+            found.filename ||
+                item.filename
         );
 
-    loadModelIntoViewer(
-        url,
-        item.filename
-    );
+    } catch (error) {
+        console.error(
+            "GALLERY MODEL ERROR:",
+            error
+        );
+
+        setViewerStatus(
+            `Не удалось получить модель.\n${error?.message || "Ошибка доступа"}`,
+            true
+        );
+    }
 }
+
 
 function openArchiveViewer(index) {
     viewerOpenedFromArchive = true;
