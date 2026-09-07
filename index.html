@@ -2382,6 +2382,13 @@ let camXRCamera = null;
 let camXRModel = null;
 let camXRReticle = null;
 
+/* Настоящее закрепление объекта в пространстве комнаты через XR Anchor. */
+let camXRAnchor = null;
+let camXRAnchorSupported = false;
+let camXRLastHitResult = null;
+let camXRLastHitPose = null;
+let camXRAnchorCreationPending = false;
+
 /*
     Compatibility-mode orbit controls.
 
@@ -4322,7 +4329,8 @@ async function startWebXRAR() {
                     "hit-test"
                 ],
                 optionalFeatures: [
-                    "dom-overlay"
+                    "dom-overlay",
+                    "anchors"
                 ],
                 domOverlay: {
                     root:
@@ -4362,7 +4370,10 @@ async function startWebXRAR() {
         camXRHitTestSource =
             await session.requestHitTestSource({
                 space:
-                    camXRViewerSpace
+                    camXRViewerSpace,
+                entityTypes: [
+                    "plane"
+                ]
             });
 
     } catch (error) {
@@ -4393,143 +4404,141 @@ function renderCamXR(
     frame
 ) {
 
-    if (
-        !camXRSession ||
-        !camXRRenderer ||
-        !camXRScene ||
-        !camXRReferenceSpace
-    ) {
+    if (!camXRSession || !camXRRenderer || !camXRScene || !camXRReferenceSpace) {
         return;
     }
 
-    camLastXRFrame =
-        frame;
+    camLastXRFrame = frame;
 
-    let hitFound =
-        false;
-
-    if (
-        frame &&
-        camXRHitTestSource
-    ) {
-
-        const hitResults =
-            frame.getHitTestResults(
-                camXRHitTestSource
+    /*
+        После размещения объект получает положение из XR Anchor.
+        Он больше не находится в центре экрана и не вращается вместе
+        с виртуальной камерой. WebXR самостоятельно отслеживает
+        положение и поворот телефона относительно комнаты.
+    */
+    if (camXRAnchor && frame && camXRModel) {
+        try {
+            const anchorPose = frame.getPose(
+                camXRAnchor.anchorSpace,
+                camXRReferenceSpace
             );
 
-        if (
-            hitResults.length > 0
-        ) {
+            if (anchorPose) {
+                camXRModel.matrix.fromArray(anchorPose.transform.matrix);
+                camXRModel.matrixAutoUpdate = false;
+                camXRModel.visible = true;
+            }
+        } catch (error) {
+            console.warn("XR Anchor pose error:", error);
+        }
 
-            const hit =
-                hitResults[0];
+        if (camXRReticle) camXRReticle.visible = false;
+        camPlace.disabled = true;
+    }
 
-            const pose =
-                hit.getPose(
-                    camXRReferenceSpace
-                );
+    let hitFound = false;
+
+    /* До размещения ищем реальную горизонтальную поверхность пола. */
+    if (!camXRAnchor && !camXRPlaced && frame && camXRHitTestSource) {
+        const hitResults = frame.getHitTestResults(camXRHitTestSource);
+
+        if (hitResults.length > 0) {
+            const hit = hitResults[0];
+            const pose = hit.getPose(camXRReferenceSpace);
 
             if (pose) {
+                hitFound = true;
+                camXRLastHitResult = hit;
+                camXRLastHitPose = pose;
 
-                hitFound =
-                    true;
-
-                if (
-                    camXRReticle
-                ) {
-
-                    camXRReticle.visible =
-                        true;
-
-                    camXRReticle.matrix
-                        .fromArray(
-                            pose.transform
-                                .matrix
-                        );
+                if (camXRReticle) {
+                    camXRReticle.visible = true;
+                    camXRReticle.matrix.fromArray(pose.transform.matrix);
                 }
 
-                /*
-                    Кнопка становится доступной
-                    только когда реально найдена
-                    поверхность.
-                */
-                if (
-                    !camXRPlaced
-                ) {
-                    camPlace.disabled =
-                        false;
-                }
+                camPlace.disabled = false;
+                setCamARStatus(
+                    "Поверхность найдена. Нажмите «ПОМЕСТИТЬ», чтобы закрепить модель на этом месте. После этого можно ходить вокруг объекта."
+                );
             }
         }
     }
 
-    if (
-        !hitFound &&
-        camXRReticle
-    ) {
+    if (!hitFound && !camXRAnchor && !camXRPlaced) {
+        if (camXRReticle) camXRReticle.visible = false;
+        camXRLastHitResult = null;
+        camXRLastHitPose = null;
+        camPlace.disabled = true;
+        setCamARStatus("Наведите камеру на пол. Ищем горизонтальную поверхность...");
+    }
 
-        camXRReticle.visible =
-            false;
+    /*
+        Создаём Anchor внутри XR animation frame. Это важно: точка
+        берётся из актуального hit-test, а не из центра экрана.
+    */
+    if (camXRAnchorCreationPending && !camXRAnchor && camXRLastHitResult && camXRLastHitPose && camXRModel) {
+        camXRAnchorCreationPending = false;
 
-        if (
-            !camXRPlaced
-        ) {
-            camPlace.disabled =
-                true;
+        const hit = camXRLastHitResult;
+        const pose = camXRLastHitPose;
+
+        camXRModel.matrix.fromArray(pose.transform.matrix);
+        camXRModel.matrixAutoUpdate = false;
+        camXRModel.visible = true;
+        camXRPlaced = true;
+        camPlace.disabled = true;
+
+        if (camXRReticle) camXRReticle.visible = false;
+
+        if (typeof hit.createAnchor === "function") {
+            hit.createAnchor().then(anchor => {
+                if (!camXRSession) {
+                    try {
+                        if (anchor && typeof anchor.delete === "function") anchor.delete();
+                    } catch {}
+                    return;
+                }
+
+                camXRAnchor = anchor;
+                camXRAnchorSupported = true;
+                camXRLastHitResult = null;
+                camXRLastHitPose = null;
+
+                setCamARStatus(
+                    "Модель закреплена в пространстве комнаты. Теперь можно ходить вокруг неё — объект остаётся на месте."
+                );
+            }).catch(error => {
+                console.warn("XR Anchor creation error:", error);
+                camXRAnchor = null;
+                camXRAnchorSupported = false;
+                setCamARStatus(
+                    "Модель размещена в найденной точке. XR Anchor недоступен в этом браузере."
+                );
+            });
+        } else {
+            setCamARStatus(
+                "Модель размещена в найденной точке. XR Anchor не поддерживается этим браузером."
+            );
         }
     }
 
-    camXRRenderer.render(
-        camXRScene,
-        camXRCamera
-    );
+    camXRRenderer.render(camXRScene, camXRCamera);
 }
 
 function placeCamModel() {
 
-    if (
-        !camXRModel ||
-        !camXRReticle ||
-        !camXRReticle.visible
-    ) {
+    if (!camXRModel || !camXRReticle || !camXRReticle.visible || camXRAnchor || camXRPlaced) {
         return;
     }
 
-    /*
-        Копируем transform reticle.
-        Reticle лежит на реальной поверхности.
-    */
-    camXRModel.position.setFromMatrixPosition(
-        camXRReticle.matrix
-    );
+    if (!camXRLastHitResult || !camXRLastHitPose) {
+        setCamARStatus("Поверхность ещё не найдена. Наведите камеру на пол.");
+        return;
+    }
 
-    const quaternion =
-        new THREE.Quaternion();
-
-    quaternion.setFromRotationMatrix(
-        camXRReticle.matrix
-    );
-
-    camXRModel.quaternion.copy(
-        quaternion
-    );
-
-    camXRModel.visible =
-        true;
-
-    camXRPlaced =
-        true;
-
-    camPlace.disabled =
-        true;
-
-    camXRReticle.visible =
-        false;
-
-    setCamARStatus(
-        "Модель размещена."
-    );
+    camXRAnchorCreationPending = true;
+    camPlace.disabled = true;
+    setCamARStatus("Закрепляем модель на найденной точке пола...");
 }
 
 async function startCameraFallback() {
@@ -4905,25 +4914,7 @@ async function startCamCamera() {
         Это особенно важно для iOS/Safari:
         requestPermission() требует transient user activation.
     */
-    let phoneOrientationReady =
-        false;
-
-    try {
-
-        phoneOrientationReady =
-            await enableCamPhoneOrientation();
-
-    } catch (orientationError) {
-
-        console.warn(
-            "DEVICE ORIENTATION ERROR:",
-            orientationError
-        );
-
-        phoneOrientationReady =
-            false;
-    }
-
+    /* В настоящем WebXR ориентацию отслеживает XR. Гироскоп нужен только fallback. */
     try {
 
         if (
@@ -4996,6 +4987,18 @@ function stopCamCamera() {
     disableCamPhoneOrientation();
 
     resetCamPhoneOrientation();
+
+    if (camXRAnchor) {
+        try {
+            if (typeof camXRAnchor.delete === "function") camXRAnchor.delete();
+        } catch {}
+    }
+
+    camXRAnchor = null;
+    camXRAnchorSupported = false;
+    camXRAnchorCreationPending = false;
+    camXRLastHitResult = null;
+    camXRLastHitPose = null;
 
     if (
         camXRSession
@@ -5088,6 +5091,18 @@ function stopCamCamera() {
 }
 
 function onCamXRSessionEnded() {
+
+    if (camXRAnchor) {
+        try {
+            if (typeof camXRAnchor.delete === "function") camXRAnchor.delete();
+        } catch {}
+    }
+
+    camXRAnchor = null;
+    camXRAnchorSupported = false;
+    camXRAnchorCreationPending = false;
+    camXRLastHitResult = null;
+    camXRLastHitPose = null;
 
     disableCamPhoneOrientation();
 
