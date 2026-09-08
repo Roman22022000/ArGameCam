@@ -8614,11 +8614,11 @@ function prepareRoomModel(loadedModel) {
 
 async function loadRoomModel(modelInfo) {
     const token = ++roomModelLoadToken;
-    const modelId = Number(modelInfo?.model_id);
+    const modelId = Number(modelInfo?.model_id || 0);
     const url = String(modelInfo?.url || "").trim();
 
-    if (!modelId || !url) {
-        throw new Error("Сервер не вернул корректную 3D модель");
+    if (!url) {
+        throw new Error("Сервер не вернул URL 3D модели");
     }
 
     setRoomStatus(
@@ -8641,9 +8641,19 @@ async function loadRoomModel(modelInfo) {
         const filename = clean.split("/").pop();
         if (!filename) return originalUrl;
 
-        return `${PUBLIC_API_BASE}/api/models/resource/${modelId}/${
-            encodeURIComponent(filename)
-        }`;
+        if (modelInfo?.source === "same_room_folder" && modelInfo?.room) {
+            return `${ROOMS_API}/model-file/${encodeURIComponent(modelInfo.room)}/${
+                encodeURIComponent(filename)
+            }`;
+        }
+
+        if (modelId > 0) {
+            return `${PUBLIC_API_BASE}/api/models/resource/${modelId}/${
+                encodeURIComponent(filename)
+            }`;
+        }
+
+        return originalUrl;
     });
 
     const roomLoader = new GLTFLoader(manager);
@@ -8905,19 +8915,40 @@ async function buildRoom(item) {
 
     const errors = results.filter(result => !result.texture);
 
+    // Модель берётся автоматически из той же папки ROOM.
+    // Загружаем её даже если одна из текстур временно не прошла через сеть.
+    const directModel = roomData?.model;
+    if (directModel?.url) {
+        try {
+            await loadRoomModel({
+                ...directModel,
+                room: folder,
+                model_id: 0,
+                source: "same_room_folder"
+            });
+        } catch (modelError) {
+            console.error("ROOM MODEL LOAD ERROR:", modelError);
+            setRoomStatus(
+                `ROOM ${folder}: модель ${directModel.filename || "GLB"} найдена, но не загрузилась.\n` +
+                `${modelError?.message || modelError}`,
+                true
+            );
+        }
+    } else {
+        await waitForRoomModel(roomData, folder);
+    }
+
     if (errors.length) {
         const errorText = errors.map(result =>
-            `${result.label}.png\n${result.error || "ошибка"}\n${result.url || "URL отсутствует"}`
+            `${result.label}.png\n${result.error || "ошибка"}`
         ).join("\n\n");
 
         setRoomStatus(
-            `ROOM ${folder} создан: 7 × 6 × 4 м.\n` +
-            `Текстуры загружены: ${loadedCount}/6.\n\n` +
-            `Ошибки:\n${errorText}`,
+            `ROOM ${folder}: 3D модель загружена.\n` +
+            `Текстуры: ${loadedCount}/6.\n\n` +
+            `Ошибки текстур:\n${errorText}`,
             true
         );
-    } else {
-        await waitForRoomModel(roomData, folder);
     }
 }
 
