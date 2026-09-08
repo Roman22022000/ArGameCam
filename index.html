@@ -8665,27 +8665,135 @@ async function loadRoomModel(modelInfo) {
     );
 
     const manager = new THREE.LoadingManager();
+
+    /*
+       КРИТИЧЕСКАЯ ЧАСТЬ ЗАГРУЗКИ GLB
+
+       model.glb находится здесь:
+         ROOM/3d_model/model.glb
+
+       а текстуры находятся здесь:
+         ROOM/3d_model/textures/*
+
+       GLTFLoader после разбора GLB может передать сюда уже АБСОЛЮТНЫЙ
+       URL вида:
+         /api/rooms/model-file/diorama_2/albedo.png
+      
+       Старый код видел https://... и сразу возвращал URL без изменения.
+       В результате браузер пытался искать PNG внутри endpoint model-file,
+       который предназначен только для model.glb. Получался 404 и модель
+       оставалась белой.
+
+       Ниже абсолютные URL ресурсов ROOM принудительно переводятся
+       на /api/rooms/model-resource/... . Сервер уже умеет искать файл
+       как по относительному пути, так и внутри 3d_model/textures.
+    */
     manager.setURLModifier(originalUrl => {
         if (!originalUrl || originalUrl.startsWith("data:")) {
             return originalUrl;
         }
 
-        /* GLTF с внешними PNG/JPG: перенаправляем ресурсы на PC API. */
-        if (/^https?:\/\//i.test(originalUrl)) {
-            return originalUrl;
+        const clean = String(originalUrl).split("?")[0];
+        const decoded = (() => {
+            try {
+                return decodeURIComponent(clean);
+            } catch {
+                return clean;
+            }
+        })();
+
+        /*
+           ROOM из той же папки.
+           Неважно, относительный URL пришёл от GLTFLoader или абсолютный.
+        */
+        if (modelInfo?.room) {
+            const roomName = String(modelInfo.room);
+            const encodedRoom = encodeURIComponent(roomName);
+
+            /*
+               Если URL уже указывает на endpoint model-resource, повторно
+               его не меняем.
+            */
+            if (decoded.includes("/api/rooms/model-resource/")) {
+                return originalUrl;
+            }
+
+            /*
+               Пытаемся получить путь ресурса после
+               /api/rooms/model-file/<room>/.
+               Для относительного textures/a.png получится textures/a.png.
+               Для абсолютного URL результат будет таким же.
+            */
+            let resourcePath = "";
+            const marker = `/api/rooms/model-file/${roomName}/`;
+            const encodedMarker = `/api/rooms/model-file/${encodedRoom}/`;
+
+            const markerIndex = decoded.indexOf(marker);
+            const encodedMarkerIndex = clean.indexOf(encodedMarker);
+
+            if (markerIndex >= 0) {
+                resourcePath = decoded.slice(markerIndex + marker.length);
+            } else if (encodedMarkerIndex >= 0) {
+                resourcePath = decodeURIComponent(
+                    clean.slice(encodedMarkerIndex + encodedMarker.length)
+                );
+            }
+
+            /*
+               Если GLTFLoader передал обычный абсолютный URL без
+               model-file marker, используем только имя ресурса.
+            */
+            if (!resourcePath) {
+                resourcePath = decoded.split("/").pop() || "";
+            }
+
+            resourcePath = resourcePath
+                .split("?")[0]
+                .replace(/^\/+/, "");
+
+            /*
+               Не допускаем возврат к model.glb как к текстуре.
+            */
+            if (!resourcePath || resourcePath.toLowerCase().endsWith("/model.glb")) {
+                return originalUrl;
+            }
+
+            /*
+               Если серверный manifest уже дал точный URL для этого файла,
+               используем его. Это особенно важно для вложенных папок.
+            */
+            const modelData = modelInfo?.model || modelInfo;
+            const byPath = modelData?.texture_urls_by_path || {};
+            const byName = modelData?.texture_urls_by_name || {};
+            const pathKey = resourcePath.toLowerCase();
+            const nameKey = resourcePath.split("/").pop().toLowerCase();
+
+            if (byPath[pathKey]) {
+                return byPath[pathKey];
+            }
+
+            if (byName[nameKey]) {
+                return byName[nameKey];
+            }
+
+            const base = modelData?.resource_base_url ||
+                `${ROOMS_API}/model-resource/${encodedRoom}/`;
+
+            return base + resourcePath
+                .split("/")
+                .map(part => encodeURIComponent(part))
+                .join("/");
         }
 
-        const clean = originalUrl.split("?")[0];
-        const filename = clean.split("/").pop();
-        if (!filename) return originalUrl;
-
-        if (modelInfo?.source === "same_room_folder" && modelInfo?.room) {
-            return `${ROOMS_API}/model-file/${encodeURIComponent(modelInfo.room)}/${
-                encodeURIComponent(filename)
-            }`;
-        }
-
+        /* Старый API-маршрут для моделей из общего архива. */
         if (modelId > 0) {
+            if (decoded.includes(`/api/models/resource/${modelId}/`)) {
+                return originalUrl;
+            }
+
+            const filename = decoded.split("/").pop();
+            if (!filename) return originalUrl;
+
             return `${PUBLIC_API_BASE}/api/models/resource/${modelId}/${
                 encodeURIComponent(filename)
             }`;
@@ -8850,6 +8958,7 @@ async function buildRoom(item) {
         const directModel = roomData?.model;
         if (directModel?.url) {
             return {
+                ...directModel,
                 success: true,
                 ready: true,
                 room: folder,
