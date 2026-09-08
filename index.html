@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>AR Gallery</title>
 
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://unpkg.com/@tonconnect/ui@3.0.0/dist/tonconnect-ui.min.js"></script>
 
 <style>
@@ -21,7 +20,6 @@ button{cursor:pointer;border:0}
 .button{width:100%;height:52px;margin-bottom:8px;background:#080808;color:#fff;border:1px solid #242424;text-align:left;padding:0 16px;font-size:13px}
 .button:hover{background:#111}
 .primary{background:#fff;color:#000;border-color:#fff}
-.telegram{width:100%;height:52px;margin-bottom:8px;background:#080808;color:#fff;border:1px solid #242424;font-size:13px}.telegram:disabled{opacity:.55}.telegramInfo{text-align:center;color:#666;font-size:11px;line-height:1.4;min-height:16px;margin:-2px 0 12px}
 .status{text-align:center;color:#666;font-size:12px;line-height:1.45;min-height:20px;margin-top:14px;white-space:pre-line}
 .page{flex-direction:column;padding:14px 18px 18px}
 .header{position:relative;width:100%;height:48px;display:flex;align-items:center;flex-shrink:0}
@@ -169,12 +167,6 @@ const authScreen=$("authScreen"),homeScreen=$("homeScreen"),roomScreen=$("roomSc
 const roomViewerScreen=$("roomViewerScreen"),generationScreen=$("generationScreen"),userScreen=$("userScreen");
 const authStatus=$("authStatus"),loading=$("loading"),userWalletAddress=$("userWalletAddress"),userStatus=$("userStatus");
 const roomGrid=$("roomGrid"),roomStatusList=$("roomStatusList"),roomViewerStatus=$("roomViewerStatus"),roomViewerTitle=$("roomViewerTitle");
-const telegramLogin=$("telegramLogin"),telegramInfo=$("telegramInfo");
-const telegramWebApp=window.Telegram?.WebApp||null;
-let telegramUser=null;
-function applyTelegramUser(user){if(!user)return false;telegramUser={id:user.id||null,first_name:user.first_name||"",last_name:user.last_name||"",username:user.username||""};const name=telegramUser.username?"@"+telegramUser.username:[telegramUser.first_name,telegramUser.last_name].filter(Boolean).join(" ");telegramInfo.textContent=name?`Telegram: ${name}`:"Telegram: пользователь авторизован";telegramLogin.textContent="TELEGRAM ВОЙДЕН";telegramLogin.disabled=true;try{sessionStorage.setItem("ar_gallery_telegram_user",JSON.stringify(telegramUser))}catch{}return true}
-if(telegramWebApp){telegramWebApp.ready();telegramWebApp.expand();if(telegramWebApp.setHeaderColor)telegramWebApp.setHeaderColor("#000000");if(telegramWebApp.setBackgroundColor)telegramWebApp.setBackgroundColor("#000000");if(telegramWebApp.disableVerticalSwipes)telegramWebApp.disableVerticalSwipes();if(telegramWebApp.initDataUnsafe?.user)applyTelegramUser(telegramWebApp.initDataUnsafe.user);else telegramInfo.textContent="Telegram Web App открыт, пользователь не передан"}else{try{const u=JSON.parse(sessionStorage.getItem("ar_gallery_telegram_user")||"null");if(u)applyTelegramUser(u)}catch{};telegramInfo.textContent=telegramUser?telegramInfo.textContent:"Откройте сайт из Telegram для входа Telegram"}
-telegramLogin.onclick=()=>{if(telegramWebApp?.initDataUnsafe?.user){applyTelegramUser(telegramWebApp.initDataUnsafe.user)}else telegramInfo.textContent="Вход через Telegram работает при открытии сайта внутри Telegram"};
 const roomCanvas=$("roomCanvas"),roomMovePad=$("roomMovePad"),roomMoveKnob=$("roomMoveKnob"),roomLookPad=$("roomLookPad");
 const roomMoveUp=$("roomMoveUp"),roomMoveDown=$("roomMoveDown"),roomRollLeft=$("roomRollLeft"),roomRollRight=$("roomRollRight"),roomReset=$("roomReset");
 const generationCode=$("generationCode"),generationSubmit=$("generationSubmit"),generationStatus=$("generationStatus");
@@ -258,7 +250,7 @@ generationSubmit.onclick=async()=>{
  if(!/^\d{5}$/.test(code)){generationStatus.textContent="Введите 5 цифр";return}
  generationSubmit.disabled=true;generationStatus.textContent="Отправка...";
  try{
-  const r=await fetch(GENERATION_API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({code,wallet:currentWallet,telegram:telegramUser||null})});
+  const r=await fetch(GENERATION_API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({code,wallet:currentWallet})});
   const d=await r.json();
   if(!r.ok||d.success!==true)throw new Error(d.error||"Ошибка сервера");
   generationStatus.textContent="Данные отправлены";generationCode.value="";
@@ -313,7 +305,7 @@ async function requestRoom(item){
  const folder=String(item?.folder||item?.name||"").trim();
  const r=await fetch(`${ROOMS_API}/request`,{
   method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},
-  body:JSON.stringify({room:folder,wallet:currentWallet,telegram:telegramUser||null})
+  body:JSON.stringify({room:folder,wallet:currentWallet})
  });
  if(!r.ok)throw new Error("ROOM HTTP "+r.status);
  const d=await r.json();
@@ -343,7 +335,6 @@ function clearRoom(){
   }
  });
  if(roomModel){roomScene.remove(roomModel);roomModel=null}
- [...roomScene.children].filter(o=>o.userData?.roomLight).forEach(o=>roomScene.remove(o));
 }
 
 /* ================= ROOM MODEL ================= */
@@ -448,9 +439,6 @@ function roomLoop(){
 /* ================= BUILD ROOM ================= */
 async function buildRoom(item){
  clearRoom();const folder=String(item?.folder||item?.name||"").trim();roomStatus(`Запрос ROOM ${folder}...`);
- const ambient=new THREE.AmbientLight(0xffffff,1.4);ambient.userData.roomLight=true;roomScene.add(ambient);
- const hemi=new THREE.HemisphereLight(0xffffff,0x666666,1.8);hemi.userData.roomLight=true;roomScene.add(hemi);
- const key=new THREE.DirectionalLight(0xffffff,2.2);key.position.set(2,4,2);key.userData.roomLight=true;roomScene.add(key);
  const data=await requestRoom(item),textures=resolveTextures(data);
  const surfaces=[
   surface(ROOM_LENGTH,ROOM_HEIGHT,new THREE.Vector3(0,2,3),new THREE.Euler(0,Math.PI,0),"01_BACKGROUND"),
