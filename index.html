@@ -8283,35 +8283,95 @@ function loadRoomTexture(url, label = "texture") {
                 texture: null,
                 label,
                 url: "",
-                error: "URL не задан"
+                error: "URL/данные текстуры не заданы"
             });
             return;
         }
 
         let finished = false;
-
         const finish = result => {
             if (finished) return;
             finished = true;
             resolve(result);
         };
 
-        const controller = new AbortController();
+        /*
+           Новая схема ROOM: Python-сервер передаёт PNG/JPG прямо
+           внутри manifest как data:image/...;base64,... .
+           Поэтому для таких URL НЕ делаем отдельный fetch к
+           /api/rooms/file/... . Это устраняет зависание Cloudflare
+           на бинарном endpoint.
+        */
+        const isEmbedded =
+            typeof url === "string" &&
+            url.startsWith("data:image/");
 
+        if (isEmbedded) {
+            setRoomStatus(`Декодирование ${label}.png...`, true);
+
+            const timeout = setTimeout(() => {
+                finish({
+                    texture: null,
+                    label,
+                    url: "embedded-data",
+                    error: "Тайм-аут декодирования встроенной текстуры 12 секунд"
+                });
+            }, 12000);
+
+            roomTextureLoader.load(
+                url,
+                texture => {
+                    clearTimeout(timeout);
+
+                    texture.colorSpace = THREE.SRGBColorSpace;
+                    texture.wrapS = THREE.ClampToEdgeWrapping;
+                    texture.wrapT = THREE.ClampToEdgeWrapping;
+                    texture.anisotropy = roomRenderer
+                        ? Math.min(
+                            roomRenderer.capabilities.getMaxAnisotropy(),
+                            4
+                        )
+                        : 1;
+                    texture.needsUpdate = true;
+
+                    finish({
+                        texture,
+                        label,
+                        url: "embedded-data",
+                        error: null
+                    });
+                },
+                undefined,
+                error => {
+                    clearTimeout(timeout);
+                    finish({
+                        texture: null,
+                        label,
+                        url: "embedded-data",
+                        error: "Three.js не смог декодировать встроенную текстуру"
+                    });
+                }
+            );
+            return;
+        }
+
+        /* Старый HTTP-режим оставлен как резервный вариант. */
+        let finishedHttp = false;
+        const controller = new AbortController();
         const timeout = setTimeout(() => {
             controller.abort();
-            finish({
-                texture: null,
-                label,
-                url,
-                error: "Тайм-аут загрузки изображения 12 секунд"
-            });
+            if (!finishedHttp) {
+                finishedHttp = true;
+                finish({
+                    texture: null,
+                    label,
+                    url,
+                    error: "Тайм-аут HTTP-загрузки изображения 12 секунд"
+                });
+            }
         }, 12000);
 
-        setRoomStatus(
-            `Получение ${label}.png с PC...`,
-            true
-        );
+        setRoomStatus(`Получение ${label}.png с PC...`, true);
 
         fetch(url, {
             method: "GET",
@@ -8326,30 +8386,17 @@ function loadRoomTexture(url, label = "texture") {
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}`);
                 }
-
-                const contentType =
-                    response.headers.get("content-type") || "";
-
-                if (
-                    !contentType.includes("image") &&
-                    !contentType.includes("octet-stream")
-                ) {
-                    console.warn(
-                        `ROOM ${label}: Content-Type = ${contentType}`
-                    );
-                }
-
                 return response.blob();
             })
             .then(blob => {
-                if (finished) return;
-
+                if (finishedHttp) return;
                 const objectUrl = URL.createObjectURL(blob);
 
                 roomTextureLoader.load(
                     objectUrl,
                     texture => {
                         clearTimeout(timeout);
+                        finishedHttp = true;
                         URL.revokeObjectURL(objectUrl);
 
                         texture.colorSpace = THREE.SRGBColorSpace;
@@ -8373,6 +8420,7 @@ function loadRoomTexture(url, label = "texture") {
                     undefined,
                     error => {
                         clearTimeout(timeout);
+                        finishedHttp = true;
                         URL.revokeObjectURL(objectUrl);
 
                         finish({
@@ -8386,23 +8434,14 @@ function loadRoomTexture(url, label = "texture") {
             })
             .catch(error => {
                 clearTimeout(timeout);
-
-                if (error?.name === "AbortError") {
-                    finish({
-                        texture: null,
-                        label,
-                        url,
-                        error: "Запрос изображения отменён по тайм-ауту"
-                    });
-                    return;
-                }
+                finishedHttp = true;
 
                 finish({
                     texture: null,
                     label,
                     url,
                     error: error?.message ||
-                        "Ошибка CORS/Cloudflare/Flask при получении файла"
+                        "Ошибка получения изображения через API"
                 });
             });
     });
