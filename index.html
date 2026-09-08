@@ -8601,9 +8601,47 @@ function prepareRoomModel(loadedModel) {
             const materials = Array.isArray(object.material)
                 ? object.material
                 : [object.material];
+
             materials.forEach(material => {
-                if (material && "envMapIntensity" in material) {
+                if (!material) return;
+
+                /* GLB должен получать свет сцены. */
+                if ("envMapIntensity" in material) {
                     material.envMapIntensity = 0.7;
+                }
+
+                /*
+                   Если конкретный GLB использует MeshBasicMaterial,
+                   он игнорирует источники света. Переводим только такие
+                   материалы в MeshStandardMaterial, сохраняя основную
+                   текстуру и базовые параметры.
+                */
+                if (material.isMeshBasicMaterial) {
+                    const standard = new THREE.MeshStandardMaterial({
+                        map: material.map || null,
+                        color: material.color ? material.color.clone() : new THREE.Color(0xffffff),
+                        transparent: material.transparent,
+                        opacity: material.opacity,
+                        side: material.side,
+                        alphaTest: material.alphaTest,
+                        depthWrite: material.depthWrite,
+                        depthTest: material.depthTest,
+                        roughness: 0.85,
+                        metalness: 0.0
+                    });
+
+                    if (material.map) {
+                        standard.map = material.map;
+                    }
+
+                    object.material = Array.isArray(object.material)
+                        ? object.material.map(item => item === material ? standard : item)
+                        : standard;
+
+                    material.dispose();
+                    standard.needsUpdate = true;
+                } else {
+                    material.needsUpdate = true;
                 }
             });
         }
@@ -8897,10 +8935,61 @@ async function buildRoom(item) {
 
     surfaces.forEach(surface => roomScene.add(surface));
 
-    /* Освещение больше не влияет на текстуры, MeshBasicMaterial. */
-    const ambient = new THREE.AmbientLight(0xffffff, 1.0);
+    /* =========================================================
+       ОСВЕЩЕНИЕ ВНУТРИ ROOM
+
+       Поверхности ROOM остаются MeshBasicMaterial, поэтому их
+       нарисованные текстуры не меняются от света.
+
+       GLB-модель использует освещаемые материалы (MeshStandardMaterial
+       / MeshPhysicalMaterial), поэтому ей нужен реальный свет сцены.
+       Добавляем мягкий общий свет + верхний свет + два заполняющих
+       источника внутри комнаты. Это делает текстуры GLB видимыми
+       без жёстких чёрных участков.
+       ========================================================= */
+
+    const ambient = new THREE.AmbientLight(0xffffff, 1.35);
     ambient.userData.roomLight = true;
     roomScene.add(ambient);
+
+    const hemisphere = new THREE.HemisphereLight(
+        0xffffff,
+        0x555555,
+        1.15
+    );
+    hemisphere.position.set(0, ROOM_HEIGHT, 0);
+    hemisphere.userData.roomLight = true;
+    roomScene.add(hemisphere);
+
+    const ceilingLight = new THREE.PointLight(
+        0xffffff,
+        18.0,
+        14.0,
+        2.0
+    );
+    ceilingLight.position.set(0, ROOM_HEIGHT - 0.25, 0);
+    ceilingLight.userData.roomLight = true;
+    roomScene.add(ceilingLight);
+
+    const frontLight = new THREE.PointLight(
+        0xffffff,
+        7.0,
+        10.0,
+        2.0
+    );
+    frontLight.position.set(0, 2.5, ROOM_WIDTH * 0.30);
+    frontLight.userData.roomLight = true;
+    roomScene.add(frontLight);
+
+    const fillLight = new THREE.PointLight(
+        0xffffff,
+        5.0,
+        10.0,
+        2.0
+    );
+    fillLight.position.set(-ROOM_LENGTH * 0.25, 2.0, -ROOM_WIDTH * 0.20);
+    fillLight.userData.roomLight = true;
+    roomScene.add(fillLight);
 
     /* Камера внутри комнаты. */
     roomCamera.position.set(0, ROOM_EYE_HEIGHT, 0);
@@ -9092,7 +9181,8 @@ function initRoomViewer() {
     );
     roomRenderer.outputColorSpace = THREE.SRGBColorSpace;
     roomRenderer.toneMapping = THREE.ACESFilmicToneMapping;
-    roomRenderer.toneMappingExposure = 1.0;
+    /* Небольшое повышение экспозиции помогает видеть детали GLB. */
+    roomRenderer.toneMappingExposure = 1.15;
 
     roomCanvas.appendChild(roomRenderer.domElement);
 
