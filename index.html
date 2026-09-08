@@ -1,4365 +1,488 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-
-    <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
-    >
-
-    <title>AR Game Cam</title>
-
-    <!-- TELEGRAM WEB APP -->
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-
-    <!-- TON CONNECT -->
-    <script src="https://unpkg.com/@tonconnect/ui@3.0.0/dist/tonconnect-ui.min.js">
-</script>
-
-    <style>
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        html,
-        body {
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-
-            background: #000;
-            color: #fff;
-
-            font-family:
-                Arial,
-                Helvetica,
-                sans-serif;
-        }
-
-        body {
-            -webkit-font-smoothing: antialiased;
-            overscroll-behavior: none;
-        }
-
-        .joystickZone,
-        .lookZone {
-            width: 112px;
-            height: 112px;
-            position: relative;
-            pointer-events: auto;
-            touch-action: none;
-            user-select: none;
-            -webkit-user-select: none;
-        }
-
-        .joystickBase {
-            position: absolute;
-            inset: 12px;
-            border: 1px solid #444;
-            background: rgba(8,8,8,.68);
-            border-radius: 50%;
-        }
-
-        .joystickKnob {
-            position: absolute;
-            width: 44px;
-            height: 44px;
-            left: 50%;
-            top: 50%;
-            margin-left: -22px;
-            margin-top: -22px;
-            border: 1px solid #777;
-            background: rgba(255,255,255,.12);
-            border-radius: 50%;
-            transform: translate3d(0,0,0);
-        }
-
-        .lookZone {
-            border: 1px solid rgba(255,255,255,.12);
-            background: rgba(8,8,8,.28);
-            border-radius: 12px;
-        }
-
-        .lookLabel {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #666;
-            font-size: 10px;
-            letter-spacing: .5px;
-            pointer-events: none;
-        }
-
-        @media (max-width: 700px) {
-            .viewerControls {
-                bottom: 14px;
-                padding: 0 10px;
-            }
-            .joystickZone,
-            .lookZone {
-                width: 100px;
-                height: 100px;
-            }
-            .viewerHint {
-                bottom: 126px;
-                font-size: 10px;
-            }
-        }
-
-        @media (min-width: 701px) {
-            .viewerControls {
-                opacity: .55;
-            }
-        }
-
-        button,
-        input {
-            font: inherit;
-        }
-
-        button {
-            cursor: pointer;
-            border: 0;
-        }
-
-        /* =========================================================
-           SCREENS
-        ========================================================= */
-
-        .screen {
-            position: fixed;
-            inset: 0;
-
-            display: none;
-
-            width: 100%;
-            height: 100%;
-
-            background: #000;
-        }
-
-        .screen.active {
-            display: flex;
-        }
-
-
-        /* =========================================================
-           AUTH
-        ========================================================= */
-
-        #authScreen {
-            align-items: center;
-            justify-content: center;
-
-            padding: 20px;
-        }
-
-        .auth {
-            width: 320px;
-            max-width: 100%;
-
-            text-align: center;
-        }
-
-        .authTitle {
-            margin-bottom: 30px;
-
-            font-size: 28px;
-            font-weight: 500;
-            letter-spacing: -0.5px;
-        }
-
-        /*
-            Собственная кнопка.
-            TON Connect modal открывается через openModal().
-        */
-
-        .connectButton {
-            width: 100%;
-            height: 52px;
-
-            background: #fff;
-            color: #000;
-
-            border: 1px solid #fff;
-
-            font-size: 14px;
-            font-weight: 500;
-
-            transition: opacity .15s ease;
-        }
-
-        .connectButton:hover {
-            opacity: .85;
-        }
-
-        .connectButton:active {
-            opacity: .65;
-        }
-
-        .telegramLoginButton {
-            width: 100%;
-            min-height: 50px;
-            margin-top: 14px;
-            padding: 0 18px;
-            border: 1px solid #2d2d2d;
-            border-radius: 14px;
-            background: #151515;
-            color: #fff;
-            font-size: 14px;
-            font-weight: 600;
-        }
-
-        .telegramLoginButton:active {
-            background: #222;
-        }
-
-        .telegramLoginButton:disabled {
-            opacity: .45;
-            cursor: default;
-        }
-
-        .telegramInfo {
-            min-height: 18px;
-            margin-top: 10px;
-            color: #777;
-            font-size: 11px;
-            text-align: center;
-        }
-
-        .authStatus {
-            min-height: 20px;
-
-            margin-top: 18px;
-
-            color: #666;
-
-            font-size: 12px;
-            line-height: 1.4;
-        }
-
-
-        /* =========================================================
-           HOME
-        ========================================================= */
-
-        #homeScreen {
-            align-items: center;
-            justify-content: center;
-
-            padding: 20px;
-        }
-
-        .home {
-            width: 320px;
-            max-width: 100%;
-        }
-
-        .homeTitle {
-            margin-bottom: 30px;
-
-            text-align: center;
-
-            font-size: 28px;
-            font-weight: 500;
-        }
-
-        .menu {
-            width: 100%;
-        }
-
-        .menuButton {
-            width: 100%;
-            height: 52px;
-
-            margin-bottom: 8px;
-
-            background: #080808;
-            color: #fff;
-
-            border: 1px solid #242424;
-
-            font-size: 13px;
-            font-weight: 400;
-
-            text-align: left;
-
-            padding: 0 16px;
-        }
-
-        .menuButton:hover {
-            background: #111;
-        }
-
-        .menuButton:active {
-            background: #181818;
-        }
-
-
-        /* =========================================================
-           PAGE HEADER
-        ========================================================= */
-
-        .page {
-            flex-direction: column;
-
-            padding:
-                14px
-                18px
-                18px
-                18px;
-        }
-
-        .header {
-            position: relative;
-
-            width: 100%;
-            height: 48px;
-
-            flex-shrink: 0;
-
-            display: flex;
-            align-items: center;
-        }
-
-        .backButton {
-            width: 40px;
-            height: 40px;
-
-            background: #080808;
-            color: #fff;
-
-            border: 1px solid #242424;
-
-            font-size: 22px;
-            line-height: 1;
-        }
-
-        .backButton:hover {
-            background: #111;
-        }
-
-        .pageTitle {
-            position: absolute;
-
-            left: 50%;
-            transform: translateX(-50%);
-
-            font-size: 14px;
-            font-weight: 400;
-        }
-
-
-        /* =========================================================
-           GENERATION
-        ========================================================= */
-
-        #generationScreen {
-            align-items: center;
-            justify-content: center;
-
-            padding: 20px;
-        }
-
-        .generation {
-            width: 320px;
-            max-width: 100%;
-        }
-
-        .generationTitle {
-            margin-bottom: 24px;
-
-            font-size: 20px;
-            font-weight: 400;
-
-            text-align: center;
-        }
-
-        .codeInput {
-            width: 100%;
-            height: 58px;
-
-            background: #050505;
-            color: #fff;
-
-            border: 1px solid #292929;
-
-            outline: none;
-
-            padding: 0 16px;
-
-            font-size: 24px;
-            letter-spacing: 8px;
-
-            text-align: center;
-        }
-
-        .codeInput:focus {
-            border-color: #555;
-        }
-
-        .codeInput::placeholder {
-            color: #333;
-        }
-
-        .sendButton {
-            width: 100%;
-            height: 52px;
-
-            margin-top: 8px;
-
-            background: #fff;
-            color: #000;
-
-            border: 1px solid #fff;
-
-            font-size: 13px;
-        }
-
-        .sendButton:disabled {
-            opacity: .25;
-            cursor: default;
-        }
-
-        .generationStatus {
-            min-height: 18px;
-
-            margin-top: 14px;
-
-            color: #666;
-
-            font-size: 12px;
-
-            text-align: center;
-        }
-
-
-        /* =========================================================
-           USER
-        ========================================================= */
-
-        .userPage {
-            width: 320px;
-            max-width: 100%;
-            margin: auto;
-
-            display: flex;
-            flex-direction: column;
-        }
-
-        .userBlock {
-            width: 100%;
-
-            padding: 18px;
-
-            background: #080808;
-
-            border: 1px solid #242424;
-        }
-
-        .userLabel {
-            margin-bottom: 10px;
-
-            color: #666;
-
-            font-size: 11px;
-            letter-spacing: .4px;
-        }
-
-        .userAddress {
-            color: #fff;
-
-            font-size: 12px;
-            line-height: 1.5;
-
-            word-break: break-all;
-        }
-
-        .disconnectButton {
-            width: 100%;
-            height: 52px;
-
-            margin-top: 10px;
-
-            background: #080808;
-            color: #fff;
-
-            border: 1px solid #242424;
-
-            font-size: 13px;
-            font-weight: 400;
-        }
-
-        .disconnectButton:hover {
-            background: #111;
-        }
-
-        .disconnectButton:active {
-            background: #181818;
-        }
-
-        .userStatus {
-            min-height: 18px;
-
-            margin-top: 14px;
-
-            color: #666;
-
-            font-size: 12px;
-
-            text-align: center;
-        }
-
-
-        /* =========================================================
-           LOADING
-        ========================================================= */
-
-        #loading {
-            position: fixed;
-            inset: 0;
-
-            z-index: 1000;
-
-            display: none;
-
-            align-items: center;
-            justify-content: center;
-
-            background: #000;
-        }
-
-        #loading.active {
-            display: flex;
-        }
-
-        .loadingText {
-            color: #777;
-            font-size: 11px;
-        }
-
-
-        /* =========================================================
-           MOBILE
-        ========================================================= */
-
-        @media (max-width: 500px) {
-
-            .authTitle,
-            .homeTitle {
-                font-size: 24px;
-            }
-
-            .galleryGrid {
-                grid-template-columns:
-                    repeat(
-                        2,
-                        1fr
-                    );
-            }
-
-        }
-
-        @media (max-width: 500px) {
-            .camGrid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
-            .camARBottom {
-                bottom: calc(18px + env(safe-area-inset-bottom));
-            }
-        }
-
-
-
-        /* =========================================================
-           ROOMS
-        ========================================================= */
-
-        #roomScreen,
-        #roomViewerScreen {
-            background: #000;
-            overflow: hidden;
-            touch-action: none;
-        }
-
-        .roomGrid {
-            width: 100%;
-            max-width: 1100px;
-            margin: auto;
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-            gap: 10px;
-            overflow-y: auto;
-            padding-bottom: 10px;
-        }
-
-        .roomItem {
-            min-height: 110px;
-            background: #080808;
-            color: #fff;
-            border: 1px solid #202020;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-            gap: 8px;
-            font-size: 22px;
-            font-weight: 400;
-            transition: background .15s ease, border-color .15s ease;
-        }
-
-        .roomItem:hover {
-            background: #111;
-            border-color: #444;
-        }
-
-        .roomItem:active {
-            background: #181818;
-        }
-
-        .roomItem small {
-            color: #666;
-            font-size: 9px;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-        }
-
-        #roomCanvas {
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            touch-action: none;
-        }
-
-        #roomCanvas canvas {
-            display: block;
-            width: 100%;
-            height: 100%;
-            touch-action: none;
-        }
-
-        .roomViewerHeader {
-            position: absolute;
-            z-index: 20;
-            top: 14px;
-            left: 14px;
-            right: 14px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-        }
-
-        .roomViewerTitle {
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 14px;
-            color: #fff;
-            white-space: nowrap;
-        }
-
-        .roomStatus {
-            position: absolute;
-            z-index: 25;
-            left: 50%;
-            top: 76px;
-            transform: translateX(-50%);
-            width: min(88vw, 560px);
-            padding: 12px 14px;
-            background: rgba(0,0,0,.78);
-            border: 1px solid rgba(255,255,255,.14);
-            color: #bbb;
-            text-align: center;
-            font-size: 11px;
-            line-height: 1.45;
-            white-space: pre-line;
-            pointer-events: none;
-        }
-
-        .roomHint {
-            position: absolute;
-            z-index: 20;
-            left: 50%;
-            bottom: 20px;
-            transform: translateX(-50%);
-            width: min(92vw, 650px);
-            padding: 8px 12px;
-            background: rgba(0,0,0,.60);
-            border: 1px solid rgba(255,255,255,.1);
-            color: #777;
-            text-align: center;
-            font-size: 10px;
-            line-height: 1.4;
-            pointer-events: none;
-        }
-
-        .roomControls {
-            position: absolute;
-            z-index: 30;
-            left: 0;
-            right: 0;
-            bottom: 16px;
-            height: 128px;
-            padding: 0 12px;
-            display: flex;
-            align-items: flex-end;
-            justify-content: space-between;
-            pointer-events: none;
-        }
-
-        .roomMovePad,
-        .roomLookPad {
-            width: 112px;
-            height: 112px;
-            position: relative;
-            pointer-events: auto;
-            touch-action: none;
-            user-select: none;
-            -webkit-user-select: none;
-        }
-
-        .roomMovePad {
-            border: 1px solid rgba(255,255,255,.20);
-            border-radius: 50%;
-            background: rgba(8,8,8,.45);
-        }
-
-        .roomMovePad::before {
-            content: "";
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            width: 68px;
-            height: 68px;
-            transform: translate(-50%, -50%);
-            border: 1px solid rgba(255,255,255,.10);
-            border-radius: 50%;
-        }
-
-        .roomMoveKnob {
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            width: 46px;
-            height: 46px;
-            margin-left: -23px;
-            margin-top: -23px;
-            border-radius: 50%;
-            border: 1px solid rgba(255,255,255,.55);
-            background: rgba(255,255,255,.14);
-            transform: translate3d(0,0,0);
-        }
-
-        .roomLookPad {
-            width: min(42vw, 300px);
-            border: 1px solid rgba(255,255,255,.10);
-            border-radius: 12px;
-            background: rgba(8,8,8,.22);
-        }
-
-        .roomLookLabel {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: rgba(255,255,255,.28);
-            font-size: 9px;
-            letter-spacing: 1px;
-            pointer-events: none;
-        }
-
-        .roomVerticalControls {
-            position: absolute;
-            left: 50%;
-            bottom: 28px;
-            transform: translateX(-50%);
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            pointer-events: auto;
-        }
-
-        .roomVerticalButton,
-        .roomRollButton,
-        .roomResetButton {
-            width: 42px;
-            height: 42px;
-            min-width: 42px;
-            min-height: 42px;
-            background: rgba(8,8,8,.72);
-            color: #fff;
-            border: 1px solid rgba(255,255,255,.24);
-            font-size: 17px;
-            line-height: 1;
-            touch-action: none;
-            user-select: none;
-            -webkit-user-select: none;
-        }
-
-        .roomVerticalButton:active,
-        .roomRollButton:active,
-        .roomResetButton:active {
-            background: rgba(255,255,255,.18);
-        }
-
-        .roomRollControls {
-            position: absolute;
-            left: 50%;
-            top: 58px;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 6px;
-            pointer-events: auto;
-        }
-
-        .roomRollButton {
-            width: 38px;
-            height: 34px;
-            min-width: 38px;
-            min-height: 34px;
-            font-size: 14px;
-        }
-
-        .roomAxisLabel {
-            position: absolute;
-            left: 50%;
-            top: 30px;
-            transform: translateX(-50%);
-            color: rgba(255,255,255,.34);
-            font-size: 8px;
-            letter-spacing: .8px;
-            pointer-events: none;
-            white-space: nowrap;
-        }
-
-        .roomResetButton {
-            position: absolute;
-            right: 12px;
-            top: -50px;
-            width: 40px;
-            height: 40px;
-            min-width: 40px;
-            min-height: 40px;
-            font-size: 18px;
-        }
-
-        @media (max-width: 500px) {
-            .roomGrid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
-            .roomItem {
-                min-height: 100px;
-            }
-
-            .roomHint {
-                bottom: calc(146px + env(safe-area-inset-bottom));
-                font-size: 9px;
-            }
-
-            .roomControls {
-                bottom: calc(10px + env(safe-area-inset-bottom));
-                height: 112px;
-                padding: 0 8px;
-            }
-
-            .roomMovePad {
-                width: 100px;
-                height: 100px;
-            }
-
-            .roomLookPad {
-                width: min(43vw, 250px);
-                height: 100px;
-            }
-
-            .roomVerticalControls {
-                bottom: 20px;
-            }
-
-            .roomResetButton {
-                right: 8px;
-            }
-        }
-
-    </style>
-
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>AR Gallery</title>
+
+<script src="https://unpkg.com/@tonconnect/ui@3.0.0/dist/tonconnect-ui.min.js"></script>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:#000;color:#fff;font-family:Arial,Helvetica,sans-serif}
+button,input{font:inherit}
+button{cursor:pointer;border:0}
+.screen{position:fixed;inset:0;display:none;background:#000}
+.screen.active{display:flex}
+.center{align-items:center;justify-content:center;padding:20px}
+.panel{width:320px;max-width:100%}
+.title{text-align:center;font-size:28px;font-weight:400;margin-bottom:30px}
+.button{width:100%;height:52px;margin-bottom:8px;background:#080808;color:#fff;border:1px solid #242424;text-align:left;padding:0 16px;font-size:13px}
+.button:hover{background:#111}
+.primary{background:#fff;color:#000;border-color:#fff}
+.status{text-align:center;color:#666;font-size:12px;line-height:1.45;min-height:20px;margin-top:14px;white-space:pre-line}
+.page{flex-direction:column;padding:14px 18px 18px}
+.header{position:relative;width:100%;height:48px;display:flex;align-items:center;flex-shrink:0}
+.back{width:40px;height:40px;background:#080808;color:#fff;border:1px solid #242424;font-size:22px}
+.pageTitle{position:absolute;left:50%;transform:translateX(-50%);font-size:14px}
+.grid{width:100%;max-width:1100px;margin:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;overflow:auto;padding-bottom:10px}
+.roomItem{min-height:110px;background:#080808;color:#fff;border:1px solid #202020;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;font-size:22px}
+.roomItem small{color:#666;font-size:9px;letter-spacing:1px}
+#roomViewerScreen{overflow:hidden;touch-action:none}
+#roomCanvas{position:absolute;inset:0}
+#roomCanvas canvas{display:block;width:100%;height:100%;touch-action:none}
+.roomHeader{position:absolute;z-index:20;top:14px;left:14px;right:14px;height:40px;display:flex;align-items:center}
+.roomTitle{position:absolute;left:50%;transform:translateX(-50%);font-size:14px}
+.roomStatus{position:absolute;z-index:25;left:50%;top:76px;transform:translateX(-50%);width:min(88vw,560px);padding:12px 14px;background:rgba(0,0,0,.78);border:1px solid rgba(255,255,255,.14);color:#bbb;text-align:center;font-size:11px;line-height:1.45;white-space:pre-line;pointer-events:none}
+.roomControls{position:absolute;z-index:30;left:0;right:0;bottom:16px;height:128px;padding:0 12px;display:flex;align-items:flex-end;justify-content:space-between;pointer-events:none}
+.movePad{width:112px;height:112px;border:1px solid rgba(255,255,255,.2);border-radius:50%;background:rgba(8,8,8,.45);position:relative;pointer-events:auto;touch-action:none}
+.movePad:before{content:"";position:absolute;left:50%;top:50%;width:68px;height:68px;transform:translate(-50%,-50%);border:1px solid rgba(255,255,255,.1);border-radius:50%}
+.moveKnob{position:absolute;left:50%;top:50%;width:46px;height:46px;margin:-23px;border-radius:50%;border:1px solid rgba(255,255,255,.55);background:rgba(255,255,255,.14);transform:translate3d(0,0,0)}
+.lookPad{width:min(42vw,300px);height:112px;border:1px solid rgba(255,255,255,.1);border-radius:12px;background:rgba(8,8,8,.22);position:relative;pointer-events:auto;touch-action:none}
+.lookLabel{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.28);font-size:9px;letter-spacing:1px;pointer-events:none}
+.vertical{position:absolute;left:50%;bottom:28px;transform:translateX(-50%);display:flex;flex-direction:column;gap:6px;pointer-events:auto}
+.vbtn,.roll,.reset{width:42px;height:42px;background:rgba(8,8,8,.72);color:#fff;border:1px solid rgba(255,255,255,.24);font-size:17px;touch-action:none}
+.rolls{position:absolute;left:50%;top:58px;transform:translateX(-50%);display:flex;gap:6px;pointer-events:auto}
+.roll{width:38px;height:34px;font-size:14px}
+.reset{position:absolute;right:12px;top:-50px;width:40px;height:40px}
+.axis{position:absolute;left:50%;top:30px;transform:translateX(-50%);color:rgba(255,255,255,.34);font-size:8px}
+#generationScreen{align-items:center;justify-content:center;padding:20px}
+.code{width:100%;height:58px;background:#050505;color:#fff;border:1px solid #292929;outline:0;padding:0 16px;font-size:24px;letter-spacing:8px;text-align:center}
+.send{width:100%;height:52px;margin-top:8px;background:#fff;color:#000;border:1px solid #fff;font-size:13px}
+.send:disabled{opacity:.25}
+.userBlock{padding:18px;background:#080808;border:1px solid #242424}
+.userLabel{margin-bottom:10px;color:#666;font-size:11px}
+.userAddress{font-size:12px;line-height:1.5;word-break:break-all}
+#loading{position:fixed;inset:0;z-index:1000;display:none;align-items:center;justify-content:center;background:#000;color:#777;font-size:11px}
+#loading.active{display:flex}
+@media(max-width:500px){
+ .title{font-size:24px}.grid{grid-template-columns:repeat(2,1fr)}
+ .movePad{width:100px;height:100px}.lookPad{width:43vw;height:100px}
+ .roomControls{height:112px;bottom:calc(10px + env(safe-area-inset-bottom));padding:0 8px}
+ .vertical{bottom:20px}.reset{right:8px}
+}
+</style>
 </head>
 
 <body>
 
-
-<!-- =============================================================
-     AUTH
-============================================================= -->
-
-<section
-    id="authScreen"
-    class="screen active"
->
-
-    <div class="auth">
-
-        <div class="authTitle">
-            AR Gallery
-        </div>
-
-        <button
-            id="telegramLogin"
-            class="telegramLoginButton"
-            type="button"
-        >
-            ВОЙТИ ЧЕРЕЗ TELEGRAM
-        </button>
-
-        <div
-            id="telegramInfo"
-            class="telegramInfo"
-        >
-            Вход через Telegram доступен внутри Telegram Web App
-        </div>
-
-        <button
-            id="connectWallet"
-            class="connectButton"
-            type="button"
-        >
-            ПОДКЛЮЧИТЬ КОШЕЛЁК
-        </button>
-
-        <div
-            id="authStatus"
-            class="authStatus"
-        >
-            Подключите TON-кошелёк
-        </div>
-
-    </div>
-
+<section id="authScreen" class="screen active center">
+ <div class="panel">
+  <div class="title">AR Gallery</div>
+  <button id="connectWallet" class="button primary">ПОДКЛЮЧИТЬ КОШЕЛЁК</button>
+  <div id="authStatus" class="status">Подключите TON-кошелёк</div>
+ </div>
 </section>
 
-
-<!-- =============================================================
-     HOME
-============================================================= -->
-
-<section
-    id="homeScreen"
-    class="screen"
->
-
-    <div class="home">
-
-        <div class="homeTitle">
-            AR Gallery
-        </div>
-
-        <div class="menu">
-<button
-                id="openGeneration"
-                class="menuButton"
-                type="button"
-            >
-                ГЕНЕРАЦИЯ
-            </button>
-<button
-                id="openRoom"
-                class="menuButton"
-                type="button"
-            >
-                ROOM
-            </button>
-
-            <button
-                id="openUser"
-                class="menuButton"
-                type="button"
-            >
-                ПОЛЬЗОВАТЕЛЬ
-            </button>
-
-        </div>
-
-    </div>
-
+<section id="homeScreen" class="screen center">
+ <div class="panel">
+  <div class="title">AR Gallery</div>
+  <button id="openRoom" class="button">ROOM</button>
+  <button id="openGeneration" class="button">ГЕНЕРАЦИЯ</button>
+  <button id="openUser" class="button">ПОЛЬЗОВАТЕЛЬ</button>
+ </div>
 </section>
 
-
-<!-- =============================================================
-     ROOM LIST
-============================================================= -->
-
-<section
-    id="roomScreen"
-    class="screen page"
->
-
-    <div class="header">
-
-        <button
-            id="roomBack"
-            class="backButton"
-            type="button"
-        >
-            ←
-        </button>
-
-        <div class="pageTitle">
-            ROOM
-        </div>
-
-    </div>
-
-    <div
-        id="roomStatus"
-        class="archiveStatus"
-    >
-        Загрузка комнат...
-    </div>
-
-    <div
-        id="roomGrid"
-        class="roomGrid"
-    ></div>
-
+<section id="roomScreen" class="screen page">
+ <div class="header">
+  <button id="roomBack" class="back">←</button><div class="pageTitle">ROOM</div>
+ </div>
+ <div id="roomStatusList" class="status">Загрузка комнат...</div>
+ <div id="roomGrid" class="grid"></div>
 </section>
 
-
-<!-- =============================================================
-     ROOM VIEWER
-============================================================= -->
-
-<section
-    id="roomViewerScreen"
-    class="screen"
->
-
-    <div id="roomCanvas"></div>
-
-    <div class="roomViewerHeader">
-
-        <button
-            id="roomViewerBack"
-            class="backButton"
-            type="button"
-        >
-            ←
-        </button>
-
-        <div
-            id="roomViewerTitle"
-            class="roomViewerTitle"
-        >
-            ROOM
-        </div>
-
-    </div>
-
-    <div
-        id="roomViewerStatus"
-        class="roomStatus"
-    >
-        Загрузка комнаты...
-    </div>
-
-    <div class="roomHint">
-        Телефон: левый круг — движение; правое поле — поворот/наклон; ↑↓ — подъём/спуск; ↶↷ — вращение.
-        ПК: WASD + мышь; R/F — подъём/спуск.
-    </div>
-
-    <div class="roomControls">
-
-        <div
-            id="roomMovePad"
-            class="roomMovePad"
-            aria-label="Движение"
-        >
-            <div id="roomMoveKnob" class="roomMoveKnob"></div>
-        </div>
-
-        <div
-            id="roomLookPad"
-            class="roomLookPad"
-            aria-label="Поворот и наклон камеры"
-        >
-            <div class="roomLookLabel">ПОВОРОТ / НАКЛОН</div>
-        </div>
-
-        <div class="roomVerticalControls">
-
-            <div class="roomAxisLabel">ВЫСОТА</div>
-
-            <button
-                id="roomMoveUp"
-                class="roomVerticalButton"
-                type="button"
-                aria-label="Поднять камеру"
-            >
-                ↑
-            </button>
-
-            <button
-                id="roomMoveDown"
-                class="roomVerticalButton"
-                type="button"
-                aria-label="Опустить камеру"
-            >
-                ↓
-            </button>
-
-        </div>
-
-        <div class="roomRollControls">
-
-            <button
-                id="roomRollLeft"
-                class="roomRollButton"
-                type="button"
-                aria-label="Вращение камеры влево"
-            >
-                ↶
-            </button>
-
-            <button
-                id="roomRollRight"
-                class="roomRollButton"
-                type="button"
-                aria-label="Вращение камеры вправо"
-            >
-                ↷
-            </button>
-
-        </div>
-
-        <button
-            id="roomReset"
-            class="roomResetButton"
-            type="button"
-            aria-label="Сбросить положение камеры"
-        >
-            ⟳
-        </button>
-
-    </div>
-
+<section id="roomViewerScreen" class="screen">
+ <div id="roomCanvas"></div>
+ <div class="roomHeader">
+  <button id="roomViewerBack" class="back">←</button>
+  <div id="roomViewerTitle" class="roomTitle">ROOM</div>
+ </div>
+ <div id="roomViewerStatus" class="roomStatus">Загрузка комнаты...</div>
+ <div class="roomControls">
+  <div id="roomMovePad" class="movePad"><div id="roomMoveKnob" class="moveKnob"></div></div>
+  <div id="roomLookPad" class="lookPad"><div class="lookLabel">ПОВОРОТ / НАКЛОН</div></div>
+  <div class="vertical">
+   <div class="axis">ВЫСОТА</div>
+   <button id="roomMoveUp" class="vbtn">↑</button>
+   <button id="roomMoveDown" class="vbtn">↓</button>
+  </div>
+  <div class="rolls">
+   <button id="roomRollLeft" class="roll">↶</button>
+   <button id="roomRollRight" class="roll">↷</button>
+  </div>
+  <button id="roomReset" class="reset">⟳</button>
+ </div>
 </section>
 
-
-     GENERATION
-============================================================= -->
-
-<section
-    id="generationScreen"
-    class="screen"
->
-
-    <div class="generation">
-
-        <div class="generationTitle">
-            ГЕНЕРАЦИЯ
-        </div>
-
-        <input
-            id="generationCode"
-            class="codeInput"
-            type="text"
-            inputmode="numeric"
-            autocomplete="off"
-            maxlength="5"
-            placeholder="00000"
-        >
-
-        <button
-            id="generationSubmit"
-            class="sendButton"
-            type="button"
-            disabled
-        >
-            ОТПРАВИТЬ
-        </button>
-
-        <div
-            id="generationStatus"
-            class="generationStatus"
-        ></div>
-
-    </div>
-
+<section id="generationScreen" class="screen center">
+ <div class="panel">
+  <div class="title" style="font-size:20px">ГЕНЕРАЦИЯ</div>
+  <input id="generationCode" class="code" inputmode="numeric" autocomplete="off" maxlength="5" placeholder="00000">
+  <button id="generationSubmit" class="send" disabled>ОТПРАВИТЬ</button>
+  <div id="generationStatus" class="status"></div>
+ </div>
+ <button id="generationBack" class="back" style="position:fixed;top:14px;left:14px">←</button>
 </section>
 
-
-<!-- =============================================================
-     USER
-============================================================= -->
-
-<section
-    id="userScreen"
-    class="screen page"
->
-
-    <div class="header">
-
-        <button
-            id="userBack"
-            class="backButton"
-            type="button"
-        >
-            ←
-        </button>
-
-        <div class="pageTitle">
-            ПОЛЬЗОВАТЕЛЬ
-        </div>
-
-    </div>
-
-    <div class="userPage">
-
-        <div class="userBlock">
-
-            <div class="userLabel">
-                TON-КОШЕЛЁК
-            </div>
-
-            <div
-                id="userWalletAddress"
-                class="userAddress"
-            ></div>
-
-        </div>
-
-        <button
-            id="disconnectWallet"
-            class="disconnectButton"
-            type="button"
-        >
-            ВЫЙТИ ИЗ КОШЕЛЬКА
-        </button>
-
-        <div
-            id="userStatus"
-            class="userStatus"
-        ></div>
-
-    </div>
-
+<section id="userScreen" class="screen page">
+ <div class="header">
+  <button id="userBack" class="back">←</button><div class="pageTitle">ПОЛЬЗОВАТЕЛЬ</div>
+ </div>
+ <div class="panel" style="margin:auto">
+  <div class="userBlock">
+   <div class="userLabel">TON-КОШЕЛЁК</div>
+   <div id="userWalletAddress" class="userAddress"></div>
+  </div>
+  <button id="disconnectWallet" class="button">ВЫЙТИ ИЗ КОШЕЛЬКА</button>
+  <div id="userStatus" class="status"></div>
+ </div>
 </section>
 
-
-<!-- =============================================================
-     LOADING
-============================================================= -->
-
-<div id="loading">
-
-    <div class="loadingText">
-        ПРОВЕРКА NFT
-    </div>
-
-</div>
-
-
-<!-- =============================================================
-     THREE.JS
-============================================================= -->
+<div id="loading"><div>ПРОВЕРКА NFT</div></div>
 
 <script type="importmap">
-
-{
-    "imports": {
-        "three":
-            "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
-
-        "three/addons/":
-            "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
-    }
-}
-
+{"imports":{
+ "three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+ "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
+}}
 </script>
-
 
 <script type="module">
-
 import * as THREE from "three";
+import {GLTFLoader} from "three/addons/loaders/GLTFLoader.js";
 
-import {
-    GLTFLoader
-} from "three/addons/loaders/GLTFLoader.js";
+/* ================= CONFIG ================= */
+const TON_MANIFEST="https://roman22022000.github.io/Ton_site/tonconnect-manifest.json";
+const REQUIRED_COLLECTION="EQD9mm3hx-QvHyNG18gDaaJtSTTQTVVYVjJ6zhonXocj2eyI";
+const REQUIRED_COLLECTION_RAW="0:fd9a6de1c7e42f1d8346d7c80369a26d4934d04d5558563eb38689d7a1c8f6";
+const GENERATION_API="https://api.araicameragame.party/api/generation";
+const ROOMS_API="https://api.araicameragame.party/api/rooms";
 
+const ROOM_LENGTH=7,ROOM_WIDTH=6,ROOM_HEIGHT=4;
+const ROOM_EYE_HEIGHT=1.65,ROOM_SPEED=2.7,ROOM_LOOK_SPEED=.006,ROOM_CAMERA_RADIUS=.18;
 
-/* =============================================================
-   CONFIG
-============================================================= */
+/* ================= DOM ================= */
+const $=id=>document.getElementById(id);
+const authScreen=$("authScreen"),homeScreen=$("homeScreen"),roomScreen=$("roomScreen");
+const roomViewerScreen=$("roomViewerScreen"),generationScreen=$("generationScreen"),userScreen=$("userScreen");
+const authStatus=$("authStatus"),loading=$("loading"),userWalletAddress=$("userWalletAddress"),userStatus=$("userStatus");
+const roomGrid=$("roomGrid"),roomStatusList=$("roomStatusList"),roomViewerStatus=$("roomViewerStatus"),roomViewerTitle=$("roomViewerTitle");
+const roomCanvas=$("roomCanvas"),roomMovePad=$("roomMovePad"),roomMoveKnob=$("roomMoveKnob"),roomLookPad=$("roomLookPad");
+const roomMoveUp=$("roomMoveUp"),roomMoveDown=$("roomMoveDown"),roomRollLeft=$("roomRollLeft"),roomRollRight=$("roomRollRight"),roomReset=$("roomReset");
+const generationCode=$("generationCode"),generationSubmit=$("generationSubmit"),generationStatus=$("generationStatus");
 
-const TON_MANIFEST =
-    "https://roman22022000.github.io/Ton_site/tonconnect-manifest.json";
+function show(screen){document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));screen.classList.add("active")}
+function roomStatus(text,on=true){roomViewerStatus.textContent=text||"";roomViewerStatus.style.display=on?"block":"none"}
 
+/* ================= TON / NFT ================= */
+function b64Bytes(v){
+ let s=String(v).replace(/-/g,"+").replace(/_/g,"/");
+ while(s.length%4)s+="=";
+ const b=atob(s),a=new Uint8Array(b.length);
+ for(let i=0;i<b.length;i++)a[i]=b.charCodeAt(i);
+ return a;
+}
+function normalizeTonAddress(address){
+ if(!address)return "";
+ address=String(address).trim();
+ if(/^-?\d+:[0-9a-fA-F]{64}$/.test(address)){
+  const p=address.split(":");return p[0]+":"+p[1].toLowerCase();
+ }
+ try{
+  const b=b64Bytes(address);if(b.length!==36)return address.toLowerCase();
+  let wc=b[1];if(wc===255)wc=-1;
+  let h="";for(let i=2;i<34;i++)h+=b[i].toString(16).padStart(2,"0");
+  return wc+":"+h.toLowerCase();
+ }catch{return address.toLowerCase()}
+}
+const requiredCollection=normalizeTonAddress(REQUIRED_COLLECTION);
 
-const REQUIRED_COLLECTION =
-    "EQD9mm3hx-QvHyNG18gDaaJtSTTQTVVYVjJ6zhonXocj2eyI";
-
-
-const REQUIRED_COLLECTION_RAW =
-    "0:fd9a6de1c7e42f1d8346d7c80369a26d4934d04d5558563eb38689d7a1c8f6";
-
-
-const GENERATION_API =
-    "https://api.araicameragame.party/api/generation";
-
-
-/*
-    ROOM API. Сервер сканирует папку:
-    3d/3d/fon_room/
-
-    Каждый подпапка считается отдельной комнатой:
-    3d/3d/fon_room/diorama_1
-    3d/3d/fon_room/diorama_2
-    ...
-*/
-const ROOMS_API =
-    "https://api.araicameragame.party/api/rooms";
-
-const PUBLIC_API_BASE =
-    "https://api.araicameragame.party";
-
-
-/* =============================================================
-   DOM
-============================================================= */
-
-const authScreen =
-    document.getElementById("authScreen");
-
-const homeScreen =
-    document.getElementById("homeScreen");
-
-
-const generationScreen =
-    document.getElementById("generationScreen");
-
-const userScreen =
-    document.getElementById("userScreen");
-
-
-const roomScreen =
-    document.getElementById("roomScreen");
-
-const roomGrid =
-    document.getElementById("roomGrid");
-
-const roomStatus =
-    document.getElementById("roomStatus");
-
-const roomBack =
-    document.getElementById("roomBack");
-
-const roomViewerScreen =
-    document.getElementById("roomViewerScreen");
-
-const roomCanvas =
-    document.getElementById("roomCanvas");
-
-const roomViewerBack =
-    document.getElementById("roomViewerBack");
-
-const roomViewerTitle =
-    document.getElementById("roomViewerTitle");
-
-const roomViewerStatus =
-    document.getElementById("roomViewerStatus");
-
-const roomMovePad =
-    document.getElementById("roomMovePad");
-
-const roomMoveKnob =
-    document.getElementById("roomMoveKnob");
-
-const roomLookPad =
-    document.getElementById("roomLookPad");
-
-const roomMoveUp =
-    document.getElementById("roomMoveUp");
-
-const roomMoveDown =
-    document.getElementById("roomMoveDown");
-
-const roomRollLeft =
-    document.getElementById("roomRollLeft");
-
-const roomRollRight =
-    document.getElementById("roomRollRight");
-
-const roomReset =
-    document.getElementById("roomReset");
-
-
-
-const connectWallet =
-    document.getElementById("connectWallet");
-
-const authStatus =
-    document.getElementById("authStatus");
-
-const telegramLogin =
-    document.getElementById("telegramLogin");
-
-const telegramInfo =
-    document.getElementById("telegramInfo");
-
-const userWalletAddress =
-    document.getElementById("userWalletAddress");
-
-const disconnectWallet =
-    document.getElementById("disconnectWallet");
-
-const userStatus =
-    document.getElementById("userStatus");
-
-
-
-const generationCode =
-    document.getElementById("generationCode");
-
-const generationSubmit =
-    document.getElementById("generationSubmit");
-
-const generationStatus =
-    document.getElementById("generationStatus");
-
-
-const loading =
-    document.getElementById("loading");
-
-
-/* =============================================================
-   SCREEN
-============================================================= */
-
-function showScreen(screen) {
-
-    document
-        .querySelectorAll(".screen")
-        .forEach(element => {
-            element.classList.remove("active");
-        });
-
-    screen.classList.add("active");
+async function checkCollectionNFT(wallet){
+ const r=await fetch("https://tonapi.io/v2/accounts/"+encodeURIComponent(wallet)+"/nfts?limit=1000",{headers:{Accept:"application/json"}});
+ if(!r.ok)throw new Error("TonAPI HTTP "+r.status);
+ const d=await r.json(),items=Array.isArray(d.nft_items)?d.nft_items:[];
+ return items.some(n=>{
+  const a=n.collection?.address||n.collection_address||"";
+  const x=normalizeTonAddress(a);
+  return x===requiredCollection||x===REQUIRED_COLLECTION_RAW;
+ });
 }
 
-
-/* =============================================================
-   TELEGRAM LOGIN / WEB APP SESSION
-============================================================= */
-
-const telegramWebApp =
-    window.Telegram?.WebApp || null;
-
-let telegramUser = null;
-
-function applyTelegramUser(user) {
-    if (!user) return false;
-
-    telegramUser = {
-        id: user.id || null,
-        first_name: user.first_name || "",
-        last_name: user.last_name || "",
-        username: user.username || ""
-    };
-
-    const displayName =
-        telegramUser.username
-            ? "@" + telegramUser.username
-            : [telegramUser.first_name, telegramUser.last_name]
-                .filter(Boolean)
-                .join(" ");
-
-    telegramInfo.textContent =
-        displayName
-            ? `Telegram: ${displayName}`
-            : "Telegram: пользователь авторизован";
-
-    telegramLogin.textContent = "TELEGRAM ВОЙДЕН";
-    telegramLogin.disabled = true;
-
-    try {
-        sessionStorage.setItem(
-            "ar_gallery_telegram_user",
-            JSON.stringify(telegramUser)
-        );
-    } catch {}
-
-    return true;
+let currentWallet=null,accessGranted=false,checkingNFT=false;
+async function processWallet(wallet){
+ if(!wallet){
+  currentWallet=null;accessGranted=false;userWalletAddress.textContent="";
+  authStatus.textContent="Подключите TON-кошелёк";show(authScreen);return;
+ }
+ if(checkingNFT||!wallet.account?.address)return;
+ currentWallet=wallet.account.address;accessGranted=false;checkingNFT=true;
+ authStatus.textContent="Проверка NFT...";loading.classList.add("active");
+ try{
+  if(!await checkCollectionNFT(currentWallet)){
+   authStatus.textContent="NFT нужной коллекции не найден";show(authScreen);return;
+  }
+  accessGranted=true;userWalletAddress.textContent=currentWallet;
+  authStatus.textContent="Доступ разрешён";show(homeScreen);
+ }catch(e){
+  console.error("NFT CHECK ERROR:",e);authStatus.textContent="Ошибка проверки NFT";show(authScreen);
+ }finally{checkingNFT=false;loading.classList.remove("active")}
+}
+function requireAccess(){
+ if(!accessGranted||!currentWallet){authStatus.textContent="Доступ закрыт";show(authScreen);return false}
+ return true;
 }
 
-if (telegramWebApp) {
-    telegramWebApp.ready();
-    telegramWebApp.expand();
+if(!window.TON_CONNECT_UI)throw new Error("TON Connect UI не загрузился");
+const tonConnectUI=new TON_CONNECT_UI.TonConnectUI({manifestUrl:TON_MANIFEST,buttonRootId:null,restoreConnection:true});
+tonConnectUI.uiOptions={language:"ru",uiPreferences:{theme:"DARK",borderRadius:"none"}};
+$("connectWallet").onclick=async()=>{try{await tonConnectUI.openModal()}catch(e){console.error(e);authStatus.textContent="Ошибка открытия TON Connect"}};
+tonConnectUI.onStatusChange(wallet=>processWallet(wallet),e=>console.error("TON Connect:",e));
+tonConnectUI.connectionRestored.catch(e=>console.error("TON RESTORE:",e));
 
-    if (typeof telegramWebApp.setHeaderColor === "function") {
-        telegramWebApp.setHeaderColor("#000000");
-    }
-
-    if (typeof telegramWebApp.setBackgroundColor === "function") {
-        telegramWebApp.setBackgroundColor("#000000");
-    }
-
-    if (typeof telegramWebApp.disableVerticalSwipes === "function") {
-        telegramWebApp.disableVerticalSwipes();
-    }
-
-    if (telegramWebApp.initDataUnsafe?.user) {
-        applyTelegramUser(telegramWebApp.initDataUnsafe.user);
-    } else {
-        telegramInfo.textContent =
-            "Telegram Web App открыт, пользователь не передан";
-    }
-} else {
-    telegramLogin.disabled = false;
-    telegramInfo.textContent =
-        "Откройте сайт из Telegram, чтобы использовать вход Telegram";
-
-    try {
-        const saved =
-            JSON.parse(
-                sessionStorage.getItem("ar_gallery_telegram_user") || "null"
-            );
-        if (saved) applyTelegramUser(saved);
-    } catch {}
-}
-
-telegramLogin.addEventListener("click", () => {
-    if (!telegramWebApp) {
-        telegramInfo.textContent =
-            "Вход через Telegram работает при открытии сайта внутри Telegram";
-        return;
-    }
-
-    if (telegramWebApp.initDataUnsafe?.user) {
-        applyTelegramUser(telegramWebApp.initDataUnsafe.user);
-        return;
-    }
-
-    telegramInfo.textContent =
-        "Telegram не передал данные пользователя. Перезапустите Web App.";
-});
-
-
-/* =============================================================
-   TON CONNECT
-============================================================= */
-
-if (!window.TON_CONNECT_UI) {
-
-    authStatus.textContent =
-        "TON Connect не загрузился";
-
-    throw new Error(
-        "TON_CONNECT_UI not loaded"
-    );
-}
-
-
-const tonConnectUI =
-    new TON_CONNECT_UI.TonConnectUI({
-
-        manifestUrl:
-            TON_MANIFEST,
-
-        buttonRootId:
-            null,
-
-        restoreConnection:
-            true
-
-    });
-
-
-/*
-    Важно:
-
-    uiOptions является setter.
-    Поэтому присваиваем объект целиком.
-*/
-
-tonConnectUI.uiOptions = {
-
-    language: "ru",
-
-    uiPreferences: {
-        theme:
-            "DARK",
-
-        borderRadius:
-            "none"
-    }
-
+/* ================= GENERATION ================= */
+generationCode.oninput=()=>{
+ generationCode.value=generationCode.value.replace(/\D/g,"").slice(0,5);
+ generationSubmit.disabled=generationCode.value.length!==5;
+};
+generationSubmit.onclick=async()=>{
+ if(!requireAccess())return;
+ const code=generationCode.value.trim();
+ if(!/^\d{5}$/.test(code)){generationStatus.textContent="Введите 5 цифр";return}
+ generationSubmit.disabled=true;generationStatus.textContent="Отправка...";
+ try{
+  const r=await fetch(GENERATION_API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({code,wallet:currentWallet})});
+  const d=await r.json();
+  if(!r.ok||d.success!==true)throw new Error(d.error||"Ошибка сервера");
+  generationStatus.textContent="Данные отправлены";generationCode.value="";
+ }catch(e){console.error(e);generationStatus.textContent="Ошибка отправки"}
 };
 
-
-/*
-    Наша кнопка открывает
-    официальное TON Connect окно.
-
-    Именно внутри этого окна
-    TON Connect показывает QR-код
-    на desktop.
-*/
-
-connectWallet.addEventListener(
-    "click",
-    async () => {
-
-        try {
-
-            await tonConnectUI.openModal();
-
-        } catch (error) {
-
-            console.error(
-                "TON Connect:",
-                error
-            );
-
-            authStatus.textContent =
-                "Ошибка открытия TON Connect";
-
-        }
-
-    }
-);
-
-
-/* =============================================================
-   TON ADDRESS
-============================================================= */
-
-function base64UrlToBytes(value) {
-
-    let normalized =
-        String(value)
-            .replace(/-/g, "+")
-            .replace(/_/g, "/");
-
-
-    while (
-        normalized.length % 4 !== 0
-    ) {
-
-        normalized += "=";
-
-    }
-
-
-    const binary =
-        atob(normalized);
-
-
-    const bytes =
-        new Uint8Array(
-            binary.length
-        );
-
-
-    for (
-        let i = 0;
-        i < binary.length;
-        i++
-    ) {
-
-        bytes[i] =
-            binary.charCodeAt(i);
-
-    }
-
-
-    return bytes;
-
+/* ================= ROOM DATA ================= */
+let rooms=[],currentRoom=null;
+function roomNumber(item,i){return item?.number??(item?.name?String(item.name).replace(/\D/g,"")||i+1:i+1)}
+function roomName(item,i){return String(item?.name||item?.folder||item?.title||"room_"+roomNumber(item,i))}
+function fileUrl(folder,file){
+ if(!file)return "";
+ if(/^https?:\/\//i.test(String(file))||String(file).startsWith("data:"))return String(file);
+ return `${ROOMS_API}/file/${encodeURIComponent(folder)}/${encodeURIComponent(file)}`;
+}
+function resolveTextures(item){
+ const folder=String(item?.folder||item?.name||"").trim();
+ const names={back:"01_BACKGROUND.png",left:"02_LEFT.png",right:"03_RIGHT.png",front:"04_FRONT.png",ceiling:"05_SKY.png",floor:"06_GROUND.png"};
+ const out={};
+ for(const [k,n] of Object.entries(names))out[k]=fileUrl(folder,n);
+ const t=item?.textures;
+ if(t&&typeof t==="object"){
+  const map={back:t.background||t.back||t.rear,left:t.left,right:t.right,front:t.front||t.forward,ceiling:t.sky||t.ceiling||t.top,floor:t.ground||t.floor||t.bottom};
+  for(const [k,v] of Object.entries(map)){
+   const u=typeof v==="string"?v:v?.url||v?.file_url||v?.download_url;
+   if(u)out[k]=fileUrl(folder,u);
+  }
+ }
+ return out;
 }
 
-
-function normalizeTonAddress(address) {
-
-    if (!address) {
-        return "";
-    }
-
-
-    address =
-        String(address).trim();
-
-
-    /*
-        Уже raw:
-        0:64hex
-    */
-
-    if (
-        /^-?\d+:[0-9a-fA-F]{64}$/
-            .test(address)
-    ) {
-
-        const parts =
-            address.split(":");
-
-
-        return (
-            parts[0] +
-            ":" +
-            parts[1].toLowerCase()
-        );
-
-    }
-
-
-    /*
-        Friendly:
-        EQ...
-        UQ...
-    */
-
-    try {
-
-        const bytes =
-            base64UrlToBytes(
-                address
-            );
-
-
-        if (
-            bytes.length !== 36
-        ) {
-
-            return address.toLowerCase();
-
-        }
-
-
-        let workchain =
-            bytes[1];
-
-
-        if (
-            workchain === 255
-        ) {
-
-            workchain = -1;
-
-        }
-
-
-        let hash = "";
-
-
-        for (
-            let i = 2;
-            i < 34;
-            i++
-        ) {
-
-            hash +=
-                bytes[i]
-                    .toString(16)
-                    .padStart(2, "0");
-
-        }
-
-
-        return (
-            workchain +
-            ":" +
-            hash.toLowerCase()
-        );
-
-    } catch {
-
-        return address.toLowerCase();
-
-    }
-
+async function loadRooms(){
+ roomStatusList.textContent="Загрузка комнат с PC-сервера...";roomGrid.innerHTML="";
+ const c=new AbortController(),t=setTimeout(()=>c.abort(),12000);
+ try{
+  const r=await fetch(ROOMS_API,{cache:"no-store",signal:c.signal});
+  if(!r.ok)throw new Error("HTTP "+r.status);
+  const d=await r.json();rooms=Array.isArray(d)?d:(d.items||d.rooms||[]);
+  if(!rooms.length){roomStatusList.textContent="Комнаты не найдены";return}
+  roomStatusList.textContent=`Получено комнат: ${rooms.length}`;
+  rooms.forEach((item,i)=>{
+   const b=document.createElement("button");b.className="roomItem";b.type="button";
+   b.innerHTML=`<div>${roomNumber(item,i)}</div><small>${roomName(item,i)}</small>`;
+   b.onclick=()=>openRoom(i);roomGrid.appendChild(b);
+  });
+ }catch(e){roomStatusList.textContent=e.name==="AbortError"?"Тайм-аут PC-сервера":`Ошибка ROOM: ${e.message}`}
+ finally{clearTimeout(t)}
 }
 
-
-const normalizedRequiredCollection =
-    normalizeTonAddress(
-        REQUIRED_COLLECTION
-    );
-
-
-/* =============================================================
-   NFT CHECK
-============================================================= */
-
-async function checkCollectionNFT(
-    walletAddress
-) {
-
-    const url =
-        "https://tonapi.io/v2/accounts/" +
-        encodeURIComponent(
-            walletAddress
-        ) +
-        "/nfts?limit=1000";
-
-
-    const response =
-        await fetch(url, {
-
-            method: "GET",
-
-            headers: {
-                "Accept":
-                    "application/json"
-            }
-
-        });
-
-
-    if (!response.ok) {
-
-        throw new Error(
-            "TonAPI HTTP " +
-            response.status
-        );
-
-    }
-
-
-    const data =
-        await response.json();
-
-
-    const nftItems =
-        Array.isArray(
-            data.nft_items
-        )
-            ? data.nft_items
-            : [];
-
-
-    for (
-        const nft of nftItems
-    ) {
-
-        const collectionAddress =
-            nft.collection?.address ||
-            nft.collection_address ||
-            "";
-
-
-        if (!collectionAddress) {
-            continue;
-        }
-
-
-        const normalized =
-            normalizeTonAddress(
-                collectionAddress
-            );
-
-
-        if (
-            normalized ===
-                normalizedRequiredCollection
-            ||
-            normalized ===
-                REQUIRED_COLLECTION_RAW
-        ) {
-
-            return true;
-
-        }
-
-    }
-
-
-    return false;
-
+/* ================= ROOM REQUEST / TEXTURES ================= */
+async function requestRoom(item){
+ const folder=String(item?.folder||item?.name||"").trim();
+ const r=await fetch(`${ROOMS_API}/request`,{
+  method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},
+  body:JSON.stringify({room:folder,wallet:currentWallet})
+ });
+ if(!r.ok)throw new Error("ROOM HTTP "+r.status);
+ const d=await r.json();
+ if(d.success===false)throw new Error(d.error||"PC-сервер отклонил запрос");
+ if(!d.room)throw new Error("PC-сервер не вернул manifest");
+ return {...item,...d.room,folder:d.room.folder||folder,name:d.room.name||folder};
+}
+function loadTexture(url,label){
+ return new Promise((resolve,reject)=>{
+  if(!url)return reject(new Error(label+" не задана"));
+  new THREE.TextureLoader().load(url,t=>{
+   t.colorSpace=THREE.SRGBColorSpace;t.wrapS=THREE.ClampToEdgeWrapping;t.wrapT=THREE.ClampToEdgeWrapping;
+   if(roomRenderer)t.anisotropy=Math.min(roomRenderer.capabilities.getMaxAnisotropy(),4);
+   resolve(t);
+  },undefined,()=>reject(new Error("Не удалось загрузить "+label)));
+ });
+}
+function surface(w,h,pos,rot,label){
+ const m=new THREE.MeshBasicMaterial({color:0x222222,side:THREE.DoubleSide});
+ const x=new THREE.Mesh(new THREE.PlaneGeometry(w,h),m);x.position.copy(pos);x.rotation.set(rot.x,rot.y,rot.z);x.userData.roomSurface=label;return x;
+}
+function clearRoom(){
+ if(!roomScene)return;
+ [...roomScene.children].forEach(o=>{
+  if(o.userData?.roomSurface){
+   o.geometry?.dispose();o.material?.map?.dispose();o.material?.dispose();roomScene.remove(o);
+  }
+ });
+ if(roomModel){roomScene.remove(roomModel);roomModel=null}
 }
 
-
-/* =============================================================
-   WALLET
-============================================================= */
-
-let currentWallet =
-    null;
-
-let accessGranted =
-    false;
-
-let checkingNFT =
-    false;
-
-
-async function processWallet(
-    wallet
-) {
-
-    if (!wallet) {
-
-        currentWallet =
-            null;
-
-        accessGranted =
-            false;
-
-        userWalletAddress.textContent =
-            "";
-
-        userStatus.textContent =
-            "";
-
-        authStatus.textContent =
-            "Подключите TON-кошелёк";
-
-        showScreen(
-            authScreen
-        );
-
-        return;
-
-    }
-
-
-    if (
-        checkingNFT
-    ) {
-
-        return;
-
-    }
-
-
-    if (
-        !wallet.account ||
-        !wallet.account.address
-    ) {
-
-        return;
-
-    }
-
-
-    currentWallet =
-        wallet.account.address;
-
-
-    accessGranted =
-        false;
-
-    checkingNFT =
-        true;
-
-
-    authStatus.textContent =
-        "Проверка NFT...";
-
-
-    loading.classList.add(
-        "active"
-    );
-
-
-    try {
-
-        const hasNFT =
-            await checkCollectionNFT(
-                currentWallet
-            );
-
-
-        if (!hasNFT) {
-
-            accessGranted =
-                false;
-
-
-            authStatus.textContent =
-                "NFT нужной коллекции не найден";
-
-
-            showScreen(
-                authScreen
-            );
-
-
-            return;
-
-        }
-
-
-        accessGranted =
-            true;
-
-
-        userWalletAddress.textContent =
-            currentWallet;
-
-
-        authStatus.textContent =
-            "Доступ разрешён";
-
-
-        showScreen(
-            homeScreen
-        );
-
-
-    } catch (error) {
-
-        console.error(
-            "NFT CHECK ERROR:",
-            error
-        );
-
-
-        accessGranted =
-            false;
-
-
-        authStatus.textContent =
-            "Ошибка проверки NFT";
-
-
-        showScreen(
-            authScreen
-        );
-
-
-    } finally {
-
-        checkingNFT =
-            false;
-
-
-        loading.classList.remove(
-            "active"
-        );
-
-    }
-
+/* ================= ROOM MODEL ================= */
+async function loadRoomModel(info){
+ const url=String(info?.url||"").trim();if(!url)throw new Error("Сервер не вернул URL 3D модели");
+ const manager=new THREE.LoadingManager();
+ manager.setURLModifier(u=>{
+  if(!u||u.startsWith("data:")||/^https?:\/\//i.test(u))return u;
+  const f=u.split("?")[0].split("/").pop();
+  return info?.room?`${ROOMS_API}/model-file/${encodeURIComponent(info.room)}/${encodeURIComponent(f)}`:u;
+ });
+ const loader=new GLTFLoader(manager);
+ const gltf=await new Promise((res,rej)=>loader.load(url,res,undefined,rej));
+ const model=gltf.scene;
+ const box=new THREE.Box3().setFromObject(model),size=box.getSize(new THREE.Vector3());
+ if(Math.max(size.x,size.y,size.z)<=0)throw new Error("3D модель не содержит геометрии");
+ model.scale.setScalar(3.2/Math.max(size.x,size.y,size.z));model.updateMatrixWorld(true);
+ const b=new THREE.Box3().setFromObject(model),center=b.getCenter(new THREE.Vector3());
+ model.position.x-=center.x;model.position.z-=center.z;model.position.y-=b.min.y;
+ roomModel=model;roomScene.add(model);
 }
 
+/* ================= ROOM VIEWER ================= */
+let roomScene,roomCamera,roomRenderer,roomClock,roomModel;
+let roomYaw=Math.PI,roomPitch=0,roomRoll=0;
+let roomPadX=0,roomPadY=0,verticalInput=0,padId=null,lookId=null,lastLX=0,lastLY=0;
+const keys=new Set();
 
-/*
-    Срабатывает после:
+function updateCamera(){
+ if(!roomCamera)return;
+ const d=new THREE.Vector3(Math.sin(roomYaw)*Math.cos(roomPitch),Math.sin(roomPitch),Math.cos(roomYaw)*Math.cos(roomPitch));
+ roomCamera.lookAt(roomCamera.position.x+d.x,roomCamera.position.y+d.y,roomCamera.position.z+d.z);
+ roomCamera.rotateZ(roomRoll);
+}
+function clampCamera(){
+ if(!roomCamera)return;
+ roomCamera.position.x=THREE.MathUtils.clamp(roomCamera.position.x,-ROOM_LENGTH/2+ROOM_CAMERA_RADIUS,ROOM_LENGTH/2-ROOM_CAMERA_RADIUS);
+ roomCamera.position.z=THREE.MathUtils.clamp(roomCamera.position.z,-ROOM_WIDTH/2+ROOM_CAMERA_RADIUS,ROOM_WIDTH/2-ROOM_CAMERA_RADIUS);
+ roomCamera.position.y=THREE.MathUtils.clamp(roomCamera.position.y,.35,ROOM_HEIGHT-.35);
+}
+function initRoomViewer(){
+ if(roomRenderer)return;
+ roomScene=new THREE.Scene();roomScene.background=new THREE.Color(0x000000);
+ roomCamera=new THREE.PerspectiveCamera(70,1,.03,100);
+ roomRenderer=new THREE.WebGLRenderer({antialias:true,powerPreference:"high-performance"});
+ roomRenderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));roomRenderer.setSize(innerWidth,innerHeight,false);
+ roomRenderer.outputColorSpace=THREE.SRGBColorSpace;roomCanvas.appendChild(roomRenderer.domElement);
+ roomClock=new THREE.Clock();
 
-    - подключения
-    - отключения
-    - восстановления сессии
-*/
+ roomRenderer.domElement.onpointerdown=e=>{
+  if(e.pointerType==="mouse"){roomRenderer.domElement._mouse=true;roomRenderer.domElement._mx=e.clientX;roomRenderer.domElement._my=e.clientY;return}
+  if(e.clientX<innerWidth/2&&padId===null){padId=e.pointerId}
+  else if(lookId===null){lookId=e.pointerId;lastLX=e.clientX;lastLY=e.clientY}
+  roomRenderer.domElement.setPointerCapture?.(e.pointerId);
+ };
+ roomRenderer.domElement.onpointermove=e=>{
+  if(e.pointerType==="mouse"){
+   if(!roomRenderer.domElement._mouse)return;
+   const dx=e.clientX-roomRenderer.domElement._mx,dy=e.clientY-roomRenderer.domElement._my;
+   roomRenderer.domElement._mx=e.clientX;roomRenderer.domElement._my=e.clientY;
+   roomYaw-=dx*ROOM_LOOK_SPEED;roomPitch=THREE.MathUtils.clamp(roomPitch-dy*ROOM_LOOK_SPEED,-1.52,1.52);updateCamera();return;
+  }
+  if(e.pointerId===lookId){
+   const dx=e.clientX-lastLX,dy=e.clientY-lastLY;lastLX=e.clientX;lastLY=e.clientY;
+   roomYaw-=dx*ROOM_LOOK_SPEED;roomPitch=THREE.MathUtils.clamp(roomPitch-dy*ROOM_LOOK_SPEED,-1.52,1.52);updateCamera();
+  }
+  if(e.pointerId===padId){roomPadX=THREE.MathUtils.clamp((e.clientX-(roomMovePad.getBoundingClientRect().left+50))/35,-1,1);roomPadY=THREE.MathUtils.clamp((e.clientY-(roomMovePad.getBoundingClientRect().top+50))/35,-1,1);roomMoveKnob.style.transform=`translate3d(${roomPadX*35}px,${roomPadY*35}px,0)`}
+ };
+ roomRenderer.domElement.onpointerup=e=>{if(e.pointerType==="mouse")roomRenderer.domElement._mouse=false;if(e.pointerId===padId){padId=null;roomPadX=roomPadY=0;roomMoveKnob.style.transform="translate3d(0,0,0)"}if(e.pointerId===lookId)lookId=null};
+ roomRenderer.domElement.onpointercancel=roomRenderer.domElement.onpointerup;
 
-tonConnectUI.onStatusChange(
-    async wallet => {
+ roomMovePad.onpointerdown=e=>{e.preventDefault();padId=e.pointerId;roomMovePad.setPointerCapture?.(e.pointerId)};
+ roomMovePad.onpointermove=e=>{if(e.pointerId!==padId)return;const r=roomMovePad.getBoundingClientRect(),x=(e.clientX-(r.left+r.width/2))/(r.width*.32),y=(e.clientY-(r.top+r.height/2))/(r.height*.32);roomPadX=THREE.MathUtils.clamp(x,-1,1);roomPadY=THREE.MathUtils.clamp(y,-1,1);roomMoveKnob.style.transform=`translate3d(${roomPadX*r.width*.32}px,${roomPadY*r.height*.32}px,0)`};
+ roomMovePad.onpointerup=roomMovePad.onpointercancel=()=>{padId=null;roomPadX=roomPadY=0;roomMoveKnob.style.transform="translate3d(0,0,0)"};
 
-        await processWallet(
-            wallet
-        );
+ roomLookPad.onpointerdown=e=>{e.preventDefault();lookId=e.pointerId;lastLX=e.clientX;lastLY=e.clientY;roomLookPad.setPointerCapture?.(e.pointerId)};
+ roomLookPad.onpointermove=e=>{if(e.pointerId!==lookId)return;const dx=e.clientX-lastLX,dy=e.clientY-lastLY;lastLX=e.clientX;lastLY=e.clientY;roomYaw-=dx*ROOM_LOOK_SPEED;roomPitch=THREE.MathUtils.clamp(roomPitch-dy*ROOM_LOOK_SPEED,-1.52,1.52);updateCamera()};
+ roomLookPad.onpointerup=roomLookPad.onpointercancel=()=>lookId=null;
 
-    },
-    error => {
+ for(const [el,v] of [[roomMoveUp,1],[roomMoveDown,-1]]){el.onpointerdown=e=>{e.preventDefault();verticalInput=v};el.onpointerup=el.onpointercancel=()=>{if(verticalInput===v)verticalInput=0}}
+ roomRollLeft.onclick=()=>{roomRoll=THREE.MathUtils.clamp(roomRoll+.12,-Math.PI/3,Math.PI/3);updateCamera()};
+ roomRollRight.onclick=()=>{roomRoll=THREE.MathUtils.clamp(roomRoll-.12,-Math.PI/3,Math.PI/3);updateCamera()};
+ roomReset.onclick=()=>{roomYaw=Math.PI;roomPitch=roomRoll=0;verticalInput=0;roomCamera.position.set(0,ROOM_EYE_HEIGHT,1);clampCamera();updateCamera()};
 
-        console.error(
-            "TON Connect error:",
-            error
-        );
-
-        authStatus.textContent =
-            "Ошибка TON Connect";
-
-    }
-);
-
-
-/* =============================================================
-   ACCESS
-============================================================= */
-
-function requireAccess() {
-
-    if (
-        !accessGranted ||
-        !currentWallet
-    ) {
-
-        showScreen(
-            authScreen
-        );
-
-        authStatus.textContent =
-            "Доступ закрыт";
-
-        return false;
-
-    }
-
-
-    return true;
-
+ addEventListener("keydown",e=>keys.add(e.code));addEventListener("keyup",e=>keys.delete(e.code));addEventListener("blur",()=>keys.clear());
+ addEventListener("resize",resizeRoom);
+ requestAnimationFrame(roomLoop);
+}
+function resizeRoom(){if(!roomRenderer||!roomCamera)return;roomCamera.aspect=innerWidth/innerHeight;roomCamera.updateProjectionMatrix();roomRenderer.setSize(innerWidth,innerHeight,false)}
+function roomLoop(){
+ requestAnimationFrame(roomLoop);if(!roomRenderer||!roomViewerScreen.classList.contains("active"))return;
+ const dt=Math.min(roomClock.getDelta(),.05);
+ let f=(keys.has("KeyW")||keys.has("ArrowUp")?1:0)-(keys.has("KeyS")||keys.has("ArrowDown")?1:0)+(-roomPadY);
+ let s=(keys.has("KeyD")||keys.has("ArrowRight")?1:0)-(keys.has("KeyA")||keys.has("ArrowLeft")?1:0)+roomPadX;
+ const len=Math.hypot(f,s);if(len>1){f/=len;s/=len}
+ const sp=ROOM_SPEED*dt,fx=Math.sin(roomYaw),fz=Math.cos(roomYaw),rx=Math.cos(roomYaw),rz=-Math.sin(roomYaw);
+ roomCamera.position.x+=(fx*f+rx*s)*sp;roomCamera.position.z+=(fz*f+rz*s)*sp;
+ const vert=(keys.has("KeyR")?1:0)-(keys.has("KeyF")?1:0)||verticalInput;roomCamera.position.y+=vert*sp;
+ clampCamera();updateCamera();roomRenderer.render(roomScene,roomCamera);
 }
 
-
-/* =============================================================
-   MENU
-============================================================= */
-
-
-document
-    .getElementById("openGeneration")
-    .addEventListener(
-        "click",
-        () => {
-
-            if (
-                !requireAccess()
-            ) {
-                return;
-            }
-
-
-            generationCode.value =
-                "";
-
-            generationStatus.textContent =
-                "";
-
-            generationSubmit.disabled =
-                true;
-
-
-            showScreen(
-                generationScreen
-            );
-
-
-            setTimeout(
-                () => {
-
-                    generationCode.focus();
-
-                },
-                100
-            );
-
-        }
-    );
-
-
-
-   USER
-============================================================= */
-
-document
-    .getElementById("openUser")
-    .addEventListener(
-        "click",
-        () => {
-
-            if (
-                !requireAccess()
-            ) {
-                return;
-            }
-
-            userStatus.textContent =
-                "";
-
-            userWalletAddress.textContent =
-                currentWallet || "";
-
-            showScreen(
-                userScreen
-            );
-
-        }
-    );
-
-
-document
-    .getElementById("userBack")
-    .addEventListener(
-        "click",
-        () => {
-
-            userStatus.textContent =
-                "";
-
-            showScreen(
-                homeScreen
-            );
-
-        }
-    );
-
-
-disconnectWallet.addEventListener(
-    "click",
-    async () => {
-
-        if (
-            !currentWallet
-        ) {
-
-            showScreen(
-                authScreen
-            );
-
-            return;
-        }
-
-
-        disconnectWallet.disabled =
-            true;
-
-        userStatus.textContent =
-            "Выход из кошелька...";
-
-
-        try {
-
-            await tonConnectUI.disconnect();
-
-            currentWallet =
-                null;
-
-            accessGranted =
-                false;
-
-            userWalletAddress.textContent =
-                "";
-
-            userStatus.textContent =
-                "";
-
-            authStatus.textContent =
-                "Кошелёк отключён";
-
-            showScreen(
-                authScreen
-            );
-
-        } catch (error) {
-
-            console.error(
-                "TON DISCONNECT ERROR:",
-                error
-            );
-
-            userStatus.textContent =
-                "Ошибка выхода из кошелька";
-
-        } finally {
-
-            disconnectWallet.disabled =
-                false;
-
-        }
-
-    }
-);
-
-
-/* =============================================================
-   GENERATION INPUT
-============================================================= */
-
-generationCode.addEventListener(
-    "input",
-    () => {
-
-        generationCode.value =
-            generationCode.value
-                .replace(/\D/g, "")
-                .slice(0, 5);
-
-
-        generationSubmit.disabled =
-            generationCode.value.length !== 5;
-
-    }
-);
-
-
-/* =============================================================
-   GENERATION SEND
-============================================================= */
-
-generationSubmit.addEventListener(
-    "click",
-    async () => {
-
-        if (
-            !requireAccess()
-        ) {
-            return;
-        }
-
-
-        const code =
-            generationCode.value.trim();
-
-
-        if (
-            !/^\d{5}$/.test(code)
-        ) {
-
-            generationStatus.textContent =
-                "Введите 5 цифр";
-
-            return;
-
-        }
-
-
-        if (!currentWallet) {
-
-            generationStatus.textContent =
-                "Кошелёк не подключён";
-
-            return;
-
-        }
-
-
-        generationSubmit.disabled =
-            true;
-
-
-        generationStatus.textContent =
-            "Отправка...";
-
-
-        try {
-
-            const response =
-                await fetch(
-                    GENERATION_API,
-                    {
-
-                        method:
-                            "POST",
-
-                        headers: {
-                            "Content-Type":
-                                "application/json"
-                        },
-
-                        body:
-                            JSON.stringify({
-
-                                code:
-                                    code,
-
-                                wallet:
-                                    currentWallet
-
-                            })
-
-                    }
-                );
-
-
-            const data =
-                await response.json();
-
-
-            if (
-                !response.ok ||
-                data.success !== true
-            ) {
-
-                throw new Error(
-                    data.error ||
-                    "Ошибка сервера"
-                );
-
-            }
-
-
-            generationStatus.textContent =
-                "Данные отправлены";
-
-
-            generationCode.value =
-                "";
-
-
-        } catch (error) {
-
-            console.error(
-                "GENERATION ERROR:",
-                error
-            );
-
-
-            generationStatus.textContent =
-                "Ошибка отправки";
-
-
-        } finally {
-
-            generationSubmit.disabled =
-                true;
-
-        }
-
-    }
-);
-
-
-
-/* =============================================================
-   GENERATION BACK
-============================================================= */
-
-const generationBack =
-    document.createElement(
-        "button"
-    );
-
-generationBack.type =
-    "button";
-
-generationBack.style.position =
-    "fixed";
-
-generationBack.style.top =
-    "14px";
-
-generationBack.style.left =
-    "14px";
-
-generationBack.style.width =
-    "40px";
-
-generationBack.style.height =
-    "40px";
-
-generationBack.style.background =
-    "#080808";
-
-generationBack.style.color =
-    "#fff";
-
-generationBack.style.border =
-    "1px solid #242424";
-
-generationBack.style.fontSize =
-    "22px";
-
-generationBack.textContent =
-    "←";
-
-generationScreen.appendChild(
-    generationBack
-);
-
-generationBack.addEventListener(
-    "click",
-    () => {
-
-        showScreen(
-            homeScreen
-        );
-
-    }
-);
-
-
-function setRoomStatus(text, visible = true) {
-    roomViewerStatus.textContent = text || "";
-    roomViewerStatus.style.display = visible ? "block" : "none";
+/* ================= BUILD ROOM ================= */
+async function buildRoom(item){
+ clearRoom();const folder=String(item?.folder||item?.name||"").trim();roomStatus(`Запрос ROOM ${folder}...`);
+ const data=await requestRoom(item),textures=resolveTextures(data);
+ const surfaces=[
+  surface(ROOM_LENGTH,ROOM_HEIGHT,new THREE.Vector3(0,2,3),new THREE.Euler(0,Math.PI,0),"01_BACKGROUND"),
+  surface(ROOM_WIDTH,ROOM_HEIGHT,new THREE.Vector3(-3.5,2,0),new THREE.Euler(0,Math.PI/2,0),"02_LEFT"),
+  surface(ROOM_WIDTH,ROOM_HEIGHT,new THREE.Vector3(3.5,2,0),new THREE.Euler(0,-Math.PI/2,0),"03_RIGHT"),
+  surface(ROOM_LENGTH,ROOM_HEIGHT,new THREE.Vector3(0,2,-3),new THREE.Euler(0,0,0),"04_FRONT"),
+  surface(ROOM_LENGTH,ROOM_WIDTH,new THREE.Vector3(0,4,0),new THREE.Euler(Math.PI/2,0,0),"05_SKY"),
+  surface(ROOM_LENGTH,ROOM_WIDTH,new THREE.Vector3(0,0,0),new THREE.Euler(-Math.PI/2,0,0),"06_GROUND")
+ ];
+ surfaces.forEach(x=>roomScene.add(x));
+ roomCamera.position.set(0,ROOM_EYE_HEIGHT,1);roomYaw=Math.PI;roomPitch=roomRoll=0;clampCamera();updateCamera();
+ let n=0;
+ for(const [key,label] of [["back","01_BACKGROUND"],["left","02_LEFT"],["right","03_RIGHT"],["front","04_FRONT"],["ceiling","05_SKY"],["floor","06_GROUND"]]){
+  try{roomStatus(`ROOM ${folder}: загрузка ${label}.png (${n}/6)`);const t=await loadTexture(textures[key],label);const m=surfaces.find(x=>x.userData.roomSurface===label);m.material.map=t;m.material.color.set(0xffffff);m.material.needsUpdate=true;n++}catch(e){console.warn(e)}
+ }
+ roomStatus(`ROOM ${folder}: текстуры ${n}/6.\nЗагрузка 3D модели...`);
+ let modelInfo=data.model;
+ if(!modelInfo?.url){
+  const id=Number(data.id||0);
+  if(id){
+   const r=await fetch(`${ROOMS_API}/${encodeURIComponent(folder)}/model?request_id=${id}`,{cache:"no-store"});
+   if(r.ok)modelInfo=await r.json();
+  }
+ }
+ if(modelInfo?.ready===false&&modelInfo.url==null){roomStatus(`ROOM ${folder}: модель ожидается от PC-сервера`);return}
+ if(modelInfo?.url){modelInfo.room=folder;await loadRoomModel(modelInfo)}
+ roomStatus(`ROOM ${folder} готов.\nТекстуры: ${n}/6.\n3D модель: ${modelInfo?.url?"загружена":"не получена"}`);
+ setTimeout(()=>{if(roomViewerScreen.classList.contains("active"))roomStatus("",false)},2200);
 }
 
-function roomNumberValue(item, index) {
-    if (item && item.number !== undefined && item.number !== null) {
-        return item.number;
-    }
-
-    if (item && item.name) {
-        const match = String(item.name).match(/\d+/);
-        if (match) return match[0];
-    }
-
-    if (item && item.folder) {
-        const match = String(item.folder).match(/\d+/);
-        if (match) return match[0];
-    }
-
-    return index + 1;
+/* ================= NAVIGATION ================= */
+$("openRoom").onclick=async()=>{if(!requireAccess())return;show(roomScreen);await loadRooms()};
+$("roomBack").onclick=()=>show(homeScreen);
+$("roomViewerBack").onclick=()=>{currentRoom=null;clearRoom();show(roomScreen)};
+function openRoom(i){
+ if(!requireAccess())return;currentRoom=rooms[i];const n=roomNumber(currentRoom,i);
+ roomViewerTitle.textContent=`ROOM ${n}`;show(roomViewerScreen);initRoomViewer();resizeRoom();
+ buildRoom(currentRoom).catch(e=>{console.error(e);roomStatus(`Ошибка ROOM: ${e.message}`)});
 }
-
-function roomName(item, index) {
-    return String(
-        item?.name ||
-        item?.folder ||
-        item?.title ||
-        `room_${roomNumberValue(item, index)}`
-    );
-}
-
-function roomFileUrl(folder, filename) {
-    if (!filename) return "";
-
-    if (String(filename).startsWith("http")) {
-        return String(filename);
-    }
-
-    const cleanFolder = String(folder || "")
-        .replace(/^\/+|\/+$/g, "");
-
-    const cleanFile = String(filename)
-        .replace(/^\/+/, "");
-
-    return `${ROOMS_API}/file/${encodeURIComponent(cleanFolder)}/${cleanFile
-        .split("/")
-        .map(part => encodeURIComponent(part))
-        .join("/")}`;
-}
-
-function getRoomFiles(item) {
-    if (!item) return [];
-
-    if (Array.isArray(item.files)) {
-        return item.files.map(file => {
-            if (typeof file === "string") {
-                return {
-                    name: file,
-                    url: roomFileUrl(item.folder || item.name, file)
-                };
-            }
-
-            return {
-                name: file.name || file.filename || "",
-                url: file.url || file.file_url || file.download_url ||
-                    roomFileUrl(item.folder || item.name, file.name || file.filename)
-            };
-        });
-    }
-
-    if (item.textures && typeof item.textures === "object") {
-        return Object.entries(item.textures).map(([key, value]) => ({
-            name: key,
-            url: typeof value === "string"
-                ? value
-                : value?.url || value?.file_url || ""
-        }));
-    }
-
-    return [];
-}
-function normalizeRoomFileValue(folder, value) {
-    if (!value) return "";
-
-    if (typeof value === "object") {
-        value =
-            value.url ||
-            value.file_url ||
-            value.download_url ||
-            value.filename ||
-            value.name ||
-            "";
-    }
-
-    if (!value) return "";
-
-    const valueString = String(value);
-
-    if (
-        valueString.startsWith("http://") ||
-        valueString.startsWith("https://") ||
-        valueString.startsWith("data:")
-    ) {
-        return valueString;
-    }
-
-    return roomFileUrl(folder, valueString);
-}
-
-function getRoomManifestFiles(item) {
-    if (!item) return [];
-
-    const folder =
-        item.folder ||
-        item.name ||
-        "";
-
-    const result = [];
-
-    if (Array.isArray(item.files)) {
-        item.files.forEach(file => {
-            if (typeof file === "string") {
-                result.push({
-                    name: file,
-                    url: normalizeRoomFileValue(folder, file)
-                });
-                return;
-            }
-
-            if (file && typeof file === "object") {
-                const name =
-                    file.name ||
-                    file.filename ||
-                    "";
-
-                result.push({
-                    name,
-                    url: normalizeRoomFileValue(
-                        folder,
-                        file.url ||
-                        file.file_url ||
-                        file.download_url ||
-                        name
-                    )
-                });
-            }
-        });
-    }
-
-    if (item.textures && typeof item.textures === "object") {
-        Object.entries(item.textures).forEach(([key, value]) => {
-            result.push({
-                name: key,
-                url: normalizeRoomFileValue(folder, value)
-            });
-        });
-    }
-
-    return result.filter(file => file.url);
-}
-
-function findRoomFileByNames(files, names) {
-    const normalized = names.map(name =>
-        String(name)
-            .toLowerCase()
-            .replace(/\.[^.]+$/, "")
-            .replace(/[^a-z0-9а-яё]/gi, "")
-    );
-
-    for (const file of files) {
-        const fileName = String(file.name || "")
-            .toLowerCase()
-            .replace(/\.[^.]+$/, "")
-            .replace(/[^a-z0-9а-яё]/gi, "");
-
-        for (const wanted of normalized) {
-            if (fileName === wanted) {
-                return file.url;
-            }
-        }
-    }
-
-    return "";
-}
-
-function resolveRoomTextures(item) {
-    const folder = String(item?.folder || item?.name || "").trim();
-
-    if (!folder) {
-        return {
-            back: "",
-            left: "",
-            right: "",
-            front: "",
-            ceiling: "",
-            floor: ""
-        };
-    }
-
-    /*
-        ВАЖНО:
-        Имена файлов на PC фиксированы и соответствуют вашей папке:
-
-        Desktop/3d/3d/fon_room/diorama_1/
-            01_BACKGROUND.png -> BACK
-            02_LEFT.png       -> LEFT
-            03_RIGHT.png      -> RIGHT
-            04_FRONT.png      -> FRONT
-            05_SKY.png        -> CEILING
-            06_GROUND.png     -> FLOOR
-
-        Не пытаемся угадывать названия файлов.
-        Всегда строим URL напрямую через Flask API.
-    */
-    const files = {
-        back: "01_BACKGROUND.png",
-        left: "02_LEFT.png",
-        right: "03_RIGHT.png",
-        front: "04_FRONT.png",
-        ceiling: "05_SKY.png",
-        floor: "06_GROUND.png"
-    };
-
-    const result = {};
-
-    Object.entries(files).forEach(([surface, filename]) => {
-        result[surface] = roomFileUrl(folder, filename);
-    });
-
-    /*
-        Если Flask вернул конкретные URL, используем их.
-        Но только если URL действительно задан сервером.
-    */
-    const direct = item?.textures;
-
-    if (direct && typeof direct === "object") {
-        const serverFields = {
-            back: direct.background || direct.back || direct.rear,
-            left: direct.left,
-            right: direct.right,
-            front: direct.front || direct.forward,
-            ceiling: direct.sky || direct.ceiling || direct.top,
-            floor: direct.ground || direct.floor || direct.bottom
-        };
-
-        Object.entries(serverFields).forEach(([surface, value]) => {
-            if (typeof value === "string" && value.trim()) {
-                result[surface] = normalizeRoomFileValue(folder, value);
-            } else if (value && typeof value === "object") {
-                const url =
-                    value.url ||
-                    value.file_url ||
-                    value.download_url ||
-                    "";
-
-                if (url) {
-                    result[surface] = normalizeRoomFileValue(folder, url);
-                }
-            }
-        });
-    }
-
-    return result;
-}
-
-async function fetchRoomManifest(item) {
-    const folder = String(item?.folder || item?.name || "").trim();
-
-    if (!folder) {
-        throw new Error("У комнаты отсутствует folder/name");
-    }
-
-    /*
-        Сразу показываем состояние запроса, чтобы интерфейс
-        никогда не оставался на старом тексте "Загрузка комнат...".
-    */
-    setRoomStatus(
-        `Запрос ROOM "${folder}" на PC-сервер...`,
-        true
-    );
-
-    const url = `${ROOMS_API}/${encodeURIComponent(folder)}`;
-
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000);
-
-    try {
-        const response = await fetch(url, {
-            method: "GET",
-            mode: "cors",
-            cache: "no-store",
-            headers: {
-                "Accept": "application/json"
-            },
-            signal: controller.signal
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-        }
-
-        const data = await response.json();
-        const manifest = data?.room || data;
-
-        if (!manifest || typeof manifest !== "object") {
-            throw new Error("Сервер вернул пустой manifest комнаты");
-        }
-
-        return {
-            ...item,
-            ...manifest,
-            folder: manifest.folder || item.folder || folder,
-            name: manifest.name || item.name || folder
-        };
-
-    } catch (error) {
-        if (error?.name === "AbortError") {
-            throw new Error(
-                `Тайм-аут запроса manifest комнаты: ${folder}`
-            );
-        }
-
-        throw new Error(
-            `Не удалось получить ROOM ${folder}: ${error?.message || error}`
-        );
-
-    } finally {
-        clearTimeout(timeout);
-    }
-}
-
-async function requestRoomFromPC(item) {
-    const folder = String(item?.folder || item?.name || "").trim();
-
-    if (!folder) {
-        throw new Error("Не указана папка комнаты");
-    }
-
-    const wallet =
-        typeof currentWallet !== "undefined" && currentWallet
-            ? String(currentWallet)
-            : "";
-
-    const url = `${ROOMS_API}/request`;
-
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000);
-
-    try {
-        const response = await fetch(url, {
-            method: "POST",
-            mode: "cors",
-            cache: "no-store",
-            headers: {
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            },
-            body: JSON.stringify({
-                room: folder,
-                wallet: wallet,
-                telegram: telegramUser || null
-            }),
-            signal: controller.signal
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        if (data?.success === false) {
-            throw new Error(data.error || "PC-сервер отклонил ROOM-запрос");
-        }
-
-        const manifest = data?.room;
-
-        if (!manifest || typeof manifest !== "object") {
-            throw new Error("PC-сервер не вернул manifest комнаты");
-        }
-
-        return {
-            ...item,
-            ...manifest,
-            folder: manifest.folder || item.folder || folder,
-            name: manifest.name || item.name || folder
-        };
-
-    } catch (error) {
-        if (error?.name === "AbortError") {
-            throw new Error("Тайм-аут ROOM-запроса к PC-серверу (10 секунд)");
-        }
-
-        throw error;
-
-    } finally {
-        clearTimeout(timeout);
-    }
-}
-
-function loadRoomTexture(url, label = "texture") {
-    return new Promise(resolve => {
-        if (!url) {
-            resolve({
-                texture: null,
-                label,
-                url: "",
-                error: "URL/данные текстуры не заданы"
-            });
-            return;
-        }
-
-        let finished = false;
-        const finish = result => {
-            if (finished) return;
-            finished = true;
-            resolve(result);
-        };
-
-        /*
-           Новая схема ROOM: Python-сервер передаёт PNG/JPG прямо
-           внутри manifest как data:image/...;base64,... .
-           Поэтому для таких URL НЕ делаем отдельный fetch к
-           /api/rooms/file/... . Это устраняет зависание Cloudflare
-           на бинарном endpoint.
-        */
-        const isEmbedded =
-            typeof url === "string" &&
-            url.startsWith("data:image/");
-
-        if (isEmbedded) {
-            setRoomStatus(`Декодирование ${label}.png...`, true);
-
-            const timeout = setTimeout(() => {
-                finish({
-                    texture: null,
-                    label,
-                    url: "embedded-data",
-                    error: "Тайм-аут декодирования встроенной текстуры 12 секунд"
-                });
-            }, 60000);
-
-            roomTextureLoader.load(
-                url,
-                texture => {
-                    clearTimeout(timeout);
-
-                    texture.colorSpace = THREE.SRGBColorSpace;
-                    texture.wrapS = THREE.ClampToEdgeWrapping;
-                    texture.wrapT = THREE.ClampToEdgeWrapping;
-                    texture.anisotropy = roomRenderer
-                        ? Math.min(
-                            roomRenderer.capabilities.getMaxAnisotropy(),
-                            4
-                        )
-                        : 1;
-                    texture.needsUpdate = true;
-
-                    finish({
-                        texture,
-                        label,
-                        url: "embedded-data",
-                        error: null
-                    });
-                },
-                undefined,
-                error => {
-                    clearTimeout(timeout);
-                    finish({
-                        texture: null,
-                        label,
-                        url: "embedded-data",
-                        error: "Three.js не смог декодировать встроенную текстуру"
-                    });
-                }
-            );
-            return;
-        }
-
-        /* Основной режим: бинарная загрузка PNG через Flask API. */
-        let finishedHttp = false;
-        const controller = new AbortController();
-        const timeout = setTimeout(() => {
-            controller.abort();
-            if (!finishedHttp) {
-                finishedHttp = true;
-                finish({
-                    texture: null,
-                    label,
-                    url,
-                    error: "Тайм-аут HTTP-загрузки изображения 60 секунд"
-                });
-            }
-        }, 60000);
-
-        setRoomStatus(`Получение ${label}.png с PC...`, true);
-
-        fetch(url, {
-            method: "GET",
-            mode: "cors",
-            cache: "no-store",
-            headers: {
-                "Accept": "image/png,image/jpeg,image/webp,image/*,*/*;q=0.8"
-            },
-            signal: controller.signal
-        })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-                return response.blob();
-            })
-            .then(blob => {
-                if (finishedHttp) return;
-                const objectUrl = URL.createObjectURL(blob);
-
-                roomTextureLoader.load(
-                    objectUrl,
-                    texture => {
-                        clearTimeout(timeout);
-                        finishedHttp = true;
-                        URL.revokeObjectURL(objectUrl);
-
-                        texture.colorSpace = THREE.SRGBColorSpace;
-                        texture.wrapS = THREE.ClampToEdgeWrapping;
-                        texture.wrapT = THREE.ClampToEdgeWrapping;
-                        texture.anisotropy = roomRenderer
-                            ? Math.min(
-                                roomRenderer.capabilities.getMaxAnisotropy(),
-                                4
-                            )
-                            : 1;
-                        texture.needsUpdate = true;
-
-                        finish({
-                            texture,
-                            label,
-                            url,
-                            error: null
-                        });
-                    },
-                    undefined,
-                    error => {
-                        clearTimeout(timeout);
-                        finishedHttp = true;
-                        URL.revokeObjectURL(objectUrl);
-
-                        finish({
-                            texture: null,
-                            label,
-                            url,
-                            error: "Three.js не смог декодировать изображение"
-                        });
-                    }
-                );
-            })
-            .catch(error => {
-                clearTimeout(timeout);
-                finishedHttp = true;
-
-                finish({
-                    texture: null,
-                    label,
-                    url,
-                    error: error?.message ||
-                        "Ошибка получения изображения через API"
-                });
-            });
-    });
-}
-
-function createRoomSurface(
-    width,
-    height,
-    position,
-    rotation,
-    texture,
-    label
-) {
-    const geometry = new THREE.PlaneGeometry(width, height);
-
-    const material = new THREE.MeshBasicMaterial({
-        map: texture || null,
-        color: texture ? 0xffffff : 0x222222,
-        side: THREE.DoubleSide,
-        transparent: false,
-        depthWrite: true,
-        depthTest: true
-    });
-
-    const mesh = new THREE.Mesh(geometry, material);
-
-    mesh.position.copy(position);
-    mesh.rotation.set(rotation.x, rotation.y, rotation.z);
-
-    mesh.userData.roomSurface = true;
-    mesh.userData.roomSurfaceName = label;
-
-    return mesh;
-}
-
-function clearRoomScene() {
-    if (!roomScene) return;
-
-    const removable = [];
-
-    roomScene.traverse(object => {
-        if (object.userData && object.userData.roomSurface) {
-            removable.push(object);
-        }
-    });
-
-    removable.forEach(object => {
-        roomScene.remove(object);
-
-        if (object.geometry) {
-            object.geometry.dispose();
-        }
-
-        if (object.material) {
-            const material = object.material;
-
-            if (material.map) {
-                material.map.dispose();
-            }
-
-            material.dispose();
-        }
-    });
-
-    /* Удаляем только созданный ROOM-свет. */
-    const lights = [];
-
-    roomScene.traverse(object => {
-        if (object.userData && object.userData.roomLight) {
-            lights.push(object);
-        }
-    });
-
-    lights.forEach(light => roomScene.remove(light));
-}
-
-let roomModel = null;
-let roomModelLoadToken = 0;
-let roomRequestId = null;
-
-function disposeRoomModel() {
-    if (!roomModel) return;
-
-    if (roomScene) {
-        roomScene.remove(roomModel);
-    }
-
-    roomModel.traverse(object => {
-        if (object.geometry) {
-            object.geometry.dispose();
-        }
-
-        if (object.material) {
-            const materials = Array.isArray(object.material)
-                ? object.material
-                : [object.material];
-
-            materials.forEach(material => {
-                if (!material) return;
-
-                const textureKeys = [
-                    "map", "normalMap", "roughnessMap", "metalnessMap",
-                    "emissiveMap", "aoMap", "alphaMap", "bumpMap",
-                    "displacementMap", "clearcoatMap", "clearcoatNormalMap",
-                    "clearcoatRoughnessMap", "iridescenceThicknessMap",
-                    "sheenColorMap", "sheenRoughnessMap", "specularColorMap",
-                    "specularIntensityMap", "transmissionMap", "thicknessMap"
-                ];
-
-                textureKeys.forEach(key => {
-                    if (material[key] && material[key].isTexture) {
-                        material[key].dispose();
-                    }
-                });
-
-                material.dispose();
-            });
-        }
-    });
-
-    roomModel = null;
-}
-
-function prepareRoomModel(loadedModel) {
-    const box = new THREE.Box3().setFromObject(loadedModel);
-    const size = box.getSize(new THREE.Vector3());
-
-    if (!Number.isFinite(size.x) || !Number.isFinite(size.y) ||
-        !Number.isFinite(size.z) || Math.max(size.x, size.y, size.z) <= 0) {
-        throw new Error("3D модель не содержит корректной геометрии");
-    }
-
-    /* Сначала нормализуем модель, затем ставим её по центру комнаты. */
-    const maxSize = Math.max(size.x, size.y, size.z);
-    const targetSize = 3.2;
-    loadedModel.scale.setScalar(targetSize / maxSize);
-    loadedModel.updateMatrixWorld(true);
-
-    const normalizedBox = new THREE.Box3().setFromObject(loadedModel);
-    const center = normalizedBox.getCenter(new THREE.Vector3());
-    const min = normalizedBox.min;
-
-    /* X/Z = центр комнаты, Y = пол комнаты. */
-    loadedModel.position.x -= center.x;
-    loadedModel.position.z -= center.z;
-    loadedModel.position.y -= min.y;
-    loadedModel.updateMatrixWorld(true);
-
-    loadedModel.traverse(object => {
-        if (!object.isMesh) return;
-        object.castShadow = false;
-        object.receiveShadow = false;
-        if (object.material) {
-            const materials = Array.isArray(object.material)
-                ? object.material
-                : [object.material];
-            materials.forEach(material => {
-                if (material && "envMapIntensity" in material) {
-                    material.envMapIntensity = 0.7;
-                }
-            });
-        }
-    });
-
-    return loadedModel;
-}
-
-async function loadRoomModel(modelInfo) {
-    const token = ++roomModelLoadToken;
-    const modelId = Number(modelInfo?.model_id || 0);
-    const url = String(modelInfo?.url || "").trim();
-
-    if (!url) {
-        throw new Error("Сервер не вернул URL 3D модели");
-    }
-
-    setRoomStatus(
-        `Получена 3D модель ${modelInfo.filename || modelId}.\nЗагрузка модели в ROOM...`,
-        true
-    );
-
-    const manager = new THREE.LoadingManager();
-    manager.setURLModifier(originalUrl => {
-        if (!originalUrl || originalUrl.startsWith("data:")) {
-            return originalUrl;
-        }
-
-        /* GLTF с внешними PNG/JPG: перенаправляем ресурсы на PC API. */
-        if (/^https?:\/\//i.test(originalUrl)) {
-            return originalUrl;
-        }
-
-        const clean = originalUrl.split("?")[0];
-        const filename = clean.split("/").pop();
-        if (!filename) return originalUrl;
-
-        if (modelInfo?.source === "same_room_folder" && modelInfo?.room) {
-            return `${ROOMS_API}/model-file/${encodeURIComponent(modelInfo.room)}/${
-                encodeURIComponent(filename)
-            }`;
-        }
-
-        if (modelId > 0) {
-            return `${PUBLIC_API_BASE}/api/models/resource/${modelId}/${
-                encodeURIComponent(filename)
-            }`;
-        }
-
-        return originalUrl;
-    });
-
-    const roomLoader = new GLTFLoader(manager);
-
-    const gltf = await new Promise((resolve, reject) => {
-        roomLoader.load(
-            url + (url.includes("?") ? "&" : "?") + "v=" + Date.now(),
-            resolve,
-            xhr => {
-                if (xhr && xhr.total > 0) {
-                    const percent = Math.round(xhr.loaded / xhr.total * 100);
-                    setRoomStatus(`Загрузка 3D модели: ${percent}%`, true);
-                }
-            },
-            reject
-        );
-    });
-
-    if (token !== roomModelLoadToken) return false;
-
-    disposeRoomModel();
-    roomModel = prepareRoomModel(gltf.scene);
-    roomModel.userData.roomModel = true;
-    roomScene.add(roomModel);
-
-    setRoomStatus(
-        `ROOM готов.\nТекстуры комнаты: 6/6.\n3D модель: ${modelInfo.filename || "готова"}.\nМодель размещена по центру комнаты.`,
-        true
-    );
-
-    setTimeout(() => {
-        if (roomViewerScreen.classList.contains("active")) {
-            setRoomStatus("", false);
-        }
-    }, 2200);
-
-    return true;
-}
-
-async function requestRoomModelFromPC(roomData, folder) {
-    const requestId = Number(roomData?.id || 0);
-    if (!requestId) {
-        throw new Error("PC-сервер не вернул ID ROOM-запроса");
-    }
-
-    roomRequestId = requestId;
-    const endpoint = `${ROOMS_API}/${encodeURIComponent(folder)}/model?request_id=${requestId}`;
-
-    setRoomStatus(
-        `ROOM ${folder}: отправлен запрос 3D модели на PC-сервер...`,
-        true
-    );
-
-    const response = await fetch(endpoint, {
-        method: "GET",
-        mode: "cors",
-        cache: "no-store",
-        headers: { "Accept": "application/json" }
-    });
-
-    if (!response.ok) {
-        throw new Error(`ROOM MODEL HTTP ${response.status}`);
-    }
-
-    const data = await response.json();
-    if (data?.ready && data?.url) {
-        return data;
-    }
-
-    return null;
-}
-
-
-async function waitForRoomModel(roomData, folder) {
-    const requestId = Number(roomData?.id);
-    if (!requestId) {
-        setRoomStatus(
-            `ROOM ${folder}: текстуры загружены 6/6.\nОжидается запрос модели.`,
-            true
-        );
-        return;
-    }
-
-    roomRequestId = requestId;
-    const endpoint = `${ROOMS_API}/${encodeURIComponent(folder)}/model?request_id=${requestId}`;
-    const started = Date.now();
-    const maxWait = 10 * 60 * 1000;
-
-    setRoomStatus(
-        `ROOM ${folder}: текстуры 6/6.\nОжидание 3D модели от PC-сервера...`,
-        true
-    );
-
-    while (Date.now() - started < maxWait) {
-        try {
-            const response = await fetch(endpoint, {
-                method: "GET",
-                mode: "cors",
-                cache: "no-store",
-                headers: { "Accept": "application/json" }
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                if (data?.ready && data?.model_id && data?.url) {
-                    await loadRoomModel(data);
-                    return;
-                }
-            }
-        } catch (error) {
-            console.warn("ROOM MODEL POLL ERROR:", error);
-        }
-
-        await new Promise(resolve => setTimeout(resolve, 2000));
-    }
-
-    setRoomStatus(
-        `ROOM ${folder}: текстуры 6/6.\n3D модель пока не отправлена с PC-сервера.`,
-        true
-    );
-}
-
-async function buildRoom(item) {
-    clearRoomScene();
-    disposeRoomModel();
-
-    const folder = String(item?.folder || item?.name || "").trim();
-    if (!folder) {
-        throw new Error("У ROOM отсутствует имя папки");
-    }
-
-    /* =========================================================
-       1. ПОЛУЧАЕМ MANIFEST КОМНАТЫ С PC
-       ========================================================= */
-    setRoomStatus(`Запрос ROOM ${folder} на PC-сервер...`, true);
-
-    let roomData;
-    try {
-        roomData = await requestRoomFromPC(item);
-    } catch (postError) {
-        // POST обязателен: именно он фиксирует ROOM-запрос в GUI.
-        // GET не используем как тихий fallback, чтобы не потерять
-        // единый протокол загрузки комнаты.
-        throw postError;
-    }
-
-    const textures = resolveRoomTextures(roomData);
-
-    /* =========================================================
-       2. СРАЗУ ПОЛУЧАЕМ 3D МОДЕЛЬ ИЗ ТОЙ ЖЕ ПАПКИ ROOM.
-       Сервер уже добавляет найденный .glb в manifest.
-       Используем его напрямую. Если старый сервер не прислал
-       model, делаем отдельный запрос /model как резерв.
-       ========================================================= */
-    const roomModelPromise = (async () => {
-        const directModel = roomData?.model;
-        if (directModel?.url) {
-            return {
-                success: true,
-                ready: true,
-                room: folder,
-                request_id: Number(roomData?.id || 0),
-                model_id: 0,
-                filename: directModel.filename || "room.glb",
-                extension: ".glb",
-                size: Number(directModel.size || 0),
-                url: directModel.url,
-                source: "same_room_folder"
-            };
-        }
-        return await requestRoomModelFromPC(roomData, folder);
-    })();
-
-    /* =========================================================
-       3. СНАЧАЛА СОЗДАЁМ ГЕОМЕТРИЮ КОМНАТЫ.
-       Не ждём загрузки PNG. Поэтому комната появляется сразу.
-
-       X = 7 м
-       Z = 6 м
-       Y = 4 м
-       ========================================================= */
-    const textureMap = {
-        "01_BACKGROUND": null,
-        "02_LEFT": null,
-        "03_RIGHT": null,
-        "04_FRONT": null,
-        "05_SKY": null,
-        "06_GROUND": null
-    };
-
-    const surfaces = [
-        createRoomSurface(
-            ROOM_LENGTH,
-            ROOM_HEIGHT,
-            new THREE.Vector3(0, ROOM_HEIGHT / 2, ROOM_WIDTH / 2),
-            new THREE.Euler(0, Math.PI, 0),
-            null,
-            "01_BACKGROUND"
-        ),
-        createRoomSurface(
-            ROOM_WIDTH,
-            ROOM_HEIGHT,
-            new THREE.Vector3(-ROOM_LENGTH / 2, ROOM_HEIGHT / 2, 0),
-            new THREE.Euler(0, Math.PI / 2, 0),
-            null,
-            "02_LEFT"
-        ),
-        createRoomSurface(
-            ROOM_WIDTH,
-            ROOM_HEIGHT,
-            new THREE.Vector3(ROOM_LENGTH / 2, ROOM_HEIGHT / 2, 0),
-            new THREE.Euler(0, -Math.PI / 2, 0),
-            null,
-            "03_RIGHT"
-        ),
-        createRoomSurface(
-            ROOM_LENGTH,
-            ROOM_HEIGHT,
-            new THREE.Vector3(0, ROOM_HEIGHT / 2, -ROOM_WIDTH / 2),
-            new THREE.Euler(0, 0, 0),
-            null,
-            "04_FRONT"
-        ),
-        createRoomSurface(
-            ROOM_LENGTH,
-            ROOM_WIDTH,
-            new THREE.Vector3(0, ROOM_HEIGHT, 0),
-            new THREE.Euler(Math.PI / 2, 0, 0),
-            null,
-            "05_SKY"
-        ),
-        createRoomSurface(
-            ROOM_LENGTH,
-            ROOM_WIDTH,
-            new THREE.Vector3(0, 0, 0),
-            new THREE.Euler(-Math.PI / 2, 0, 0),
-            null,
-            "06_GROUND"
-        )
-    ];
-
-    surfaces.forEach(surface => roomScene.add(surface));
-
-    /* Освещение больше не влияет на текстуры, MeshBasicMaterial. */
-    const ambient = new THREE.AmbientLight(0xffffff, 1.0);
-    ambient.userData.roomLight = true;
-    roomScene.add(ambient);
-
-    /* Камера внутри комнаты. */
-    roomCamera.position.set(0, ROOM_EYE_HEIGHT, 0);
-    roomYaw = Math.PI;
-    roomPitch = 0;
-    roomRoll = 0;
-    roomVerticalInput = 0;
-    roomVerticalButtonInput = 0;
-
-    resetRoomMovePadVisual();
-    clampRoomCamera();
-    updateRoomCameraRotation();
-    resizeRoomViewer();
-
-    setRoomStatus(
-        `ROOM ${folder} создан: 7 × 6 × 4 м.\n` +
-        `Загрузка 6 текстур с PC-сервера...`,
-        true
-    );
-
-    /* =========================================================
-       3. ЗАГРУЖАЕМ PNG ПО ОДНОМУ И СРАЗУ НАКЛАДЫВАЕМ.
-       Комната уже видна даже во время загрузки.
-       ========================================================= */
-    const textureEntries = [
-        ["back", "01_BACKGROUND"],
-        ["left", "02_LEFT"],
-        ["right", "03_RIGHT"],
-        ["front", "04_FRONT"],
-        ["ceiling", "05_SKY"],
-        ["floor", "06_GROUND"]
-    ];
-
-    const surfaceByLabel = {};
-    surfaces.forEach(surface => {
-        surfaceByLabel[surface.userData.roomSurfaceName] = surface;
-    });
-
-    const results = [];
-    let loadedCount = 0;
-
-    for (const [key, label] of textureEntries) {
-        const url = textures[key];
-
-        setRoomStatus(
-            `ROOM ${folder}: ${loadedCount}/6\n` +
-            `Получение ${label}.png с PC-сервера...`,
-            true
-        );
-
-        const result = await loadRoomTexture(url, label);
-        results.push(result);
-
-        if (result.texture) {
-            loadedCount++;
-            textureMap[label] = result.texture;
-
-            const surface = surfaceByLabel[label];
-            if (surface && surface.material) {
-                surface.material.map = result.texture;
-                surface.material.color.set(0xffffff);
-                surface.material.needsUpdate = true;
-            }
-        }
-
-        setRoomStatus(
-            `ROOM ${folder}: текстуры ${loadedCount}/6`,
-            true
-        );
-    }
-
-    const errors = results.filter(result => !result.texture);
-
-    // Получаем ответ на ранее отправленный запрос модели.
-    try {
-        const modelData = await roomModelPromise;
-
-        if (modelData?.ready && modelData?.url) {
-            await loadRoomModel(modelData);
-        } else {
-            await waitForRoomModel(roomData, folder);
-        }
-    } catch (modelError) {
-        console.error("ROOM MODEL REQUEST ERROR:", modelError);
-        setRoomStatus(
-            `ROOM ${folder}: запрос 3D модели не выполнен.\n` +
-            `${modelError?.message || modelError}`,
-            true
-        );
-    }
-
-    if (errors.length) {
-        const errorText = errors.map(result =>
-            `${result.label}.png\n${result.error || "ошибка"}`
-        ).join("\n\n");
-
-        setRoomStatus(
-            `ROOM ${folder}: 3D модель загружена.\n` +
-            `Текстуры: ${loadedCount}/6.\n\n` +
-            `Ошибки текстур:\n${errorText}`,
-            true
-        );
-    }
-}
-
-function resetRoomMovePadVisual() {
-    if (!roomMoveKnob) return;
-
-    roomMoveKnob.style.transform =
-        "translate3d(0,0,0)";
-}
-
-function updateRoomMovePad(clientX, clientY) {
-    if (!roomMovePad) return;
-
-    const rect = roomMovePad.getBoundingClientRect();
-
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-
-    const max = Math.max(
-        18,
-        Math.min(rect.width, rect.height) * 0.32
-    );
-
-    let dx = clientX - centerX;
-    let dy = clientY - centerY;
-
-    const length = Math.hypot(dx, dy);
-
-    if (length > max) {
-        dx = dx / length * max;
-        dy = dy / length * max;
-    }
-
-    roomPadX = dx / max;
-    roomPadY = dy / max;
-
-    roomMoveKnob.style.transform =
-        `translate3d(${dx}px, ${dy}px, 0)`;
-}
-
-function releaseRoomMovePad() {
-    roomPadPointerId = null;
-    roomPadX = 0;
-    roomPadY = 0;
-    resetRoomMovePadVisual();
-}
-
-function startRoomVertical(direction) {
-    roomVerticalButtonInput = direction;
-}
-
-function stopRoomVertical(direction) {
-    if (roomVerticalButtonInput === direction) {
-        roomVerticalButtonInput = 0;
-    }
-}
-
-function initRoomViewer() {
-    if (roomRenderer) return;
-
-    roomScene = new THREE.Scene();
-    roomScene.background = new THREE.Color(0x000000);
-
-    roomCamera = new THREE.PerspectiveCamera(
-        70,
-        1,
-        0.03,
-        100
-    );
-
-    roomRenderer = new THREE.WebGLRenderer({
-        antialias: !isMobileDevice(),
-        alpha: false,
-        powerPreference: "high-performance",
-        precision: isMobileDevice() ? "mediump" : "highp"
-    });
-
-    const pixelRatio = isMobileDevice()
-        ? Math.min(window.devicePixelRatio || 1, 1.35)
-        : Math.min(window.devicePixelRatio || 1, 1.75);
-
-    roomRenderer.setPixelRatio(pixelRatio);
-    roomRenderer.setSize(
-        roomCanvas.clientWidth || window.innerWidth,
-        roomCanvas.clientHeight || window.innerHeight,
-        false
-    );
-    roomRenderer.outputColorSpace = THREE.SRGBColorSpace;
-    roomRenderer.toneMapping = THREE.ACESFilmicToneMapping;
-    roomRenderer.toneMappingExposure = 1.0;
-
-    roomCanvas.appendChild(roomRenderer.domElement);
-
-    roomClock = new THREE.Clock();
-
-    roomRenderer.domElement.addEventListener("pointerdown", event => {
-        if (event.pointerType === "mouse") {
-            roomMouseDown = true;
-            roomLastMouseX = event.clientX;
-            roomLastMouseY = event.clientY;
-            roomRenderer.domElement.setPointerCapture?.(event.pointerId);
-            return;
-        }
-
-        roomTouchPointers.set(event.pointerId, {
-            x: event.clientX,
-            y: event.clientY
-        });
-
-        const half = window.innerWidth / 2;
-
-        if (event.clientX < half && roomMovePointerId === null) {
-            roomMovePointerId = event.pointerId;
-            roomMoveX = event.clientX;
-            roomMoveY = event.clientY;
-        } else if (roomLookPointerId === null) {
-            roomLookPointerId = event.pointerId;
-            roomLookLastX = event.clientX;
-            roomLookLastY = event.clientY;
-        }
-
-        roomRenderer.domElement.setPointerCapture?.(event.pointerId);
-    });
-
-    roomRenderer.domElement.addEventListener("pointermove", event => {
-        if (event.pointerType === "mouse") {
-            if (!roomMouseDown) return;
-
-            const dx = event.clientX - roomLastMouseX;
-            const dy = event.clientY - roomLastMouseY;
-
-            roomLastMouseX = event.clientX;
-            roomLastMouseY = event.clientY;
-
-            roomYaw -= dx * ROOM_LOOK_SPEED;
-            roomPitch -= dy * ROOM_LOOK_SPEED;
-            roomPitch = THREE.MathUtils.clamp(
-                roomPitch,
-                -Math.PI / 2 + 0.05,
-                Math.PI / 2 - 0.05
-            );
-
-            updateRoomCameraRotation();
-            return;
-        }
-
-        if (!roomTouchPointers.has(event.pointerId)) return;
-
-        roomTouchPointers.set(event.pointerId, {
-            x: event.clientX,
-            y: event.clientY
-        });
-
-        if (event.pointerId === roomMovePointerId) {
-            const dx = event.clientX - roomMoveX;
-            const dy = event.clientY - roomMoveY;
-            const limit = 65;
-            const length = Math.hypot(dx, dy) || 1;
-
-            roomMoveX = event.clientX;
-            roomMoveY = event.clientY;
-
-            roomMovePointerX = THREE.MathUtils.clamp(dx / limit, -1, 1);
-            roomMovePointerY = THREE.MathUtils.clamp(dy / limit, -1, 1);
-        }
-
-        if (event.pointerId === roomLookPointerId) {
-            const dx = event.clientX - roomLookLastX;
-            const dy = event.clientY - roomLookLastY;
-
-            roomLookLastX = event.clientX;
-            roomLookLastY = event.clientY;
-
-            roomYaw -= dx * ROOM_LOOK_SPEED;
-            roomPitch -= dy * ROOM_LOOK_SPEED;
-            roomPitch = THREE.MathUtils.clamp(
-                roomPitch,
-                -Math.PI / 2 + 0.05,
-                Math.PI / 2 - 0.05
-            );
-
-            updateRoomCameraRotation();
-        }
-    });
-
-    roomRenderer.domElement.addEventListener("pointerup", event => {
-        if (event.pointerType === "mouse") {
-            roomMouseDown = false;
-            return;
-        }
-
-        roomTouchPointers.delete(event.pointerId);
-
-        if (event.pointerId === roomMovePointerId) {
-            roomMovePointerId = null;
-            roomMoveX = 0;
-            roomMoveY = 0;
-        }
-
-        if (event.pointerId === roomLookPointerId) {
-            roomLookPointerId = null;
-        }
-    });
-
-    roomRenderer.domElement.addEventListener("pointercancel", event => {
-        roomTouchPointers.delete(event.pointerId);
-        if (event.pointerId === roomMovePointerId) roomMovePointerId = null;
-        if (event.pointerId === roomLookPointerId) roomLookPointerId = null;
-    });
-
-    window.addEventListener("keydown", event => {
-        if (roomViewerScreen.classList.contains("active")) {
-            roomKeyboard.add(event.code);
-        }
-    });
-
-    window.addEventListener("keyup", event => {
-        roomKeyboard.delete(event.code);
-    });
-
-    window.addEventListener("blur", () => {
-        roomKeyboard.clear();
-        roomMouseDown = false;
-        releaseRoomMovePad();
-        roomVerticalInput = 0;
-        roomVerticalButtonInput = 0;
-    });
-
-    /*
-        МОБИЛЬНОЕ УПРАВЛЕНИЕ ROOM
-
-        Левый круг:
-            вверх    = вперёд
-            вниз     = назад
-            влево    = влево
-            вправо   = вправо
-    */
-    roomMovePad.addEventListener("pointerdown", event => {
-        event.preventDefault();
-
-        if (roomPadPointerId !== null) return;
-
-        roomPadPointerId = event.pointerId;
-
-        roomMovePad.setPointerCapture?.(
-            event.pointerId
-        );
-
-        updateRoomMovePad(
-            event.clientX,
-            event.clientY
-        );
-    });
-
-    roomMovePad.addEventListener("pointermove", event => {
-        if (event.pointerId !== roomPadPointerId) return;
-
-        event.preventDefault();
-
-        updateRoomMovePad(
-            event.clientX,
-            event.clientY
-        );
-    });
-
-    roomMovePad.addEventListener("pointerup", event => {
-        if (event.pointerId !== roomPadPointerId) return;
-        releaseRoomMovePad();
-    });
-
-    roomMovePad.addEventListener("pointercancel", event => {
-        if (event.pointerId !== roomPadPointerId) return;
-        releaseRoomMovePad();
-    });
-
-    /*
-        Правое поле:
-            горизонталь = поворот влево/вправо
-            вертикаль   = наклон вверх/вниз
-    */
-    roomLookPad.addEventListener("pointerdown", event => {
-        event.preventDefault();
-
-        if (roomLookPointerId !== null) return;
-
-        roomLookPointerId = event.pointerId;
-        roomLookLastX = event.clientX;
-        roomLookLastY = event.clientY;
-
-        roomLookPad.setPointerCapture?.(
-            event.pointerId
-        );
-    });
-
-    roomLookPad.addEventListener("pointermove", event => {
-        if (event.pointerId !== roomLookPointerId) return;
-
-        event.preventDefault();
-
-        const dx = event.clientX - roomLookLastX;
-        const dy = event.clientY - roomLookLastY;
-
-        roomLookLastX = event.clientX;
-        roomLookLastY = event.clientY;
-
-        roomYaw -= dx * ROOM_LOOK_SPEED;
-        roomPitch -= dy * ROOM_LOOK_SPEED;
-
-        roomPitch = THREE.MathUtils.clamp(
-            roomPitch,
-            -Math.PI / 2 + 0.05,
-            Math.PI / 2 - 0.05
-        );
-
-        updateRoomCameraRotation();
-    });
-
-    const releaseRoomLook = event => {
-        if (event.pointerId === roomLookPointerId) {
-            roomLookPointerId = null;
-        }
-    };
-
-    roomLookPad.addEventListener(
-        "pointerup",
-        releaseRoomLook
-    );
-
-    roomLookPad.addEventListener(
-        "pointercancel",
-        releaseRoomLook
-    );
-
-    /*
-        ↑ / ↓ — подъём и спуск.
-        Кнопка работает и на touch, и мышью.
-    */
-    roomMoveUp.addEventListener(
-        "pointerdown",
-        event => {
-            event.preventDefault();
-            startRoomVertical(1);
-            roomMoveUp.setPointerCapture?.(
-                event.pointerId
-            );
-        }
-    );
-
-    roomMoveUp.addEventListener(
-        "pointerup",
-        event => {
-            event.preventDefault();
-            stopRoomVertical(1);
-        }
-    );
-
-    roomMoveUp.addEventListener(
-        "pointercancel",
-        () => stopRoomVertical(1)
-    );
-
-    roomMoveDown.addEventListener(
-        "pointerdown",
-        event => {
-            event.preventDefault();
-            startRoomVertical(-1);
-            roomMoveDown.setPointerCapture?.(
-                event.pointerId
-            );
-        }
-    );
-
-    roomMoveDown.addEventListener(
-        "pointerup",
-        event => {
-            event.preventDefault();
-            stopRoomVertical(-1);
-        }
-    );
-
-    roomMoveDown.addEventListener(
-        "pointercancel",
-        () => stopRoomVertical(-1)
-    );
-
-    /*
-        ↶ / ↷ — roll, то есть вращение изображения
-        вокруг оси взгляда.
-    */
-    roomRollLeft.addEventListener(
-        "click",
-        () => {
-            roomRoll += 0.12;
-            roomRoll = THREE.MathUtils.clamp(
-                roomRoll,
-                -Math.PI / 3,
-                Math.PI / 3
-            );
-            updateRoomCameraRotation();
-        }
-    );
-
-    roomRollRight.addEventListener(
-        "click",
-        () => {
-            roomRoll -= 0.12;
-            roomRoll = THREE.MathUtils.clamp(
-                roomRoll,
-                -Math.PI / 3,
-                Math.PI / 3
-            );
-            updateRoomCameraRotation();
-        }
-    );
-
-    roomReset.addEventListener(
-        "click",
-        () => {
-            if (!roomCamera) return;
-
-            roomYaw = Math.PI;
-            roomPitch = 0;
-            roomRoll = 0;
-            roomVerticalInput = 0;
-            roomVerticalButtonInput = 0;
-
-            roomCamera.position.set(
-                0,
-                ROOM_EYE_HEIGHT,
-                1.0
-            );
-
-            releaseRoomMovePad();
-            clampRoomCamera();
-            updateRoomCameraRotation();
-        }
-    );
-
-    resizeRoomViewer();
-    roomAnimationFrame = requestAnimationFrame(roomRenderLoop);
-}
-
-let roomMovePointerX = 0;
-let roomMovePointerY = 0;
-
-function updateRoomCameraRotation() {
-    if (!roomCamera) return;
-
-    const direction = new THREE.Vector3(
-        Math.sin(roomYaw) * Math.cos(roomPitch),
-        Math.sin(roomPitch),
-        Math.cos(roomYaw) * Math.cos(roomPitch)
-    );
-
-    roomCamera.lookAt(
-        roomCamera.position.x + direction.x,
-        roomCamera.position.y + direction.y,
-        roomCamera.position.z + direction.z
-    );
-
-    /*
-        Roll — вращение камеры вокруг собственной оси взгляда.
-        Сначала сохраняем ориентацию направления, затем
-        применяем дополнительный поворот вокруг локальной оси Z.
-    */
-    const baseQuaternion =
-        roomCamera.quaternion.clone();
-
-    const rollQuaternion =
-        new THREE.Quaternion().setFromAxisAngle(
-            new THREE.Vector3(0, 0, 1),
-            roomRoll
-        );
-
-    roomCamera.quaternion
-        .copy(baseQuaternion)
-        .multiply(rollQuaternion);
-}
-
-function clampRoomCamera() {
-    if (!roomCamera) return;
-
-    roomCamera.position.x = THREE.MathUtils.clamp(
-        roomCamera.position.x,
-        -ROOM_LENGTH / 2 + ROOM_CAMERA_RADIUS,
-        ROOM_LENGTH / 2 - ROOM_CAMERA_RADIUS
-    );
-
-    roomCamera.position.z = THREE.MathUtils.clamp(
-        roomCamera.position.z,
-        -ROOM_WIDTH / 2 + ROOM_CAMERA_RADIUS,
-        ROOM_WIDTH / 2 - ROOM_CAMERA_RADIUS
-    );
-
-    roomCamera.position.y = THREE.MathUtils.clamp(
-        roomCamera.position.y,
-        0.35,
-        ROOM_HEIGHT - 0.35
-    );
-}
-
-function updateRoomMovement(dt) {
-    if (!roomCamera) return;
-
-    let forward = 0;
-    let strafe = 0;
-
-    if (roomKeyboard.has("KeyW") || roomKeyboard.has("ArrowUp")) forward += 1;
-    if (roomKeyboard.has("KeyS") || roomKeyboard.has("ArrowDown")) forward -= 1;
-    if (roomKeyboard.has("KeyA") || roomKeyboard.has("ArrowLeft")) strafe -= 1;
-    if (roomKeyboard.has("KeyD") || roomKeyboard.has("ArrowRight")) strafe += 1;
-
-    const keyboardVertical =
-        (roomKeyboard.has("KeyR") ? 1 : 0) -
-        (roomKeyboard.has("KeyF") ? 1 : 0);
-
-    roomVerticalInput =
-        keyboardVertical !== 0
-            ? keyboardVertical
-            : roomVerticalButtonInput;
-
-    if (roomMovePointerId !== null) {
-        strafe += roomMovePointerX;
-        forward -= roomMovePointerY;
-    }
-
-    if (roomPadPointerId !== null) {
-        strafe += roomPadX;
-        forward -= roomPadY;
-    }
-
-    const length = Math.hypot(strafe, forward);
-    if (length > 1) {
-        strafe /= length;
-        forward /= length;
-    }
-
-    if (Math.abs(strafe) < 0.001 && Math.abs(forward) < 0.001) {
-        clampRoomCamera();
-        return;
-    }
-
-    const speed = ROOM_SPEED * dt;
-
-    const forwardX = Math.sin(roomYaw);
-    const forwardZ = Math.cos(roomYaw);
-
-    const rightX = Math.cos(roomYaw);
-    const rightZ = -Math.sin(roomYaw);
-
-    roomCamera.position.x +=
-        (forwardX * forward + rightX * strafe) * speed;
-
-    roomCamera.position.z +=
-        (forwardZ * forward + rightZ * strafe) * speed;
-
-    if (roomVerticalInput !== 0) {
-        roomCamera.position.y +=
-            roomVerticalInput * speed;
-    }
-
-    clampRoomCamera();
-}
-
-function roomRenderLoop() {
-    roomAnimationFrame = requestAnimationFrame(roomRenderLoop);
-
-    if (!roomRenderer || !roomScene || !roomCamera) return;
-
-    const dt = Math.min(roomClock?.getDelta() || 0.016, 0.05);
-
-    if (roomViewerScreen.classList.contains("active")) {
-        updateRoomMovement(dt);
-        updateRoomCameraRotation();
-        roomRenderer.render(roomScene, roomCamera);
-    }
-}
-
-function resizeRoomViewer() {
-    if (!roomRenderer || !roomCamera) return;
-
-    const width = roomCanvas.clientWidth || window.innerWidth;
-    const height = roomCanvas.clientHeight || window.innerHeight;
-
-    roomCamera.aspect = width / height;
-    roomCamera.updateProjectionMatrix();
-    roomRenderer.setSize(width, height, false);
-}
-
-async function loadRooms() {
-    roomStatus.textContent = "Загрузка комнат с PC-сервера...";
-    roomGrid.innerHTML = "";
-
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 12000);
-
-    try {
-        const response = await fetch(ROOMS_API, {
-            method: "GET",
-            mode: "cors",
-            cache: "no-store",
-            headers: {
-                "Accept": "application/json"
-            },
-            signal: controller.signal
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        rooms = Array.isArray(data)
-            ? data
-            : Array.isArray(data.items)
-                ? data.items
-                : Array.isArray(data.rooms)
-                    ? data.rooms
-                    : [];
-
-        rooms = rooms.filter(Boolean);
-
-        if (!rooms.length) {
-            roomStatus.textContent =
-                "Комнаты не найдены. PC-сервер не передал ни одной папки из Desktop/3d/3d/fon_room.";
-            return;
-        }
-
-        roomStatus.textContent = `Получено комнат: ${rooms.length}`;
-
-        rooms.forEach((item, index) => {
-            const folder = String(item?.folder || item?.name || "").trim();
-            const button = document.createElement("button");
-            button.type = "button";
-            button.className = "roomItem";
-
-            const number = document.createElement("div");
-            number.textContent = roomNumberValue(item, index);
-
-            const name = document.createElement("small");
-            name.textContent = folder || `room_${index + 1}`;
-
-            button.appendChild(number);
-            button.appendChild(name);
-
-            button.addEventListener("click", () => {
-                openRoom(index);
-            });
-
-            roomGrid.appendChild(button);
-        });
-
-    } catch (error) {
-        console.error("ROOM LIST ERROR:", error);
-
-        if (error?.name === "AbortError") {
-            roomStatus.textContent =
-                "Тайм-аут: PC-сервер не ответил за 12 секунд.";
-        } else {
-            roomStatus.textContent =
-                `Ошибка получения списка ROOM: ${error?.message || error}`;
-        }
-    } finally {
-        clearTimeout(timeout);
-    }
-}
-
-function openRoom(index) {
-    if (!requireAccess()) return;
-
-    const item = rooms[index];
-    if (!item) return;
-
-    currentRoom = item;
-
-    const number = roomNumberValue(item, index);
-    const name = roomName(item, index);
-
-    roomViewerTitle.textContent = `ROOM ${number}`;
-
-    showScreen(roomViewerScreen);
-    initRoomViewer();
-    resizeRoomViewer();
-
-    /* Сразу меняем статус — до первого сетевого запроса. */
-    setRoomStatus(
-        `Отправка запроса ROOM ${name} на PC-сервер...`,
-        true
-    );
-
-    buildRoom(item).catch(error => {
-        console.error("ROOM BUILD ERROR:", error);
-
-        setRoomStatus(
-            `Не удалось загрузить ROOM ${name}.\n\n` +
-            `${error?.message || "Неизвестная ошибка"}\n\n` +
-            `API: ${ROOMS_API}`,
-            true
-        );
-    });
-}
-
-document
-    .getElementById("openRoom")
-    .addEventListener("click", async () => {
-        if (!requireAccess()) return;
-        showScreen(roomScreen);
-        await loadRooms();
-    });
-
-roomBack.addEventListener("click", () => {
-    showScreen(homeScreen);
-});
-
-roomViewerBack.addEventListener("click", () => {
-    currentRoom = null;
-    ++roomModelLoadToken;
-    roomRequestId = null;
-    disposeRoomModel();
-    clearRoomScene();
-    showScreen(roomScreen);
-});
-
-window.addEventListener(
-    "resize",
-    resizeRoomViewer,
-    { passive: true }
-);
-
-
-/* =============================================================
-   RESTORE
-============================================================= */
-
-tonConnectUI.connectionRestored
-    .then(
-        restored => {
-            console.log(
-                "TON connection restored:",
-                restored
-            );
-        }
-    )
-    .catch(
-        error => {
-            console.error(
-                "TON RESTORE ERROR:",
-                error
-            );
-        }
-    );
-
-
-
-
+$("openGeneration").onclick=()=>{if(!requireAccess())return;generationCode.value="";generationStatus.textContent="";generationSubmit.disabled=true;show(generationScreen)};
+$("generationBack").onclick=()=>show(homeScreen);
+$("openUser").onclick=()=>{if(!requireAccess())return;userWalletAddress.textContent=currentWallet||"";show(userScreen)};
+$("userBack").onclick=()=>show(homeScreen);
+$("disconnectWallet").onclick=async()=>{try{await tonConnectUI.disconnect()}finally{currentWallet=null;accessGranted=false;show(authScreen)}};
 </script>
-
-
 </body>
 </html>
