@@ -9278,6 +9278,85 @@ function resizeRoomViewer() {
     roomRenderer.setSize(width, height, false);
 }
 
+async function loadRooms() {
+    roomStatus.textContent = "Загрузка комнат с PC-сервера...";
+    roomGrid.innerHTML = "";
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 12000);
+
+    try {
+        const response = await fetch(ROOMS_API, {
+            method: "GET",
+            mode: "cors",
+            cache: "no-store",
+            headers: {
+                "Accept": "application/json"
+            },
+            signal: controller.signal
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        rooms = Array.isArray(data)
+            ? data
+            : Array.isArray(data.items)
+                ? data.items
+                : Array.isArray(data.rooms)
+                    ? data.rooms
+                    : [];
+
+        rooms = rooms.filter(Boolean);
+
+        if (!rooms.length) {
+            roomStatus.textContent =
+                "Комнаты не найдены. PC-сервер не передал ни одной папки из Desktop/3d/3d/fon_room.";
+            return;
+        }
+
+        roomStatus.textContent = `Получено комнат: ${rooms.length}`;
+
+        rooms.forEach((item, index) => {
+            const folder = String(item?.folder || item?.name || "").trim();
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "roomItem";
+
+            const number = document.createElement("div");
+            number.textContent = roomNumberValue(item, index);
+
+            const name = document.createElement("small");
+            name.textContent = folder || `room_${index + 1}`;
+
+            button.appendChild(number);
+            button.appendChild(name);
+
+            button.addEventListener("click", () => {
+                openRoom(index);
+            });
+
+            roomGrid.appendChild(button);
+        });
+
+    } catch (error) {
+        console.error("ROOM LIST ERROR:", error);
+
+        if (error?.name === "AbortError") {
+            roomStatus.textContent =
+                "Тайм-аут: PC-сервер не ответил за 12 секунд.";
+        } else {
+            roomStatus.textContent =
+                `Ошибка получения списка ROOM: ${error?.message || error}`;
+        }
+    } finally {
+        clearTimeout(timeout);
+    }
+}
+
 function openRoom(index) {
     if (!requireAccess()) return;
 
