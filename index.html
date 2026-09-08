@@ -348,98 +348,22 @@ function clearRoom(){
 
 /* ================= ROOM MODEL ================= */
 async function loadRoomModel(info){
- const url=String(info?.url||"").trim();
- if(!url)throw new Error("Сервер не вернул URL 3D модели");
-
+ const url=String(info?.url||"").trim();if(!url)throw new Error("Сервер не вернул URL 3D модели");
  const manager=new THREE.LoadingManager();
- const room=encodeURIComponent(String(info?.room||currentRoom?.folder||currentRoom?.name||""));
- const resourceBase=String(info?.resource_base_url||`${ROOMS_API}/model-resource/${room}/`);
- const textureMap=new Map();
- if(Array.isArray(info?.textures)){
-  for(const item of info.textures){
-   if(!item)continue;
-   const filename=String(item.filename||item.name||"").trim();
-   const u=String(item.url||"").trim();
-   if(filename&&u){
-    textureMap.set(filename.toLowerCase(),u);
-    textureMap.set(filename.split(".")[0].toLowerCase(),u);
-   }
-  }
- }
-
- manager.setURLModifier(rawUrl=>{
-  if(!rawUrl||rawUrl.startsWith("data:")||rawUrl.startsWith("blob:"))return rawUrl;
-  let clean=String(rawUrl).split("?")[0].replace(/\\/g,"/");
-  try{clean=decodeURIComponent(clean)}catch{}
-  const baseName=clean.split("/").pop()||clean;
-  const direct=textureMap.get(baseName.toLowerCase());
-  if(direct)return direct;
-  const stem=baseName.replace(/\.[^.]+$/i,"").toLowerCase();
-  const byStem=textureMap.get(stem);
-  if(byStem)return byStem;
-
-  if(/^https?:\/\//i.test(clean)){
-   try{
-    const parsed=new URL(clean);
-    if(parsed.pathname.includes("/api/rooms/model-resource/"))return clean;
-    if(parsed.pathname.includes("/api/rooms/model-file/")){
-     const filename=decodeURIComponent(parsed.pathname.split("/model-file/").pop()||"").split("/").pop();
-     return `${ROOMS_API}/model-resource/${room}/${encodeURIComponent(filename)}`;
-    }
-   }catch{}
-   return clean;
-  }
-  return resourceBase+clean.replace(/^\.\//,"").split("/").map(encodeURIComponent).join("/");
+ manager.setURLModifier(u=>{
+  if(!u||u.startsWith("data:")||/^https?:\/\//i.test(u))return u;
+  const f=u.split("?")[0].split("/").pop();
+  return info?.room?`${ROOMS_API}/model-file/${encodeURIComponent(info.room)}/${encodeURIComponent(f)}`:u;
  });
-
  const loader=new GLTFLoader(manager);
  const gltf=await new Promise((res,rej)=>loader.load(url,res,undefined,rej));
  const model=gltf.scene;
-
- /*
-  ROOM не использует источники света.
-  После GLTFLoader все PBR-материалы переводим в MeshBasicMaterial,
-  сохраняя diffuse/baseColor map. Поэтому изображение текстуры
-  показывается напрямую и не зависит от Ambient/DirectionalLight.
- */
- let materialCount=0;
- let texturedCount=0;
- model.traverse(object=>{
-  if(!object.isMesh||!object.material)return;
-  const source=Array.isArray(object.material)?object.material:[object.material];
-  const converted=source.map(old=>{
-   materialCount++;
-   const map=old.map||old.emissiveMap||null;
-   if(map)texturedCount++;
-   const material=new THREE.MeshBasicMaterial({
-    map:map||null,
-    color:map?0xffffff:(old.color?.clone?old.color.clone():new THREE.Color(0xffffff)),
-    transparent:Boolean(old.transparent),
-    opacity:Number.isFinite(old.opacity)?old.opacity:1,
-    side:old.side??THREE.FrontSide,
-    alphaTest:Number(old.alphaTest)||0,
-    depthWrite:old.depthWrite!==false,
-    depthTest:old.depthTest!==false
-   });
-   if(map){
-    map.colorSpace=THREE.SRGBColorSpace;
-    map.needsUpdate=true;
-   }
-   if(old.vertexColors)material.vertexColors=true;
-   return material;
-  });
-  object.material=Array.isArray(object.material)?converted:converted[0];
- });
-
  const box=new THREE.Box3().setFromObject(model),size=box.getSize(new THREE.Vector3());
  if(Math.max(size.x,size.y,size.z)<=0)throw new Error("3D модель не содержит геометрии");
- model.scale.setScalar(3.2/Math.max(size.x,size.y,size.z));
- model.updateMatrixWorld(true);
+ model.scale.setScalar(3.2/Math.max(size.x,size.y,size.z));model.updateMatrixWorld(true);
  const b=new THREE.Box3().setFromObject(model),center=b.getCenter(new THREE.Vector3());
  model.position.x-=center.x;model.position.z-=center.z;model.position.y-=b.min.y;
- roomModel=model;
- roomScene.add(model);
- console.log("ROOM MODEL MATERIALS",{materials:materialCount,textured:texturedCount,textures:Array.isArray(info?.textures)?info.textures.length:0});
+ roomModel=model;roomScene.add(model);
 }
 
 /* ================= ROOM VIEWER ================= */
@@ -524,6 +448,9 @@ function roomLoop(){
 /* ================= BUILD ROOM ================= */
 async function buildRoom(item){
  clearRoom();const folder=String(item?.folder||item?.name||"").trim();roomStatus(`Запрос ROOM ${folder}...`);
+ const ambient=new THREE.AmbientLight(0xffffff,1.4);ambient.userData.roomLight=true;roomScene.add(ambient);
+ const hemi=new THREE.HemisphereLight(0xffffff,0x666666,1.8);hemi.userData.roomLight=true;roomScene.add(hemi);
+ const key=new THREE.DirectionalLight(0xffffff,2.2);key.position.set(2,4,2);key.userData.roomLight=true;roomScene.add(key);
  const data=await requestRoom(item),textures=resolveTextures(data);
  const surfaces=[
   surface(ROOM_LENGTH,ROOM_HEIGHT,new THREE.Vector3(0,2,3),new THREE.Euler(0,Math.PI,0),"01_BACKGROUND"),
@@ -550,7 +477,7 @@ async function buildRoom(item){
  }
  if(modelInfo?.ready===false&&modelInfo.url==null){roomStatus(`ROOM ${folder}: модель ожидается от PC-сервера`);return}
  if(modelInfo?.url){modelInfo.room=folder;await loadRoomModel(modelInfo)}
- roomStatus(`ROOM ${folder} готов.\nТекстуры комнаты: ${n}/6.\n3D модель: ${modelInfo?.url?"загружена":"не получена"}\nТекстуры модели: ${Array.isArray(modelInfo?.textures)?modelInfo.textures.length:0}`);
+ roomStatus(`ROOM ${folder} готов.\nТекстуры: ${n}/6.\n3D модель: ${modelInfo?.url?"загружена":"не получена"}`);
  setTimeout(()=>{if(roomViewerScreen.classList.contains("active"))roomStatus("",false)},2200);
 }
 
