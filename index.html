@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>AR Gallery</title>
 
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://unpkg.com/@tonconnect/ui@3.0.0/dist/tonconnect-ui.min.js"></script>
 
 <style>
@@ -20,6 +21,7 @@ button{cursor:pointer;border:0}
 .button{width:100%;height:52px;margin-bottom:8px;background:#080808;color:#fff;border:1px solid #242424;text-align:left;padding:0 16px;font-size:13px}
 .button:hover{background:#111}
 .primary{background:#fff;color:#000;border-color:#fff}
+.telegram{width:100%;height:52px;margin-bottom:8px;background:#080808;color:#fff;border:1px solid #242424;font-size:13px}.telegram:disabled{opacity:.55}.telegramInfo{text-align:center;color:#666;font-size:11px;line-height:1.4;min-height:16px;margin:-2px 0 12px}
 .status{text-align:center;color:#666;font-size:12px;line-height:1.45;min-height:20px;margin-top:14px;white-space:pre-line}
 .page{flex-direction:column;padding:14px 18px 18px}
 .header{position:relative;width:100%;height:48px;display:flex;align-items:center;flex-shrink:0}
@@ -167,6 +169,12 @@ const authScreen=$("authScreen"),homeScreen=$("homeScreen"),roomScreen=$("roomSc
 const roomViewerScreen=$("roomViewerScreen"),generationScreen=$("generationScreen"),userScreen=$("userScreen");
 const authStatus=$("authStatus"),loading=$("loading"),userWalletAddress=$("userWalletAddress"),userStatus=$("userStatus");
 const roomGrid=$("roomGrid"),roomStatusList=$("roomStatusList"),roomViewerStatus=$("roomViewerStatus"),roomViewerTitle=$("roomViewerTitle");
+const telegramLogin=$("telegramLogin"),telegramInfo=$("telegramInfo");
+const telegramWebApp=window.Telegram?.WebApp||null;
+let telegramUser=null;
+function applyTelegramUser(user){if(!user)return false;telegramUser={id:user.id||null,first_name:user.first_name||"",last_name:user.last_name||"",username:user.username||""};const name=telegramUser.username?"@"+telegramUser.username:[telegramUser.first_name,telegramUser.last_name].filter(Boolean).join(" ");telegramInfo.textContent=name?`Telegram: ${name}`:"Telegram: пользователь авторизован";telegramLogin.textContent="TELEGRAM ВОЙДЕН";telegramLogin.disabled=true;try{sessionStorage.setItem("ar_gallery_telegram_user",JSON.stringify(telegramUser))}catch{}return true}
+if(telegramWebApp){telegramWebApp.ready();telegramWebApp.expand();if(telegramWebApp.setHeaderColor)telegramWebApp.setHeaderColor("#000000");if(telegramWebApp.setBackgroundColor)telegramWebApp.setBackgroundColor("#000000");if(telegramWebApp.disableVerticalSwipes)telegramWebApp.disableVerticalSwipes();if(telegramWebApp.initDataUnsafe?.user)applyTelegramUser(telegramWebApp.initDataUnsafe.user);else telegramInfo.textContent="Telegram Web App открыт, пользователь не передан"}else{try{const u=JSON.parse(sessionStorage.getItem("ar_gallery_telegram_user")||"null");if(u)applyTelegramUser(u)}catch{};telegramInfo.textContent=telegramUser?telegramInfo.textContent:"Откройте сайт из Telegram для входа Telegram"}
+telegramLogin.onclick=()=>{if(telegramWebApp?.initDataUnsafe?.user){applyTelegramUser(telegramWebApp.initDataUnsafe.user)}else telegramInfo.textContent="Вход через Telegram работает при открытии сайта внутри Telegram"};
 const roomCanvas=$("roomCanvas"),roomMovePad=$("roomMovePad"),roomMoveKnob=$("roomMoveKnob"),roomLookPad=$("roomLookPad");
 const roomMoveUp=$("roomMoveUp"),roomMoveDown=$("roomMoveDown"),roomRollLeft=$("roomRollLeft"),roomRollRight=$("roomRollRight"),roomReset=$("roomReset");
 const generationCode=$("generationCode"),generationSubmit=$("generationSubmit"),generationStatus=$("generationStatus");
@@ -250,7 +258,7 @@ generationSubmit.onclick=async()=>{
  if(!/^\d{5}$/.test(code)){generationStatus.textContent="Введите 5 цифр";return}
  generationSubmit.disabled=true;generationStatus.textContent="Отправка...";
  try{
-  const r=await fetch(GENERATION_API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({code,wallet:currentWallet})});
+  const r=await fetch(GENERATION_API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({code,wallet:currentWallet,telegram:telegramUser||null})});
   const d=await r.json();
   if(!r.ok||d.success!==true)throw new Error(d.error||"Ошибка сервера");
   generationStatus.textContent="Данные отправлены";generationCode.value="";
@@ -305,7 +313,7 @@ async function requestRoom(item){
  const folder=String(item?.folder||item?.name||"").trim();
  const r=await fetch(`${ROOMS_API}/request`,{
   method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},
-  body:JSON.stringify({room:folder,wallet:currentWallet})
+  body:JSON.stringify({room:folder,wallet:currentWallet,telegram:telegramUser||null})
  });
  if(!r.ok)throw new Error("ROOM HTTP "+r.status);
  const d=await r.json();
@@ -335,26 +343,103 @@ function clearRoom(){
   }
  });
  if(roomModel){roomScene.remove(roomModel);roomModel=null}
+ [...roomScene.children].filter(o=>o.userData?.roomLight).forEach(o=>roomScene.remove(o));
 }
 
 /* ================= ROOM MODEL ================= */
 async function loadRoomModel(info){
- const url=String(info?.url||"").trim();if(!url)throw new Error("Сервер не вернул URL 3D модели");
+ const url=String(info?.url||"").trim();
+ if(!url)throw new Error("Сервер не вернул URL 3D модели");
+
  const manager=new THREE.LoadingManager();
- manager.setURLModifier(u=>{
-  if(!u||u.startsWith("data:")||/^https?:\/\//i.test(u))return u;
-  const f=u.split("?")[0].split("/").pop();
-  return info?.room?`${ROOMS_API}/model-file/${encodeURIComponent(info.room)}/${encodeURIComponent(f)}`:u;
+ const room=encodeURIComponent(String(info?.room||currentRoom?.folder||currentRoom?.name||""));
+ const resourceBase=String(info?.resource_base_url||`${ROOMS_API}/model-resource/${room}/`);
+ const textureMap=new Map();
+ if(Array.isArray(info?.textures)){
+  for(const item of info.textures){
+   if(!item)continue;
+   const filename=String(item.filename||item.name||"").trim();
+   const u=String(item.url||"").trim();
+   if(filename&&u){
+    textureMap.set(filename.toLowerCase(),u);
+    textureMap.set(filename.split(".")[0].toLowerCase(),u);
+   }
+  }
+ }
+
+ manager.setURLModifier(rawUrl=>{
+  if(!rawUrl||rawUrl.startsWith("data:")||rawUrl.startsWith("blob:"))return rawUrl;
+  let clean=String(rawUrl).split("?")[0].replace(/\\/g,"/");
+  try{clean=decodeURIComponent(clean)}catch{}
+  const baseName=clean.split("/").pop()||clean;
+  const direct=textureMap.get(baseName.toLowerCase());
+  if(direct)return direct;
+  const stem=baseName.replace(/\.[^.]+$/i,"").toLowerCase();
+  const byStem=textureMap.get(stem);
+  if(byStem)return byStem;
+
+  if(/^https?:\/\//i.test(clean)){
+   try{
+    const parsed=new URL(clean);
+    if(parsed.pathname.includes("/api/rooms/model-resource/"))return clean;
+    if(parsed.pathname.includes("/api/rooms/model-file/")){
+     const filename=decodeURIComponent(parsed.pathname.split("/model-file/").pop()||"").split("/").pop();
+     return `${ROOMS_API}/model-resource/${room}/${encodeURIComponent(filename)}`;
+    }
+   }catch{}
+   return clean;
+  }
+  return resourceBase+clean.replace(/^\.\//,"").split("/").map(encodeURIComponent).join("/");
  });
+
  const loader=new GLTFLoader(manager);
  const gltf=await new Promise((res,rej)=>loader.load(url,res,undefined,rej));
  const model=gltf.scene;
+
+ /*
+  ROOM не использует источники света.
+  После GLTFLoader все PBR-материалы переводим в MeshBasicMaterial,
+  сохраняя diffuse/baseColor map. Поэтому изображение текстуры
+  показывается напрямую и не зависит от Ambient/DirectionalLight.
+ */
+ let materialCount=0;
+ let texturedCount=0;
+ model.traverse(object=>{
+  if(!object.isMesh||!object.material)return;
+  const source=Array.isArray(object.material)?object.material:[object.material];
+  const converted=source.map(old=>{
+   materialCount++;
+   const map=old.map||old.emissiveMap||null;
+   if(map)texturedCount++;
+   const material=new THREE.MeshBasicMaterial({
+    map:map||null,
+    color:map?0xffffff:(old.color?.clone?old.color.clone():new THREE.Color(0xffffff)),
+    transparent:Boolean(old.transparent),
+    opacity:Number.isFinite(old.opacity)?old.opacity:1,
+    side:old.side??THREE.FrontSide,
+    alphaTest:Number(old.alphaTest)||0,
+    depthWrite:old.depthWrite!==false,
+    depthTest:old.depthTest!==false
+   });
+   if(map){
+    map.colorSpace=THREE.SRGBColorSpace;
+    map.needsUpdate=true;
+   }
+   if(old.vertexColors)material.vertexColors=true;
+   return material;
+  });
+  object.material=Array.isArray(object.material)?converted:converted[0];
+ });
+
  const box=new THREE.Box3().setFromObject(model),size=box.getSize(new THREE.Vector3());
  if(Math.max(size.x,size.y,size.z)<=0)throw new Error("3D модель не содержит геометрии");
- model.scale.setScalar(3.2/Math.max(size.x,size.y,size.z));model.updateMatrixWorld(true);
+ model.scale.setScalar(3.2/Math.max(size.x,size.y,size.z));
+ model.updateMatrixWorld(true);
  const b=new THREE.Box3().setFromObject(model),center=b.getCenter(new THREE.Vector3());
  model.position.x-=center.x;model.position.z-=center.z;model.position.y-=b.min.y;
- roomModel=model;roomScene.add(model);
+ roomModel=model;
+ roomScene.add(model);
+ console.log("ROOM MODEL MATERIALS",{materials:materialCount,textured:texturedCount,textures:Array.isArray(info?.textures)?info.textures.length:0});
 }
 
 /* ================= ROOM VIEWER ================= */
@@ -465,7 +550,7 @@ async function buildRoom(item){
  }
  if(modelInfo?.ready===false&&modelInfo.url==null){roomStatus(`ROOM ${folder}: модель ожидается от PC-сервера`);return}
  if(modelInfo?.url){modelInfo.room=folder;await loadRoomModel(modelInfo)}
- roomStatus(`ROOM ${folder} готов.\nТекстуры: ${n}/6.\n3D модель: ${modelInfo?.url?"загружена":"не получена"}`);
+ roomStatus(`ROOM ${folder} готов.\nТекстуры комнаты: ${n}/6.\n3D модель: ${modelInfo?.url?"загружена":"не получена"}\nТекстуры модели: ${Array.isArray(modelInfo?.textures)?modelInfo.textures.length:0}`);
  setTimeout(()=>{if(roomViewerScreen.classList.contains("active"))roomStatus("",false)},2200);
 }
 
