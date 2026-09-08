@@ -1061,6 +1061,147 @@
             }
         }
 
+
+
+        /* =========================================================
+           ROOMS
+        ========================================================= */
+
+        #roomScreen,
+        #roomViewerScreen {
+            background: #000;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        .roomGrid {
+            width: 100%;
+            max-width: 1100px;
+            margin: auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 10px;
+            overflow-y: auto;
+            padding-bottom: 10px;
+        }
+
+        .roomItem {
+            min-height: 110px;
+            background: #080808;
+            color: #fff;
+            border: 1px solid #202020;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 8px;
+            font-size: 22px;
+            font-weight: 400;
+            transition: background .15s ease, border-color .15s ease;
+        }
+
+        .roomItem:hover {
+            background: #111;
+            border-color: #444;
+        }
+
+        .roomItem:active {
+            background: #181818;
+        }
+
+        .roomItem small {
+            color: #666;
+            font-size: 9px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        #roomCanvas {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        #roomCanvas canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+
+        .roomViewerHeader {
+            position: absolute;
+            z-index: 20;
+            top: 14px;
+            left: 14px;
+            right: 14px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+        }
+
+        .roomViewerTitle {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 14px;
+            color: #fff;
+            white-space: nowrap;
+        }
+
+        .roomStatus {
+            position: absolute;
+            z-index: 25;
+            left: 50%;
+            top: 76px;
+            transform: translateX(-50%);
+            width: min(88vw, 560px);
+            padding: 12px 14px;
+            background: rgba(0,0,0,.78);
+            border: 1px solid rgba(255,255,255,.14);
+            color: #bbb;
+            text-align: center;
+            font-size: 11px;
+            line-height: 1.45;
+            white-space: pre-line;
+            pointer-events: none;
+        }
+
+        .roomHint {
+            position: absolute;
+            z-index: 20;
+            left: 50%;
+            bottom: 22px;
+            transform: translateX(-50%);
+            width: min(92vw, 620px);
+            padding: 9px 12px;
+            background: rgba(0,0,0,.62);
+            border: 1px solid rgba(255,255,255,.1);
+            color: #777;
+            text-align: center;
+            font-size: 10px;
+            line-height: 1.4;
+            pointer-events: none;
+        }
+
+        @media (max-width: 500px) {
+            .roomGrid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .roomItem {
+                min-height: 100px;
+            }
+
+            .roomHint {
+                bottom: calc(14px + env(safe-area-inset-bottom));
+                font-size: 9px;
+            }
+        }
+
     </style>
 
 </head>
@@ -1153,6 +1294,14 @@
             </button>
 
             <button
+                id="openRoom"
+                class="menuButton"
+                type="button"
+            >
+                ROOM
+            </button>
+
+            <button
                 id="openUser"
                 class="menuButton"
                 type="button"
@@ -1162,6 +1311,90 @@
 
         </div>
 
+    </div>
+
+</section>
+
+
+<!-- =============================================================
+     ROOM LIST
+============================================================= -->
+
+<section
+    id="roomScreen"
+    class="screen page"
+>
+
+    <div class="header">
+
+        <button
+            id="roomBack"
+            class="backButton"
+            type="button"
+        >
+            ←
+        </button>
+
+        <div class="pageTitle">
+            ROOM
+        </div>
+
+    </div>
+
+    <div
+        id="roomStatus"
+        class="archiveStatus"
+    >
+        Загрузка комнат...
+    </div>
+
+    <div
+        id="roomGrid"
+        class="roomGrid"
+    ></div>
+
+</section>
+
+
+<!-- =============================================================
+     ROOM VIEWER
+============================================================= -->
+
+<section
+    id="roomViewerScreen"
+    class="screen"
+>
+
+    <div id="roomCanvas"></div>
+
+    <div class="roomViewerHeader">
+
+        <button
+            id="roomViewerBack"
+            class="backButton"
+            type="button"
+        >
+            ←
+        </button>
+
+        <div
+            id="roomViewerTitle"
+            class="roomViewerTitle"
+        >
+            ROOM
+        </div>
+
+    </div>
+
+    <div
+        id="roomViewerStatus"
+        class="roomStatus"
+    >
+        Загрузка комнаты...
+    </div>
+
+    <div class="roomHint">
+        ПК: WASD + мышь. Телефон: левый круг — движение, правое поле — обзор.
     </div>
 
 </section>
@@ -1586,6 +1819,18 @@ const ARCHIVE_API =
 const CAM_API =
     "https://api.araicameragame.party/api/cam";
 
+/*
+    ROOM API. Сервер сканирует папку:
+    3d/3d/fon_room/
+
+    Каждый подпапка считается отдельной комнатой:
+    3d/3d/fon_room/diorama_1
+    3d/3d/fon_room/diorama_2
+    ...
+*/
+const ROOMS_API =
+    "https://api.araicameragame.party/api/rooms";
+
 
 const MODEL_BASE =
     "https://raw.githubusercontent.com/Roman22022000/ArGameCam/main/models/";
@@ -1615,6 +1860,33 @@ const userScreen =
 
 const camScreen =
     document.getElementById("camScreen");
+
+const roomScreen =
+    document.getElementById("roomScreen");
+
+const roomGrid =
+    document.getElementById("roomGrid");
+
+const roomStatus =
+    document.getElementById("roomStatus");
+
+const roomBack =
+    document.getElementById("roomBack");
+
+const roomViewerScreen =
+    document.getElementById("roomViewerScreen");
+
+const roomCanvas =
+    document.getElementById("roomCanvas");
+
+const roomViewerBack =
+    document.getElementById("roomViewerBack");
+
+const roomViewerTitle =
+    document.getElementById("roomViewerTitle");
+
+const roomViewerStatus =
+    document.getElementById("roomViewerStatus");
 
 const camGrid =
     document.getElementById("camGrid");
@@ -7275,6 +7547,794 @@ function openArchiveViewer(index) {
             "3D модель"
     );
 }
+
+
+
+/* =============================================================
+   ROOM SYSTEM
+============================================================= */
+
+let rooms = [];
+let currentRoom = null;
+
+let roomRenderer = null;
+let roomScene = null;
+let roomCamera = null;
+let roomClock = null;
+let roomAnimationFrame = 0;
+
+let roomYaw = 0;
+let roomPitch = 0;
+let roomMouseDown = false;
+let roomLastMouseX = 0;
+let roomLastMouseY = 0;
+
+let roomKeyboard = new Set();
+let roomTouchPointers = new Map();
+let roomMovePointerId = null;
+let roomLookPointerId = null;
+let roomMoveX = 0;
+let roomMoveY = 0;
+let roomLookLastX = 0;
+let roomLookLastY = 0;
+
+const ROOM_LENGTH = 7;
+const ROOM_WIDTH = 6;
+const ROOM_HEIGHT = 4;
+const ROOM_EYE_HEIGHT = 1.65;
+const ROOM_SPEED = 2.7;
+const ROOM_LOOK_SPEED = 0.006;
+const ROOM_CAMERA_RADIUS = 0.22;
+
+const roomTextureLoader =
+    new THREE.TextureLoader();
+
+roomTextureLoader.setCrossOrigin("anonymous");
+
+function setRoomStatus(text, visible = true) {
+    roomViewerStatus.textContent = text || "";
+    roomViewerStatus.style.display = visible ? "block" : "none";
+}
+
+function roomNumberValue(item, index) {
+    if (item && item.number !== undefined && item.number !== null) {
+        return item.number;
+    }
+
+    if (item && item.name) {
+        const match = String(item.name).match(/\d+/);
+        if (match) return match[0];
+    }
+
+    if (item && item.folder) {
+        const match = String(item.folder).match(/\d+/);
+        if (match) return match[0];
+    }
+
+    return index + 1;
+}
+
+function roomName(item, index) {
+    return String(
+        item?.name ||
+        item?.folder ||
+        item?.title ||
+        `room_${roomNumberValue(item, index)}`
+    );
+}
+
+function roomFileUrl(folder, filename) {
+    if (!filename) return "";
+
+    if (String(filename).startsWith("http")) {
+        return String(filename);
+    }
+
+    const cleanFolder = String(folder || "")
+        .replace(/^\/+|\/+$/g, "");
+
+    const cleanFile = String(filename)
+        .replace(/^\/+/, "");
+
+    return `${ROOMS_API}/file/${encodeURIComponent(cleanFolder)}/${cleanFile
+        .split("/")
+        .map(part => encodeURIComponent(part))
+        .join("/")}`;
+}
+
+function getRoomFiles(item) {
+    if (!item) return [];
+
+    if (Array.isArray(item.files)) {
+        return item.files.map(file => {
+            if (typeof file === "string") {
+                return {
+                    name: file,
+                    url: roomFileUrl(item.folder || item.name, file)
+                };
+            }
+
+            return {
+                name: file.name || file.filename || "",
+                url: file.url || file.file_url || file.download_url ||
+                    roomFileUrl(item.folder || item.name, file.name || file.filename)
+            };
+        });
+    }
+
+    if (item.textures && typeof item.textures === "object") {
+        return Object.entries(item.textures).map(([key, value]) => ({
+            name: key,
+            url: typeof value === "string"
+                ? value
+                : value?.url || value?.file_url || ""
+        }));
+    }
+
+    return [];
+}
+
+function findRoomTexture(item, aliases) {
+    const files = getRoomFiles(item);
+    const normalizedAliases = aliases.map(alias =>
+        String(alias).toLowerCase().replace(/[^a-z0-9а-яё]/gi, "")
+    );
+
+    for (const file of files) {
+        const name = String(file.name || "")
+            .toLowerCase()
+            .replace(/[^a-z0-9а-яё]/gi, "");
+
+        for (const alias of normalizedAliases) {
+            if (name.includes(alias)) {
+                return file.url;
+            }
+        }
+    }
+
+    return "";
+}
+
+function resolveRoomTextures(item) {
+    const folder = item?.folder || item?.name || "";
+    const files = getRoomFiles(item);
+
+    const direct = item?.textures || {};
+
+    const resolve = (keys) => {
+        for (const key of keys) {
+            const value = direct[key];
+            if (typeof value === "string" && value) return value;
+            if (value && typeof value.url === "string" && value.url) {
+                return value.url;
+            }
+        }
+
+        return findRoomTexture(item, keys);
+    };
+
+    const result = {
+        front: resolve(["front", "forward", "перед", "передняя"]),
+        back: resolve(["back", "rear", "назад", "зад", "задняя"]),
+        left: resolve(["left", "лев", "левая"]),
+        right: resolve(["right", "прав", "правая"]),
+        ceiling: resolve(["ceiling", "sky", "top", "верх", "потолок", "небо"]),
+        floor: resolve(["floor", "ground", "bottom", "низ", "пол", "земля"])
+    };
+
+    /*
+       Если сервер вернул только один файл, используем его
+       на всех поверхностях. Это позволяет открыть комнату
+       даже при наличии одной общей текстуры.
+    */
+    const firstFile = files.find(file => file.url);
+
+    if (firstFile) {
+        for (const key of Object.keys(result)) {
+            if (!result[key]) result[key] = firstFile.url;
+        }
+    }
+
+    /*
+       Поддержка серверного формата, где URL уже передаются
+       отдельными полями.
+    */
+    const fields = [
+        "front", "back", "left", "right",
+        "ceiling", "floor", "sky", "ground"
+    ];
+
+    for (const field of fields) {
+        if (!result[field] && typeof item?.[field] === "string") {
+            result[field] = item[field];
+        }
+    }
+
+    for (const key of Object.keys(result)) {
+        if (
+            result[key] &&
+            !result[key].startsWith("http") &&
+            !result[key].startsWith("data:")
+        ) {
+            result[key] = roomFileUrl(folder, result[key]);
+        }
+    }
+
+    return result;
+}
+
+async function loadRooms() {
+    roomStatus.textContent = "Загрузка комнат...";
+    roomGrid.innerHTML = "";
+
+    try {
+        const response = await fetch(
+            ROOMS_API,
+            {
+                method: "GET",
+                cache: "no-store",
+                headers: {
+                    "Accept": "application/json"
+                }
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        rooms = Array.isArray(data)
+            ? data
+            : Array.isArray(data.items)
+                ? data.items
+                : Array.isArray(data.rooms)
+                    ? data.rooms
+                    : [];
+
+        rooms = rooms.filter(Boolean);
+
+        if (!rooms.length) {
+            roomStatus.textContent =
+                "Комнаты не найдены. Проверьте папку 3d/3d/fon_room/.";
+            return;
+        }
+
+        roomStatus.textContent =
+            `Комнат: ${rooms.length}`;
+
+        rooms.forEach((item, index) => {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "roomItem";
+
+            const number = document.createElement("div");
+            number.textContent = roomNumberValue(item, index);
+
+            const name = document.createElement("small");
+            name.textContent = roomName(item, index);
+
+            button.appendChild(number);
+            button.appendChild(name);
+
+            button.addEventListener("click", () => {
+                openRoom(index);
+            });
+
+            roomGrid.appendChild(button);
+        });
+
+    } catch (error) {
+        console.error("ROOM LIST ERROR:", error);
+        roomStatus.textContent =
+            `Не удалось загрузить комнаты.\n${error?.message || "Ошибка сервера"}`;
+    }
+}
+
+function loadRoomTexture(url, fallbackColor = 0x202020) {
+    return new Promise(resolve => {
+        if (!url) {
+            resolve(null);
+            return;
+        }
+
+        roomTextureLoader.load(
+            url,
+            texture => {
+                texture.colorSpace = THREE.SRGBColorSpace;
+                texture.wrapS = THREE.ClampToEdgeWrapping;
+                texture.wrapT = THREE.ClampToEdgeWrapping;
+                texture.anisotropy = roomRenderer
+                    ? Math.min(roomRenderer.capabilities.getMaxAnisotropy(), 4)
+                    : 1;
+                resolve(texture);
+            },
+            undefined,
+            error => {
+                console.warn("ROOM TEXTURE LOAD ERROR:", url, error);
+                resolve(null);
+            }
+        );
+    });
+}
+
+function createRoomSurface(width, height, position, rotation, texture) {
+    const geometry = new THREE.PlaneGeometry(width, height);
+
+    const material = new THREE.MeshStandardMaterial({
+        map: texture || null,
+        color: texture ? 0xffffff : 0x303030,
+        side: THREE.BackSide,
+        roughness: 0.92,
+        metalness: 0
+    });
+
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.position.copy(position);
+    mesh.rotation.set(rotation.x, rotation.y, rotation.z);
+    mesh.receiveShadow = false;
+
+    return mesh;
+}
+
+function clearRoomScene() {
+    if (!roomScene) return;
+
+    const removable = [];
+
+    roomScene.traverse(object => {
+        if (object.userData && object.userData.roomSurface) {
+            removable.push(object);
+        }
+    });
+
+    removable.forEach(object => {
+        roomScene.remove(object);
+
+        if (object.geometry) {
+            object.geometry.dispose();
+        }
+
+        if (object.material) {
+            const material = object.material;
+            if (material.map) material.map.dispose();
+            material.dispose();
+        }
+    });
+}
+
+async function buildRoom(item) {
+    clearRoomScene();
+
+    const textures = resolveRoomTextures(item);
+
+    setRoomStatus("Загрузка текстур комнаты...", true);
+
+    const [front, back, left, right, ceiling, floor] =
+        await Promise.all([
+            loadRoomTexture(textures.front),
+            loadRoomTexture(textures.back),
+            loadRoomTexture(textures.left),
+            loadRoomTexture(textures.right),
+            loadRoomTexture(textures.ceiling),
+            loadRoomTexture(textures.floor)
+        ]);
+
+    const surfaces = [
+        createRoomSurface(
+            ROOM_LENGTH,
+            ROOM_HEIGHT,
+            new THREE.Vector3(0, ROOM_HEIGHT / 2, -ROOM_WIDTH / 2),
+            new THREE.Euler(0, 0, 0),
+            front
+        ),
+        createRoomSurface(
+            ROOM_LENGTH,
+            ROOM_HEIGHT,
+            new THREE.Vector3(0, ROOM_HEIGHT / 2, ROOM_WIDTH / 2),
+            new THREE.Euler(0, Math.PI, 0),
+            back
+        ),
+        createRoomSurface(
+            ROOM_WIDTH,
+            ROOM_HEIGHT,
+            new THREE.Vector3(-ROOM_LENGTH / 2, ROOM_HEIGHT / 2, 0),
+            new THREE.Euler(0, Math.PI / 2, 0),
+            left
+        ),
+        createRoomSurface(
+            ROOM_WIDTH,
+            ROOM_HEIGHT,
+            new THREE.Vector3(ROOM_LENGTH / 2, ROOM_HEIGHT / 2, 0),
+            new THREE.Euler(0, -Math.PI / 2, 0),
+            right
+        ),
+        createRoomSurface(
+            ROOM_LENGTH,
+            ROOM_WIDTH,
+            new THREE.Vector3(0, ROOM_HEIGHT, 0),
+            new THREE.Euler(Math.PI / 2, 0, 0),
+            ceiling
+        ),
+        createRoomSurface(
+            ROOM_LENGTH,
+            ROOM_WIDTH,
+            new THREE.Vector3(0, 0, 0),
+            new THREE.Euler(-Math.PI / 2, 0, 0),
+            floor
+        )
+    ];
+
+    surfaces.forEach(surface => {
+        surface.userData.roomSurface = true;
+        roomScene.add(surface);
+    });
+
+    /*
+       Небольшой свет внутри комнаты. Текстуры остаются видимыми,
+       а поверхности не становятся полностью чёрными на телефоне.
+    */
+    const ambient = new THREE.AmbientLight(0xffffff, 2.1);
+    ambient.userData.roomSurface = false;
+    roomScene.add(ambient);
+
+    const light = new THREE.PointLight(0xffffff, 35, 14, 2);
+    light.position.set(0, ROOM_HEIGHT - 0.35, 0);
+    roomScene.add(light);
+
+    const fill = new THREE.PointLight(0xffffff, 12, 10, 2);
+    fill.position.set(0, 1.2, 0);
+    roomScene.add(fill);
+
+    roomCamera.position.set(0, ROOM_EYE_HEIGHT, 1.0);
+    roomYaw = Math.PI;
+    roomPitch = 0;
+    updateRoomCameraRotation();
+
+    const missing = Object.entries(textures)
+        .filter(([, url]) => !url)
+        .map(([key]) => key);
+
+    if (missing.length) {
+        setRoomStatus(
+            `Комната загружена.\nНет текстур: ${missing.join(", ")}`,
+            true
+        );
+    } else {
+        setRoomStatus("", false);
+    }
+}
+
+function initRoomViewer() {
+    if (roomRenderer) return;
+
+    roomScene = new THREE.Scene();
+    roomScene.background = new THREE.Color(0x000000);
+
+    roomCamera = new THREE.PerspectiveCamera(
+        70,
+        1,
+        0.03,
+        100
+    );
+
+    roomRenderer = new THREE.WebGLRenderer({
+        antialias: !isMobileDevice(),
+        alpha: false,
+        powerPreference: "high-performance",
+        precision: isMobileDevice() ? "mediump" : "highp"
+    });
+
+    const pixelRatio = isMobileDevice()
+        ? Math.min(window.devicePixelRatio || 1, 1.35)
+        : Math.min(window.devicePixelRatio || 1, 1.75);
+
+    roomRenderer.setPixelRatio(pixelRatio);
+    roomRenderer.setSize(
+        roomCanvas.clientWidth || window.innerWidth,
+        roomCanvas.clientHeight || window.innerHeight,
+        false
+    );
+    roomRenderer.outputColorSpace = THREE.SRGBColorSpace;
+    roomRenderer.toneMapping = THREE.ACESFilmicToneMapping;
+    roomRenderer.toneMappingExposure = 1.0;
+
+    roomCanvas.appendChild(roomRenderer.domElement);
+
+    roomClock = new THREE.Clock();
+
+    roomRenderer.domElement.addEventListener("pointerdown", event => {
+        if (event.pointerType === "mouse") {
+            roomMouseDown = true;
+            roomLastMouseX = event.clientX;
+            roomLastMouseY = event.clientY;
+            roomRenderer.domElement.setPointerCapture?.(event.pointerId);
+            return;
+        }
+
+        roomTouchPointers.set(event.pointerId, {
+            x: event.clientX,
+            y: event.clientY
+        });
+
+        const half = window.innerWidth / 2;
+
+        if (event.clientX < half && roomMovePointerId === null) {
+            roomMovePointerId = event.pointerId;
+            roomMoveX = event.clientX;
+            roomMoveY = event.clientY;
+        } else if (roomLookPointerId === null) {
+            roomLookPointerId = event.pointerId;
+            roomLookLastX = event.clientX;
+            roomLookLastY = event.clientY;
+        }
+
+        roomRenderer.domElement.setPointerCapture?.(event.pointerId);
+    });
+
+    roomRenderer.domElement.addEventListener("pointermove", event => {
+        if (event.pointerType === "mouse") {
+            if (!roomMouseDown) return;
+
+            const dx = event.clientX - roomLastMouseX;
+            const dy = event.clientY - roomLastMouseY;
+
+            roomLastMouseX = event.clientX;
+            roomLastMouseY = event.clientY;
+
+            roomYaw -= dx * ROOM_LOOK_SPEED;
+            roomPitch -= dy * ROOM_LOOK_SPEED;
+            roomPitch = THREE.MathUtils.clamp(
+                roomPitch,
+                -Math.PI / 2 + 0.05,
+                Math.PI / 2 - 0.05
+            );
+
+            updateRoomCameraRotation();
+            return;
+        }
+
+        if (!roomTouchPointers.has(event.pointerId)) return;
+
+        roomTouchPointers.set(event.pointerId, {
+            x: event.clientX,
+            y: event.clientY
+        });
+
+        if (event.pointerId === roomMovePointerId) {
+            const dx = event.clientX - roomMoveX;
+            const dy = event.clientY - roomMoveY;
+            const limit = 65;
+            const length = Math.hypot(dx, dy) || 1;
+
+            roomMoveX = event.clientX;
+            roomMoveY = event.clientY;
+
+            roomMovePointerX = THREE.MathUtils.clamp(dx / limit, -1, 1);
+            roomMovePointerY = THREE.MathUtils.clamp(dy / limit, -1, 1);
+        }
+
+        if (event.pointerId === roomLookPointerId) {
+            const dx = event.clientX - roomLookLastX;
+            const dy = event.clientY - roomLookLastY;
+
+            roomLookLastX = event.clientX;
+            roomLookLastY = event.clientY;
+
+            roomYaw -= dx * ROOM_LOOK_SPEED;
+            roomPitch -= dy * ROOM_LOOK_SPEED;
+            roomPitch = THREE.MathUtils.clamp(
+                roomPitch,
+                -Math.PI / 2 + 0.05,
+                Math.PI / 2 - 0.05
+            );
+
+            updateRoomCameraRotation();
+        }
+    });
+
+    roomRenderer.domElement.addEventListener("pointerup", event => {
+        if (event.pointerType === "mouse") {
+            roomMouseDown = false;
+            return;
+        }
+
+        roomTouchPointers.delete(event.pointerId);
+
+        if (event.pointerId === roomMovePointerId) {
+            roomMovePointerId = null;
+            roomMoveX = 0;
+            roomMoveY = 0;
+        }
+
+        if (event.pointerId === roomLookPointerId) {
+            roomLookPointerId = null;
+        }
+    });
+
+    roomRenderer.domElement.addEventListener("pointercancel", event => {
+        roomTouchPointers.delete(event.pointerId);
+        if (event.pointerId === roomMovePointerId) roomMovePointerId = null;
+        if (event.pointerId === roomLookPointerId) roomLookPointerId = null;
+    });
+
+    window.addEventListener("keydown", event => {
+        if (roomViewerScreen.classList.contains("active")) {
+            roomKeyboard.add(event.code);
+        }
+    });
+
+    window.addEventListener("keyup", event => {
+        roomKeyboard.delete(event.code);
+    });
+
+    window.addEventListener("blur", () => {
+        roomKeyboard.clear();
+        roomMouseDown = false;
+    });
+
+    resizeRoomViewer();
+    roomAnimationFrame = requestAnimationFrame(roomRenderLoop);
+}
+
+let roomMovePointerX = 0;
+let roomMovePointerY = 0;
+
+function updateRoomCameraRotation() {
+    if (!roomCamera) return;
+
+    const direction = new THREE.Vector3(
+        Math.sin(roomYaw) * Math.cos(roomPitch),
+        Math.sin(roomPitch),
+        Math.cos(roomYaw) * Math.cos(roomPitch)
+    );
+
+    roomCamera.lookAt(
+        roomCamera.position.x + direction.x,
+        roomCamera.position.y + direction.y,
+        roomCamera.position.z + direction.z
+    );
+}
+
+function clampRoomCamera() {
+    if (!roomCamera) return;
+
+    roomCamera.position.x = THREE.MathUtils.clamp(
+        roomCamera.position.x,
+        -ROOM_LENGTH / 2 + ROOM_CAMERA_RADIUS,
+        ROOM_LENGTH / 2 - ROOM_CAMERA_RADIUS
+    );
+
+    roomCamera.position.z = THREE.MathUtils.clamp(
+        roomCamera.position.z,
+        -ROOM_WIDTH / 2 + ROOM_CAMERA_RADIUS,
+        ROOM_WIDTH / 2 - ROOM_CAMERA_RADIUS
+    );
+
+    roomCamera.position.y = THREE.MathUtils.clamp(
+        roomCamera.position.y,
+        0.35,
+        ROOM_HEIGHT - 0.35
+    );
+}
+
+function updateRoomMovement(dt) {
+    if (!roomCamera) return;
+
+    let forward = 0;
+    let strafe = 0;
+
+    if (roomKeyboard.has("KeyW") || roomKeyboard.has("ArrowUp")) forward += 1;
+    if (roomKeyboard.has("KeyS") || roomKeyboard.has("ArrowDown")) forward -= 1;
+    if (roomKeyboard.has("KeyA") || roomKeyboard.has("ArrowLeft")) strafe -= 1;
+    if (roomKeyboard.has("KeyD") || roomKeyboard.has("ArrowRight")) strafe += 1;
+
+    if (roomMovePointerId !== null) {
+        strafe += roomMovePointerX;
+        forward -= roomMovePointerY;
+    }
+
+    const length = Math.hypot(strafe, forward);
+    if (length > 1) {
+        strafe /= length;
+        forward /= length;
+    }
+
+    if (Math.abs(strafe) < 0.001 && Math.abs(forward) < 0.001) {
+        clampRoomCamera();
+        return;
+    }
+
+    const speed = ROOM_SPEED * dt;
+
+    const forwardX = Math.sin(roomYaw);
+    const forwardZ = Math.cos(roomYaw);
+
+    const rightX = Math.cos(roomYaw);
+    const rightZ = -Math.sin(roomYaw);
+
+    roomCamera.position.x +=
+        (forwardX * forward + rightX * strafe) * speed;
+
+    roomCamera.position.z +=
+        (forwardZ * forward + rightZ * strafe) * speed;
+
+    clampRoomCamera();
+}
+
+function roomRenderLoop() {
+    roomAnimationFrame = requestAnimationFrame(roomRenderLoop);
+
+    if (!roomRenderer || !roomScene || !roomCamera) return;
+
+    const dt = Math.min(roomClock?.getDelta() || 0.016, 0.05);
+
+    if (roomViewerScreen.classList.contains("active")) {
+        updateRoomMovement(dt);
+        updateRoomCameraRotation();
+        roomRenderer.render(roomScene, roomCamera);
+    }
+}
+
+function resizeRoomViewer() {
+    if (!roomRenderer || !roomCamera) return;
+
+    const width = roomCanvas.clientWidth || window.innerWidth;
+    const height = roomCanvas.clientHeight || window.innerHeight;
+
+    roomCamera.aspect = width / height;
+    roomCamera.updateProjectionMatrix();
+    roomRenderer.setSize(width, height, false);
+}
+
+function openRoom(index) {
+    if (!requireAccess()) return;
+
+    const item = rooms[index];
+    if (!item) return;
+
+    currentRoom = item;
+
+    const number = roomNumberValue(item, index);
+    roomViewerTitle.textContent = `ROOM ${number}`;
+
+    showScreen(roomViewerScreen);
+    initRoomViewer();
+
+    buildRoom(item).catch(error => {
+        console.error("ROOM BUILD ERROR:", error);
+        setRoomStatus(
+            `Не удалось открыть комнату.\n${error?.message || "Ошибка"}`,
+            true
+        );
+    });
+}
+
+document
+    .getElementById("openRoom")
+    .addEventListener("click", async () => {
+        if (!requireAccess()) return;
+        showScreen(roomScreen);
+        await loadRooms();
+    });
+
+roomBack.addEventListener("click", () => {
+    showScreen(homeScreen);
+});
+
+roomViewerBack.addEventListener("click", () => {
+    currentRoom = null;
+    clearRoomScene();
+    showScreen(roomScreen);
+});
+
+window.addEventListener(
+    "resize",
+    resizeRoomViewer,
+    { passive: true }
+);
+
 
 /* =============================================================
    RESTORE
