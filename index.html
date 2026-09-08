@@ -8483,39 +8483,123 @@ async function buildRoom(item) {
     clearRoomScene();
 
     const folder = String(item?.folder || item?.name || "").trim();
-
     if (!folder) {
         throw new Error("У ROOM отсутствует имя папки");
     }
 
-    /*
-        Сначала отправляем POST-запрос на PC-сервер.
-        Flask возвращает manifest выбранной комнаты.
-    */
-    setRoomStatus(
-        `Отправка запроса ROOM ${folder} на PC-сервер...`,
-        true
-    );
+    /* =========================================================
+       1. ПОЛУЧАЕМ MANIFEST КОМНАТЫ С PC
+       ========================================================= */
+    setRoomStatus(`Запрос ROOM ${folder} на PC-сервер...`, true);
 
     let roomData;
-
     try {
         roomData = await requestRoomFromPC(item);
-    } catch (requestError) {
-        console.warn(
-            "ROOM POST REQUEST ERROR. Переход на GET manifest:",
-            requestError
-        );
-
-        /*
-            GET является резервным способом.
-            Это важно, если Cloudflare/прокси не пропускает POST.
-        */
+    } catch (postError) {
+        console.warn("ROOM POST ERROR, пробуем GET:", postError);
         roomData = await fetchRoomManifest(item);
     }
 
     const textures = resolveRoomTextures(roomData);
 
+    /* =========================================================
+       2. СНАЧАЛА СОЗДАЁМ ГЕОМЕТРИЮ КОМНАТЫ.
+       Не ждём загрузки PNG. Поэтому комната появляется сразу.
+
+       X = 7 м
+       Z = 6 м
+       Y = 4 м
+       ========================================================= */
+    const textureMap = {
+        "01_BACKGROUND": null,
+        "02_LEFT": null,
+        "03_RIGHT": null,
+        "04_FRONT": null,
+        "05_SKY": null,
+        "06_GROUND": null
+    };
+
+    const surfaces = [
+        createRoomSurface(
+            ROOM_LENGTH,
+            ROOM_HEIGHT,
+            new THREE.Vector3(0, ROOM_HEIGHT / 2, ROOM_WIDTH / 2),
+            new THREE.Euler(0, Math.PI, 0),
+            null,
+            "01_BACKGROUND"
+        ),
+        createRoomSurface(
+            ROOM_WIDTH,
+            ROOM_HEIGHT,
+            new THREE.Vector3(-ROOM_LENGTH / 2, ROOM_HEIGHT / 2, 0),
+            new THREE.Euler(0, Math.PI / 2, 0),
+            null,
+            "02_LEFT"
+        ),
+        createRoomSurface(
+            ROOM_WIDTH,
+            ROOM_HEIGHT,
+            new THREE.Vector3(ROOM_LENGTH / 2, ROOM_HEIGHT / 2, 0),
+            new THREE.Euler(0, -Math.PI / 2, 0),
+            null,
+            "03_RIGHT"
+        ),
+        createRoomSurface(
+            ROOM_LENGTH,
+            ROOM_HEIGHT,
+            new THREE.Vector3(0, ROOM_HEIGHT / 2, -ROOM_WIDTH / 2),
+            new THREE.Euler(0, 0, 0),
+            null,
+            "04_FRONT"
+        ),
+        createRoomSurface(
+            ROOM_LENGTH,
+            ROOM_WIDTH,
+            new THREE.Vector3(0, ROOM_HEIGHT, 0),
+            new THREE.Euler(Math.PI / 2, 0, 0),
+            null,
+            "05_SKY"
+        ),
+        createRoomSurface(
+            ROOM_LENGTH,
+            ROOM_WIDTH,
+            new THREE.Vector3(0, 0, 0),
+            new THREE.Euler(-Math.PI / 2, 0, 0),
+            null,
+            "06_GROUND"
+        )
+    ];
+
+    surfaces.forEach(surface => roomScene.add(surface));
+
+    /* Освещение больше не влияет на текстуры, MeshBasicMaterial. */
+    const ambient = new THREE.AmbientLight(0xffffff, 1.0);
+    ambient.userData.roomLight = true;
+    roomScene.add(ambient);
+
+    /* Камера внутри комнаты. */
+    roomCamera.position.set(0, ROOM_EYE_HEIGHT, 0);
+    roomYaw = Math.PI;
+    roomPitch = 0;
+    roomRoll = 0;
+    roomVerticalInput = 0;
+    roomVerticalButtonInput = 0;
+
+    resetRoomMovePadVisual();
+    clampRoomCamera();
+    updateRoomCameraRotation();
+    resizeRoomViewer();
+
+    setRoomStatus(
+        `ROOM ${folder} создан: 7 × 6 × 4 м.\n` +
+        `Загрузка 6 текстур с PC-сервера...`,
+        true
+    );
+
+    /* =========================================================
+       3. ЗАГРУЖАЕМ PNG ПО ОДНОМУ И СРАЗУ НАКЛАДЫВАЕМ.
+       Комната уже видна даже во время загрузки.
+       ========================================================= */
     const textureEntries = [
         ["back", "01_BACKGROUND"],
         ["left", "02_LEFT"],
@@ -8525,162 +8609,62 @@ async function buildRoom(item) {
         ["floor", "06_GROUND"]
     ];
 
-    setRoomStatus(
-        `ROOM ${folder}: получение 6 текстур с PC-сервера...`,
-        true
-    );
-
-    const loaded = await Promise.all(
-        textureEntries.map(([key, label]) =>
-            loadRoomTexture(textures[key], label)
-        )
-    );
-
-    const textureMap = {};
-
-    loaded.forEach(result => {
-        textureMap[result.label] = result.texture;
+    const surfaceByLabel = {};
+    surfaces.forEach(surface => {
+        surfaceByLabel[surface.userData.roomSurfaceName] = surface;
     });
 
-    /*
-        Физические размеры комнаты:
+    const results = [];
+    let loadedCount = 0;
 
-        X = 7 метров
-        Z = 6 метров
-        Y = 4 метра
+    for (const [key, label] of textureEntries) {
+        const url = textures[key];
 
-        Камера находится внутри.
-    */
-    const surfaces = [
-        /* BACK — 01_BACKGROUND.png */
-        createRoomSurface(
-            ROOM_LENGTH,
-            ROOM_HEIGHT,
-            new THREE.Vector3(
-                0,
-                ROOM_HEIGHT / 2,
-                ROOM_WIDTH / 2
-            ),
-            new THREE.Euler(0, Math.PI, 0),
-            textureMap["01_BACKGROUND"],
-            "01_BACKGROUND"
-        ),
+        setRoomStatus(
+            `ROOM ${folder}: ${loadedCount}/6\n` +
+            `Получение ${label}.png...`,
+            true
+        );
 
-        /* LEFT — 02_LEFT.png */
-        createRoomSurface(
-            ROOM_WIDTH,
-            ROOM_HEIGHT,
-            new THREE.Vector3(
-                -ROOM_LENGTH / 2,
-                ROOM_HEIGHT / 2,
-                0
-            ),
-            new THREE.Euler(0, Math.PI / 2, 0),
-            textureMap["02_LEFT"],
-            "02_LEFT"
-        ),
+        const result = await loadRoomTexture(url, label);
+        results.push(result);
 
-        /* RIGHT — 03_RIGHT.png */
-        createRoomSurface(
-            ROOM_WIDTH,
-            ROOM_HEIGHT,
-            new THREE.Vector3(
-                ROOM_LENGTH / 2,
-                ROOM_HEIGHT / 2,
-                0
-            ),
-            new THREE.Euler(0, -Math.PI / 2, 0),
-            textureMap["03_RIGHT"],
-            "03_RIGHT"
-        ),
+        if (result.texture) {
+            loadedCount++;
+            textureMap[label] = result.texture;
 
-        /* FRONT — 04_FRONT.png */
-        createRoomSurface(
-            ROOM_LENGTH,
-            ROOM_HEIGHT,
-            new THREE.Vector3(
-                0,
-                ROOM_HEIGHT / 2,
-                -ROOM_WIDTH / 2
-            ),
-            new THREE.Euler(0, 0, 0),
-            textureMap["04_FRONT"],
-            "04_FRONT"
-        ),
+            const surface = surfaceByLabel[label];
+            if (surface && surface.material) {
+                surface.material.map = result.texture;
+                surface.material.color.set(0xffffff);
+                surface.material.needsUpdate = true;
+            }
+        }
 
-        /* CEILING — 05_SKY.png */
-        createRoomSurface(
-            ROOM_LENGTH,
-            ROOM_WIDTH,
-            new THREE.Vector3(
-                0,
-                ROOM_HEIGHT,
-                0
-            ),
-            new THREE.Euler(Math.PI / 2, 0, 0),
-            textureMap["05_SKY"],
-            "05_SKY"
-        ),
+        setRoomStatus(
+            `ROOM ${folder}: текстуры ${loadedCount}/6`,
+            true
+        );
+    }
 
-        /* FLOOR — 06_GROUND.png */
-        createRoomSurface(
-            ROOM_LENGTH,
-            ROOM_WIDTH,
-            new THREE.Vector3(0, 0, 0),
-            new THREE.Euler(-Math.PI / 2, 0, 0),
-            textureMap["06_GROUND"],
-            "06_GROUND"
-        )
-    ];
-
-    surfaces.forEach(surface => roomScene.add(surface));
-
-    /*
-        Для текстурной комнаты используем MeshBasicMaterial,
-        поэтому изображение не зависит от освещения.
-        Свет оставляем для резервных/дополнительных объектов.
-    */
-    const ambient = new THREE.AmbientLight(0xffffff, 1.0);
-    ambient.userData.roomLight = true;
-    roomScene.add(ambient);
-
-    /* Камера строго внутри комнаты. */
-    roomCamera.position.set(
-        0,
-        ROOM_EYE_HEIGHT,
-        0
-    );
-
-    roomYaw = Math.PI;
-    roomPitch = 0;
-    roomRoll = 0;
-
-    roomVerticalInput = 0;
-    roomVerticalButtonInput = 0;
-
-    resetRoomMovePadVisual();
-    clampRoomCamera();
-    updateRoomCameraRotation();
-    resizeRoomViewer();
-
-    const errors = loaded.filter(result => !result.texture);
+    const errors = results.filter(result => !result.texture);
 
     if (errors.length) {
         const errorText = errors.map(result =>
-            `${result.label}.png: ${result.error || "ошибка"}\n${result.url}`
+            `${result.label}.png\n${result.error || "ошибка"}\n${result.url || "URL отсутствует"}`
         ).join("\n\n");
 
         setRoomStatus(
             `ROOM ${folder} создан: 7 × 6 × 4 м.\n` +
-            `Получено текстур: ${loaded.length - errors.length} / 6.\n\n` +
-            `Проблемные файлы:\n${errorText}`,
+            `Текстуры загружены: ${loadedCount}/6.\n\n` +
+            `Ошибки:\n${errorText}`,
             true
         );
     } else {
         setRoomStatus(
-            `ROOM ${folder} загружен.\n` +
+            `ROOM ${folder} полностью загружен.\n` +
             `Размер: 7 × 6 × 4 м.\n` +
-            `Текстуры: 6 / 6 получены с PC-сервера.`,
+            `Текстуры: 6/6.`,
             true
         );
 
