@@ -2082,6 +2082,9 @@ const CAM_API =
 const ROOMS_API =
     "https://api.araicameragame.party/api/rooms";
 
+const PUBLIC_API_BASE =
+    "https://api.araicameragame.party";
+
 
 const MODEL_BASE =
     "https://raw.githubusercontent.com/Roman22022000/ArGameCam/main/models/";
@@ -8316,7 +8319,7 @@ function loadRoomTexture(url, label = "texture") {
                     url: "embedded-data",
                     error: "Тайм-аут декодирования встроенной текстуры 12 секунд"
                 });
-            }, 12000);
+            }, 60000);
 
             roomTextureLoader.load(
                 url,
@@ -8355,7 +8358,7 @@ function loadRoomTexture(url, label = "texture") {
             return;
         }
 
-        /* Старый HTTP-режим оставлен как резервный вариант. */
+        /* Основной режим: бинарная загрузка PNG через Flask API. */
         let finishedHttp = false;
         const controller = new AbortController();
         const timeout = setTimeout(() => {
@@ -8366,10 +8369,10 @@ function loadRoomTexture(url, label = "texture") {
                     texture: null,
                     label,
                     url,
-                    error: "Тайм-аут HTTP-загрузки изображения 12 секунд"
+                    error: "Тайм-аут HTTP-загрузки изображения 60 секунд"
                 });
             }
-        }, 12000);
+        }, 60000);
 
         setRoomStatus(`Получение ${label}.png с PC...`, true);
 
@@ -8518,8 +8521,220 @@ function clearRoomScene() {
     lights.forEach(light => roomScene.remove(light));
 }
 
+let roomModel = null;
+let roomModelLoadToken = 0;
+let roomRequestId = null;
+
+function disposeRoomModel() {
+    if (!roomModel) return;
+
+    if (roomScene) {
+        roomScene.remove(roomModel);
+    }
+
+    roomModel.traverse(object => {
+        if (object.geometry) {
+            object.geometry.dispose();
+        }
+
+        if (object.material) {
+            const materials = Array.isArray(object.material)
+                ? object.material
+                : [object.material];
+
+            materials.forEach(material => {
+                if (!material) return;
+
+                const textureKeys = [
+                    "map", "normalMap", "roughnessMap", "metalnessMap",
+                    "emissiveMap", "aoMap", "alphaMap", "bumpMap",
+                    "displacementMap", "clearcoatMap", "clearcoatNormalMap",
+                    "clearcoatRoughnessMap", "iridescenceThicknessMap",
+                    "sheenColorMap", "sheenRoughnessMap", "specularColorMap",
+                    "specularIntensityMap", "transmissionMap", "thicknessMap"
+                ];
+
+                textureKeys.forEach(key => {
+                    if (material[key] && material[key].isTexture) {
+                        material[key].dispose();
+                    }
+                });
+
+                material.dispose();
+            });
+        }
+    });
+
+    roomModel = null;
+}
+
+function prepareRoomModel(loadedModel) {
+    const box = new THREE.Box3().setFromObject(loadedModel);
+    const size = box.getSize(new THREE.Vector3());
+
+    if (!Number.isFinite(size.x) || !Number.isFinite(size.y) ||
+        !Number.isFinite(size.z) || Math.max(size.x, size.y, size.z) <= 0) {
+        throw new Error("3D модель не содержит корректной геометрии");
+    }
+
+    /* Сначала нормализуем модель, затем ставим её по центру комнаты. */
+    const maxSize = Math.max(size.x, size.y, size.z);
+    const targetSize = 3.2;
+    loadedModel.scale.setScalar(targetSize / maxSize);
+    loadedModel.updateMatrixWorld(true);
+
+    const normalizedBox = new THREE.Box3().setFromObject(loadedModel);
+    const center = normalizedBox.getCenter(new THREE.Vector3());
+    const min = normalizedBox.min;
+
+    /* X/Z = центр комнаты, Y = пол комнаты. */
+    loadedModel.position.x -= center.x;
+    loadedModel.position.z -= center.z;
+    loadedModel.position.y -= min.y;
+    loadedModel.updateMatrixWorld(true);
+
+    loadedModel.traverse(object => {
+        if (!object.isMesh) return;
+        object.castShadow = false;
+        object.receiveShadow = false;
+        if (object.material) {
+            const materials = Array.isArray(object.material)
+                ? object.material
+                : [object.material];
+            materials.forEach(material => {
+                if (material && "envMapIntensity" in material) {
+                    material.envMapIntensity = 0.7;
+                }
+            });
+        }
+    });
+
+    return loadedModel;
+}
+
+async function loadRoomModel(modelInfo) {
+    const token = ++roomModelLoadToken;
+    const modelId = Number(modelInfo?.model_id);
+    const url = String(modelInfo?.url || "").trim();
+
+    if (!modelId || !url) {
+        throw new Error("Сервер не вернул корректную 3D модель");
+    }
+
+    setRoomStatus(
+        `Получена 3D модель ${modelInfo.filename || modelId}.\nЗагрузка модели в ROOM...`,
+        true
+    );
+
+    const manager = new THREE.LoadingManager();
+    manager.setURLModifier(originalUrl => {
+        if (!originalUrl || originalUrl.startsWith("data:")) {
+            return originalUrl;
+        }
+
+        /* GLTF с внешними PNG/JPG: перенаправляем ресурсы на PC API. */
+        if (/^https?:\/\//i.test(originalUrl)) {
+            return originalUrl;
+        }
+
+        const clean = originalUrl.split("?")[0];
+        const filename = clean.split("/").pop();
+        if (!filename) return originalUrl;
+
+        return `${PUBLIC_API_BASE}/api/models/resource/${modelId}/${
+            encodeURIComponent(filename)
+        }`;
+    });
+
+    const roomLoader = new GLTFLoader(manager);
+
+    const gltf = await new Promise((resolve, reject) => {
+        roomLoader.load(
+            url + (url.includes("?") ? "&" : "?") + "v=" + Date.now(),
+            resolve,
+            xhr => {
+                if (xhr && xhr.total > 0) {
+                    const percent = Math.round(xhr.loaded / xhr.total * 100);
+                    setRoomStatus(`Загрузка 3D модели: ${percent}%`, true);
+                }
+            },
+            reject
+        );
+    });
+
+    if (token !== roomModelLoadToken) return false;
+
+    disposeRoomModel();
+    roomModel = prepareRoomModel(gltf.scene);
+    roomModel.userData.roomModel = true;
+    roomScene.add(roomModel);
+
+    setRoomStatus(
+        `ROOM готов.\nТекстуры комнаты: 6/6.\n3D модель: ${modelInfo.filename || "готова"}.\nМодель размещена по центру комнаты.`,
+        true
+    );
+
+    setTimeout(() => {
+        if (roomViewerScreen.classList.contains("active")) {
+            setRoomStatus("", false);
+        }
+    }, 2200);
+
+    return true;
+}
+
+async function waitForRoomModel(roomData, folder) {
+    const requestId = Number(roomData?.id);
+    if (!requestId) {
+        setRoomStatus(
+            `ROOM ${folder}: текстуры загружены 6/6.\nОжидается запрос модели.`,
+            true
+        );
+        return;
+    }
+
+    roomRequestId = requestId;
+    const endpoint = `${ROOMS_API}/${encodeURIComponent(folder)}/model?request_id=${requestId}`;
+    const started = Date.now();
+    const maxWait = 10 * 60 * 1000;
+
+    setRoomStatus(
+        `ROOM ${folder}: текстуры 6/6.\nОжидание 3D модели от PC-сервера...`,
+        true
+    );
+
+    while (Date.now() - started < maxWait) {
+        try {
+            const response = await fetch(endpoint, {
+                method: "GET",
+                mode: "cors",
+                cache: "no-store",
+                headers: { "Accept": "application/json" }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data?.ready && data?.model_id && data?.url) {
+                    await loadRoomModel(data);
+                    return;
+                }
+            }
+        } catch (error) {
+            console.warn("ROOM MODEL POLL ERROR:", error);
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 2000));
+    }
+
+    setRoomStatus(
+        `ROOM ${folder}: текстуры 6/6.\n3D модель пока не отправлена с PC-сервера.`,
+        true
+    );
+}
+
 async function buildRoom(item) {
     clearRoomScene();
+    disposeRoomModel();
 
     const folder = String(item?.folder || item?.name || "").trim();
     if (!folder) {
@@ -8535,8 +8750,10 @@ async function buildRoom(item) {
     try {
         roomData = await requestRoomFromPC(item);
     } catch (postError) {
-        console.warn("ROOM POST ERROR, пробуем GET:", postError);
-        roomData = await fetchRoomManifest(item);
+        // POST обязателен: именно он фиксирует ROOM-запрос в GUI.
+        // GET не используем как тихий fallback, чтобы не потерять
+        // единый протокол загрузки комнаты.
+        throw postError;
     }
 
     const textures = resolveRoomTextures(roomData);
@@ -8661,7 +8878,7 @@ async function buildRoom(item) {
 
         setRoomStatus(
             `ROOM ${folder}: ${loadedCount}/6\n` +
-            `Получение ${label}.png...`,
+            `Получение ${label}.png с PC-сервера...`,
             true
         );
 
@@ -8700,18 +8917,7 @@ async function buildRoom(item) {
             true
         );
     } else {
-        setRoomStatus(
-            `ROOM ${folder} полностью загружен.\n` +
-            `Размер: 7 × 6 × 4 м.\n` +
-            `Текстуры: 6/6.`,
-            true
-        );
-
-        setTimeout(() => {
-            if (roomViewerScreen.classList.contains("active")) {
-                setRoomStatus("", false);
-            }
-        }, 1800);
+        await waitForRoomModel(roomData, folder);
     }
 }
 
@@ -9429,6 +9635,9 @@ roomBack.addEventListener("click", () => {
 
 roomViewerBack.addEventListener("click", () => {
     currentRoom = null;
+    ++roomModelLoadToken;
+    roomRequestId = null;
+    disposeRoomModel();
     clearRoomScene();
     showScreen(roomScreen);
 });
