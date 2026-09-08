@@ -2,12 +2,9 @@
 <html lang="ru">
 
 <head>
+
     <meta charset="UTF-8">
 
-    <!--
-        Настройки отображения страницы на мобильных устройствах.
-        Запрещается масштабирование интерфейса пользователем.
-    -->
     <meta
         name="viewport"
         content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"
@@ -15,17 +12,18 @@
 
     <title>AR Gallery</title>
 
-    <!--
-        TON Connect UI.
-        Используется для подключения TON-кошелька пользователя.
-    -->
+    <!-- ============================================================
+         TON CONNECT UI
+         Используется для подключения TON-кошелька.
+         ============================================================ -->
+
     <script src="https://unpkg.com/@tonconnect/ui@3.0.0/dist/tonconnect-ui.min.js"></script>
+
 
     <style>
 
         /* ============================================================
-           GLOBAL STYLES
-           Базовые настройки всего интерфейса.
+           GLOBAL
            ============================================================ */
 
         * {
@@ -54,10 +52,11 @@
             border: 0;
         }
 
-        /*
-            .screen — отдельный экран приложения.
-            По умолчанию скрыт.
-        */
+
+        /* ============================================================
+           SCREENS
+           ============================================================ */
+
         .screen {
             position: fixed;
             inset: 0;
@@ -65,33 +64,26 @@
             background: #000;
         }
 
-        /*
-            Активный экран становится видимым.
-        */
         .screen.active {
             display: flex;
         }
 
-        /*
-            Центрирование содержимого экрана.
-        */
         .center {
             align-items: center;
             justify-content: center;
             padding: 20px;
         }
 
-        /*
-            Основная ширина панели интерфейса.
-        */
+
+        /* ============================================================
+           PANELS
+           ============================================================ */
+
         .panel {
             width: 320px;
             max-width: 100%;
         }
 
-        /*
-            Заголовок экрана.
-        */
         .title {
             text-align: center;
             font-size: 28px;
@@ -99,9 +91,11 @@
             margin-bottom: 30px;
         }
 
-        /*
-            Основная кнопка интерфейса.
-        */
+
+        /* ============================================================
+           BUTTONS
+           ============================================================ */
+
         .button {
             width: 100%;
             height: 52px;
@@ -118,18 +112,17 @@
             background: #111;
         }
 
-        /*
-            Основная белая кнопка.
-        */
         .primary {
             background: #fff;
             color: #000;
             border-color: #fff;
         }
 
-        /*
-            Текст статуса.
-        */
+
+        /* ============================================================
+           STATUS
+           ============================================================ */
+
         .status {
             text-align: center;
             color: #666;
@@ -140,17 +133,16 @@
             white-space: pre-line;
         }
 
-        /*
-            Экран со списком комнат.
-        */
+
+        /* ============================================================
+           PAGE
+           ============================================================ */
+
         .page {
             flex-direction: column;
             padding: 14px 18px 18px;
         }
 
-        /*
-            Верхняя панель страницы.
-        */
         .header {
             position: relative;
             width: 100%;
@@ -160,9 +152,6 @@
             flex-shrink: 0;
         }
 
-        /*
-            Кнопка возврата назад.
-        */
         .back {
             width: 40px;
             height: 40px;
@@ -172,9 +161,6 @@
             font-size: 22px;
         }
 
-        /*
-            Заголовок страницы по центру.
-        */
         .pageTitle {
             position: absolute;
             left: 50%;
@@ -182,23 +168,23 @@
             font-size: 14px;
         }
 
-        /*
-            Сетка комнат.
-        */
+
+        /* ============================================================
+           ROOM LIST
+           ============================================================ */
+
         .grid {
             width: 100%;
             max-width: 1100px;
             margin: auto;
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            grid-template-columns:
+                repeat(auto-fill, minmax(180px, 1fr));
             gap: 10px;
             overflow: auto;
             padding-bottom: 10px;
         }
 
-        /*
-            Отдельная кнопка комнаты.
-        */
         .roomItem {
             min-height: 110px;
             background: #080808;
@@ -212,31 +198,31 @@
             font-size: 22px;
         }
 
+        .roomItem:hover {
+            background: #111;
+        }
+
         .roomItem small {
             color: #666;
             font-size: 9px;
             letter-spacing: 1px;
         }
 
-        /*
-            Экран просмотра 3D-комнаты.
-        */
+
+        /* ============================================================
+           ROOM VIEWER
+           ============================================================ */
+
         #roomViewerScreen {
             overflow: hidden;
             touch-action: none;
         }
 
-        /*
-            Контейнер WebGL-сцены.
-        */
         #roomCanvas {
             position: absolute;
             inset: 0;
         }
 
-        /*
-            Canvas Three.js занимает весь экран.
-        */
         #roomCanvas canvas {
             display: block;
             width: 100%;
@@ -244,9 +230,6 @@
             touch-action: none;
         }
 
-        /*
-            Заголовок 3D-комнаты.
-        */
         .roomHeader {
             position: absolute;
             z-index: 20;
@@ -265,9 +248,6 @@
             font-size: 14px;
         }
 
-        /*
-            Информационное сообщение поверх 3D-сцены.
-        */
         .roomStatus {
             position: absolute;
             z-index: 25;
@@ -286,9 +266,11 @@
             pointer-events: none;
         }
 
-        /*
-            Нижняя панель управления комнатой.
-        */
+
+        /* ============================================================
+           ROOM CONTROLS
+           ============================================================ */
+
         .roomControls {
             position: absolute;
             z-index: 30;
@@ -303,9 +285,6 @@
             pointer-events: none;
         }
 
-        /*
-            Джойстик перемещения.
-        */
         .movePad {
             width: 112px;
             height: 112px;
@@ -317,9 +296,6 @@
             touch-action: none;
         }
 
-        /*
-            Внутренний круг джойстика.
-        */
         .movePad:before {
             content: "";
             position: absolute;
@@ -332,9 +308,6 @@
             border-radius: 50%;
         }
 
-        /*
-            Подвижная ручка джойстика.
-        */
         .moveKnob {
             position: absolute;
             left: 50%;
@@ -348,9 +321,6 @@
             transform: translate3d(0, 0, 0);
         }
 
-        /*
-            Панель управления направлением взгляда.
-        */
         .lookPad {
             width: min(42vw, 300px);
             height: 112px;
@@ -374,9 +344,6 @@
             pointer-events: none;
         }
 
-        /*
-            Вертикальное управление высотой камеры.
-        */
         .vertical {
             position: absolute;
             left: 50%;
@@ -400,9 +367,6 @@
             touch-action: none;
         }
 
-        /*
-            Кнопки вращения камеры вокруг оси.
-        */
         .rolls {
             position: absolute;
             left: 50%;
@@ -419,9 +383,6 @@
             font-size: 14px;
         }
 
-        /*
-            Сброс положения камеры.
-        */
         .reset {
             position: absolute;
             right: 12px;
@@ -430,9 +391,6 @@
             height: 40px;
         }
 
-        /*
-            Подпись вертикальной оси.
-        */
         .axis {
             position: absolute;
             left: 50%;
@@ -442,18 +400,17 @@
             font-size: 8px;
         }
 
-        /*
-            Экран генерации.
-        */
+
+        /* ============================================================
+           GENERATION
+           ============================================================ */
+
         #generationScreen {
             align-items: center;
             justify-content: center;
             padding: 20px;
         }
 
-        /*
-            Поле пятизначного кода.
-        */
         .code {
             width: 100%;
             height: 58px;
@@ -467,9 +424,6 @@
             text-align: center;
         }
 
-        /*
-            Кнопка отправки кода.
-        */
         .send {
             width: 100%;
             height: 52px;
@@ -480,16 +434,15 @@
             font-size: 13px;
         }
 
-        /*
-            Неактивная кнопка отправки.
-        */
         .send:disabled {
             opacity: .25;
         }
 
-        /*
-            Блок информации о пользователе.
-        */
+
+        /* ============================================================
+           USER
+           ============================================================ */
+
         .userBlock {
             padding: 18px;
             background: #080808;
@@ -508,9 +461,11 @@
             word-break: break-all;
         }
 
-        /*
-            Полноэкранный индикатор проверки NFT.
-        */
+
+        /* ============================================================
+           LOADING
+           ============================================================ */
+
         #loading {
             position: fixed;
             inset: 0;
@@ -527,9 +482,11 @@
             display: flex;
         }
 
-        /*
-            Адаптация интерфейса для мобильных экранов.
-        */
+
+        /* ============================================================
+           MOBILE
+           ============================================================ */
+
         @media (max-width: 500px) {
 
             .title {
@@ -537,7 +494,8 @@
             }
 
             .grid {
-                grid-template-columns: repeat(2, 1fr);
+                grid-template-columns:
+                    repeat(2, 1fr);
             }
 
             .movePad {
@@ -552,7 +510,11 @@
 
             .roomControls {
                 height: 112px;
-                bottom: calc(10px + env(safe-area-inset-bottom));
+                bottom:
+                    calc(
+                        10px +
+                        env(safe-area-inset-bottom)
+                    );
                 padding: 0 8px;
             }
 
@@ -566,16 +528,21 @@
         }
 
     </style>
+
 </head>
+
 
 <body>
 
+
     <!-- ============================================================
          AUTH SCREEN
-         Экран подключения TON-кошелька.
          ============================================================ -->
 
-    <section id="authScreen" class="screen active center">
+    <section
+        id="authScreen"
+        class="screen active center"
+    >
 
         <div class="panel">
 
@@ -590,7 +557,10 @@
                 ПОДКЛЮЧИТЬ КОШЕЛЁК
             </button>
 
-            <div id="authStatus" class="status">
+            <div
+                id="authStatus"
+                class="status"
+            >
                 Подключите TON-кошелёк
             </div>
 
@@ -601,10 +571,12 @@
 
     <!-- ============================================================
          HOME SCREEN
-         Главное меню приложения.
          ============================================================ -->
 
-    <section id="homeScreen" class="screen center">
+    <section
+        id="homeScreen"
+        class="screen center"
+    >
 
         <div class="panel">
 
@@ -612,15 +584,24 @@
                 AR Gallery
             </div>
 
-            <button id="openRoom" class="button">
+            <button
+                id="openRoom"
+                class="button"
+            >
                 ROOM
             </button>
 
-            <button id="openGeneration" class="button">
+            <button
+                id="openGeneration"
+                class="button"
+            >
                 ГЕНЕРАЦИЯ
             </button>
 
-            <button id="openUser" class="button">
+            <button
+                id="openUser"
+                class="button"
+            >
                 ПОЛЬЗОВАТЕЛЬ
             </button>
 
@@ -630,15 +611,20 @@
 
 
     <!-- ============================================================
-         ROOM LIST SCREEN
-         Список доступных комнат.
+         ROOM LIST
          ============================================================ -->
 
-    <section id="roomScreen" class="screen page">
+    <section
+        id="roomScreen"
+        class="screen page"
+    >
 
         <div class="header">
 
-            <button id="roomBack" class="back">
+            <button
+                id="roomBack"
+                class="back"
+            >
                 ←
             </button>
 
@@ -648,89 +634,132 @@
 
         </div>
 
-        <div id="roomStatusList" class="status">
+        <div
+            id="roomStatusList"
+            class="status"
+        >
             Загрузка комнат...
         </div>
 
-        <div id="roomGrid" class="grid"></div>
+        <div
+            id="roomGrid"
+            class="grid"
+        ></div>
 
     </section>
 
 
     <!-- ============================================================
-         ROOM VIEWER SCREEN
-         3D-просмотр комнаты.
+         ROOM VIEWER
          ============================================================ -->
 
-    <section id="roomViewerScreen" class="screen">
+    <section
+        id="roomViewerScreen"
+        class="screen"
+    >
 
-        <!-- Контейнер для Three.js Canvas -->
         <div id="roomCanvas"></div>
 
         <div class="roomHeader">
 
-            <button id="roomViewerBack" class="back">
+            <button
+                id="roomViewerBack"
+                class="back"
+            >
                 ←
             </button>
 
-            <div id="roomViewerTitle" class="roomTitle">
+            <div
+                id="roomViewerTitle"
+                class="roomTitle"
+            >
                 ROOM
             </div>
 
         </div>
 
-        <!-- Информация о процессе загрузки комнаты -->
-        <div id="roomViewerStatus" class="roomStatus">
+
+        <div
+            id="roomViewerStatus"
+            class="roomStatus"
+        >
             Загрузка комнаты...
         </div>
 
-        <!-- Панель управления 3D-камерой -->
+
         <div class="roomControls">
 
-            <!-- Джойстик перемещения -->
-            <div id="roomMovePad" class="movePad">
-                <div id="roomMoveKnob" class="moveKnob"></div>
+            <div
+                id="roomMovePad"
+                class="movePad"
+            >
+
+                <div
+                    id="roomMoveKnob"
+                    class="moveKnob"
+                ></div>
+
             </div>
 
-            <!-- Управление поворотом и наклоном -->
-            <div id="roomLookPad" class="lookPad">
+
+            <div
+                id="roomLookPad"
+                class="lookPad"
+            >
+
                 <div class="lookLabel">
                     ПОВОРОТ / НАКЛОН
                 </div>
+
             </div>
 
-            <!-- Управление высотой -->
+
             <div class="vertical">
 
                 <div class="axis">
                     ВЫСОТА
                 </div>
 
-                <button id="roomMoveUp" class="vbtn">
+                <button
+                    id="roomMoveUp"
+                    class="vbtn"
+                >
                     ↑
                 </button>
 
-                <button id="roomMoveDown" class="vbtn">
+                <button
+                    id="roomMoveDown"
+                    class="vbtn"
+                >
                     ↓
                 </button>
 
             </div>
 
-            <!-- Управление креном -->
+
             <div class="rolls">
 
-                <button id="roomRollLeft" class="roll">
+                <button
+                    id="roomRollLeft"
+                    class="roll"
+                >
                     ↶
                 </button>
 
-                <button id="roomRollRight" class="roll">
+                <button
+                    id="roomRollRight"
+                    class="roll"
+                >
                     ↷
                 </button>
 
             </div>
 
-            <!-- Сброс положения камеры -->
-            <button id="roomReset" class="reset">
+
+            <button
+                id="roomReset"
+                class="reset"
+            >
                 ⟳
             </button>
 
@@ -741,10 +770,12 @@
 
     <!-- ============================================================
          GENERATION SCREEN
-         Отправка пятизначного кода на API генерации.
          ============================================================ -->
 
-    <section id="generationScreen" class="screen center">
+    <section
+        id="generationScreen"
+        class="screen center"
+    >
 
         <div class="panel">
 
@@ -779,10 +810,15 @@
 
         </div>
 
+
         <button
             id="generationBack"
             class="back"
-            style="position:fixed;top:14px;left:14px"
+            style="
+                position:fixed;
+                top:14px;
+                left:14px
+            "
         >
             ←
         </button>
@@ -792,14 +828,19 @@
 
     <!-- ============================================================
          USER SCREEN
-         Информация о подключённом TON-кошельке.
          ============================================================ -->
 
-    <section id="userScreen" class="screen page">
+    <section
+        id="userScreen"
+        class="screen page"
+    >
 
         <div class="header">
 
-            <button id="userBack" class="back">
+            <button
+                id="userBack"
+                class="back"
+            >
                 ←
             </button>
 
@@ -808,6 +849,7 @@
             </div>
 
         </div>
+
 
         <div
             class="panel"
@@ -827,12 +869,14 @@
 
             </div>
 
+
             <button
                 id="disconnectWallet"
                 class="button"
             >
                 ВЫЙТИ ИЗ КОШЕЛЬКА
             </button>
+
 
             <div
                 id="userStatus"
@@ -845,28 +889,31 @@
 
 
     <!-- ============================================================
-         GLOBAL LOADING SCREEN
-         Показывается во время проверки NFT.
+         GLOBAL LOADING
          ============================================================ -->
 
     <div id="loading">
+
         <div>
             ПРОВЕРКА NFT
         </div>
+
     </div>
 
 
     <!-- ============================================================
          IMPORT MAP
-         Определяет адреса библиотек Three.js.
          ============================================================ -->
 
     <script type="importmap">
 
         {
             "imports": {
-                "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
-                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
+                "three":
+                    "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+
+                "three/addons/":
+                    "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
             }
         }
 
@@ -875,47 +922,37 @@
 
     <script type="module">
 
-        /*
-         * ============================================================
-         * THREE.JS IMPORTS
-         * ============================================================
-         *
-         * THREE:
-         * Основная библиотека Three.js.
-         *
-         * GLTFLoader:
-         * Загрузчик 3D-моделей форматов GLB/GLTF.
-         */
+        /* ============================================================
+           THREE.JS
+           ============================================================ */
 
         import * as THREE from "three";
-        import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+
+        import {
+            GLTFLoader
+        } from "three/addons/loaders/GLTFLoader.js";
 
 
         /* ============================================================
            CONFIG
-           Основные настройки приложения.
            ============================================================ */
 
         /*
          * TON Connect manifest.
-         * Используется при подключении TON-кошелька.
          */
         const TON_MANIFEST =
             "https://roman22022000.github.io/Ton_site/tonconnect-manifest.json";
 
 
         /*
-         * Адрес обязательной NFT-коллекции.
-         * Пользователь получает доступ только при наличии NFT
-         * из этой коллекции.
+         * NFT collection в user-friendly формате.
          */
         const REQUIRED_COLLECTION =
             "EQD9mm3hx-QvHyNG18gDaaJtSTTQTVVYVjJ6zhonXocj2eyI";
 
 
         /*
-         * Raw-адрес той же NFT-коллекции.
-         * Используется как дополнительный вариант сравнения.
+         * Та же коллекция в raw формате.
          */
         const REQUIRED_COLLECTION_RAW =
             "0:fd9a6de1c7e42f1d8346d7c80369a26d4934d04d5558563eb38689d7a1c8f6";
@@ -930,17 +967,25 @@
 
         /*
          * API комнат.
+         *
+         * GET:
+         *     /api/rooms
+         *
+         * POST:
+         *     /api/rooms/request
+         *
+         * Файлы:
+         *     /api/rooms/file/...
+         *
+         * Модель:
+         *     /api/rooms/model-file/...
          */
         const ROOMS_API =
             "https://api.araicameragame.party/api/rooms";
 
 
         /*
-         * Размер комнаты:
-         *
-         * Длина: 7
-         * Ширина: 6
-         * Высота: 4
+         * Размер виртуальной комнаты.
          */
         const ROOM_LENGTH = 7;
         const ROOM_WIDTH = 6;
@@ -948,19 +993,7 @@
 
 
         /*
-         * Параметры камеры:
-         *
-         * ROOM_EYE_HEIGHT:
-         * начальная высота камеры.
-         *
-         * ROOM_SPEED:
-         * скорость перемещения.
-         *
-         * ROOM_LOOK_SPEED:
-         * скорость вращения взгляда.
-         *
-         * ROOM_CAMERA_RADIUS:
-         * минимальное расстояние камеры от стен.
+         * Параметры камеры.
          */
         const ROOM_EYE_HEIGHT = 1.65;
         const ROOM_SPEED = 2.7;
@@ -970,95 +1003,116 @@
 
         /* ============================================================
            DOM
-           Получение ссылок на HTML-элементы.
            ============================================================ */
 
         /*
-         * Функция $:
-         *
-         * INPUT:
-         * id — идентификатор HTML-элемента.
-         *
-         * OUTPUT:
-         * найденный DOM-элемент.
+         * Универсальная функция получения элемента по ID.
          */
-        const $ = id => document.getElementById(id);
+        const $ = id =>
+            document.getElementById(id);
 
 
-        /*
-         * Основные экраны приложения.
-         */
-        const authScreen = $("authScreen");
-        const homeScreen = $("homeScreen");
-        const roomScreen = $("roomScreen");
-        const roomViewerScreen = $("roomViewerScreen");
-        const generationScreen = $("generationScreen");
-        const userScreen = $("userScreen");
+        const authScreen =
+            $("authScreen");
+
+        const homeScreen =
+            $("homeScreen");
+
+        const roomScreen =
+            $("roomScreen");
+
+        const roomViewerScreen =
+            $("roomViewerScreen");
+
+        const generationScreen =
+            $("generationScreen");
+
+        const userScreen =
+            $("userScreen");
 
 
-        /*
-         * Элементы статуса и пользователя.
-         */
-        const authStatus = $("authStatus");
-        const loading = $("loading");
-        const userWalletAddress = $("userWalletAddress");
-        const userStatus = $("userStatus");
+        const authStatus =
+            $("authStatus");
+
+        const loading =
+            $("loading");
+
+        const userWalletAddress =
+            $("userWalletAddress");
+
+        const userStatus =
+            $("userStatus");
 
 
-        /*
-         * Элементы ROOM.
-         */
-        const roomGrid = $("roomGrid");
-        const roomStatusList = $("roomStatusList");
-        const roomViewerStatus = $("roomViewerStatus");
-        const roomViewerTitle = $("roomViewerTitle");
+        const roomGrid =
+            $("roomGrid");
+
+        const roomStatusList =
+            $("roomStatusList");
+
+        const roomViewerStatus =
+            $("roomViewerStatus");
+
+        const roomViewerTitle =
+            $("roomViewerTitle");
 
 
-        /*
-         * Элементы управления 3D-комнатой.
-         */
-        const roomCanvas = $("roomCanvas");
-        const roomMovePad = $("roomMovePad");
-        const roomMoveKnob = $("roomMoveKnob");
-        const roomLookPad = $("roomLookPad");
+        const roomCanvas =
+            $("roomCanvas");
 
-        const roomMoveUp = $("roomMoveUp");
-        const roomMoveDown = $("roomMoveDown");
-        const roomRollLeft = $("roomRollLeft");
-        const roomRollRight = $("roomRollRight");
-        const roomReset = $("roomReset");
+        const roomMovePad =
+            $("roomMovePad");
+
+        const roomMoveKnob =
+            $("roomMoveKnob");
+
+        const roomLookPad =
+            $("roomLookPad");
 
 
-        /*
-         * Элементы генерации.
-         */
-        const generationCode = $("generationCode");
-        const generationSubmit = $("generationSubmit");
-        const generationStatus = $("generationStatus");
+        const roomMoveUp =
+            $("roomMoveUp");
+
+        const roomMoveDown =
+            $("roomMoveDown");
+
+        const roomRollLeft =
+            $("roomRollLeft");
+
+        const roomRollRight =
+            $("roomRollRight");
+
+        const roomReset =
+            $("roomReset");
+
+
+        const generationCode =
+            $("generationCode");
+
+        const generationSubmit =
+            $("generationSubmit");
+
+        const generationStatus =
+            $("generationStatus");
 
 
         /* ============================================================
-           NAVIGATION HELPERS
+           GENERAL NAVIGATION
            ============================================================ */
 
         /*
          * FUNCTION: show
          *
-         * Назначение:
-         * Переключает активный экран приложения.
-         *
-         * INPUT:
-         * screen — DOM-элемент экрана, который нужно показать.
-         *
-         * Логика:
-         * 1. Все экраны скрываются.
-         * 2. Переданный экран получает класс active.
+         * Переключает активный экран.
          */
         function show(screen) {
 
             document
                 .querySelectorAll(".screen")
-                .forEach(s => s.classList.remove("active"));
+                .forEach(
+                    s =>
+                        s.classList.remove("active")
+                );
 
             screen.classList.add("active");
         }
@@ -1067,19 +1121,20 @@
         /*
          * FUNCTION: roomStatus
          *
-         * Назначение:
-         * Изменяет информационное сообщение поверх 3D-комнаты.
-         *
-         * INPUT:
-         * text — отображаемый текст.
-         * on — показать или скрыть сообщение.
+         * Показывает или скрывает статус загрузки ROOM.
          */
-        function roomStatus(text, on = true) {
+        function roomStatus(
+            text,
+            on = true
+        ) {
 
-            roomViewerStatus.textContent = text || "";
+            roomViewerStatus.textContent =
+                text || "";
 
             roomViewerStatus.style.display =
-                on ? "block" : "none";
+                on
+                    ? "block"
+                    : "none";
         }
 
 
@@ -1090,31 +1145,41 @@
         /*
          * FUNCTION: b64Bytes
          *
-         * Назначение:
-         * Преобразует Base64/Base64URL строку в Uint8Array.
-         *
-         * INPUT:
-         * v — Base64 или Base64URL строка.
-         *
-         * OUTPUT:
-         * Uint8Array с байтами исходной строки.
+         * Преобразует Base64URL в Uint8Array.
          */
         function b64Bytes(v) {
 
-            let s = String(v)
-                .replace(/-/g, "+")
-                .replace(/_/g, "/");
+            let s =
+                String(v)
+                    .replace(/-/g, "+")
+                    .replace(/_/g, "/");
+
 
             while (s.length % 4) {
                 s += "=";
             }
 
-            const b = atob(s);
-            const a = new Uint8Array(b.length);
 
-            for (let i = 0; i < b.length; i++) {
-                a[i] = b.charCodeAt(i);
+            const b =
+                atob(s);
+
+
+            const a =
+                new Uint8Array(
+                    b.length
+                );
+
+
+            for (
+                let i = 0;
+                i < b.length;
+                i++
+            ) {
+
+                a[i] =
+                    b.charCodeAt(i);
             }
+
 
             return a;
         }
@@ -1123,162 +1188,167 @@
         /*
          * FUNCTION: normalizeTonAddress
          *
-         * Назначение:
-         * Приводит TON-адрес к единому raw-формату.
-         *
-         * INPUT:
-         * address — TON-адрес.
-         *
-         * OUTPUT:
-         * Нормализованный TON-адрес.
+         * Приводит TON-адрес к raw-формату.
          */
-        function normalizeTonAddress(address) {
+        function normalizeTonAddress(
+            address
+        ) {
 
             if (!address) {
                 return "";
             }
 
-            address = String(address).trim();
+
+            address =
+                String(address).trim();
 
 
-            /*
-             * Если адрес уже находится в raw-формате,
-             * приводим hex-часть к нижнему регистру.
-             */
-            if (/^-?\d+:[0-9a-fA-F]{64}$/.test(address)) {
+            if (
+                /^-?\d+:[0-9a-fA-F]{64}$/
+                    .test(address)
+            ) {
 
-                const p = address.split(":");
+                const p =
+                    address.split(":");
 
-                return p[0] + ":" + p[1].toLowerCase();
+
+                return (
+                    p[0] +
+                    ":" +
+                    p[1].toLowerCase()
+                );
             }
 
 
-            /*
-             * Если адрес user-friendly,
-             * декодируем его из Base64.
-             */
             try {
 
-                const b = b64Bytes(address);
+                const b =
+                    b64Bytes(address);
 
-                if (b.length !== 36) {
+
+                if (
+                    b.length !== 36
+                ) {
+
                     return address.toLowerCase();
                 }
 
-                let wc = b[1];
+
+                let wc =
+                    b[1];
+
 
                 if (wc === 255) {
                     wc = -1;
                 }
 
 
-                /*
-                 * Получаем 32-байтный hash адреса.
-                 */
                 let h = "";
 
-                for (let i = 2; i < 34; i++) {
-                    h += b[i]
-                        .toString(16)
-                        .padStart(2, "0");
+
+                for (
+                    let i = 2;
+                    i < 34;
+                    i++
+                ) {
+
+                    h +=
+                        b[i]
+                            .toString(16)
+                            .padStart(
+                                2,
+                                "0"
+                            );
                 }
 
 
-                return wc + ":" + h.toLowerCase();
+                return (
+                    wc +
+                    ":" +
+                    h.toLowerCase()
+                );
 
             } catch {
 
-                /*
-                 * Если декодирование не удалось,
-                 * возвращаем исходную строку в нижнем регистре.
-                 */
                 return address.toLowerCase();
             }
         }
 
 
-        /*
-         * Нормализованный адрес обязательной коллекции.
-         */
         const requiredCollection =
-            normalizeTonAddress(REQUIRED_COLLECTION);
+            normalizeTonAddress(
+                REQUIRED_COLLECTION
+            );
 
 
         /*
          * FUNCTION: checkCollectionNFT
          *
-         * Назначение:
-         * Проверяет наличие у кошелька NFT из обязательной коллекции.
-         *
-         * INPUT:
-         * wallet — TON-адрес кошелька.
-         *
-         * OUTPUT:
-         * true  — NFT нужной коллекции существует.
-         * false — NFT нужной коллекции отсутствует.
-         *
-         * API:
-         * TonAPI.
+         * Проверяет наличие NFT необходимой коллекции.
          */
-        async function checkCollectionNFT(wallet) {
+        async function checkCollectionNFT(
+            wallet
+        ) {
 
-            const r = await fetch(
-                "https://tonapi.io/v2/accounts/" +
-                encodeURIComponent(wallet) +
-                "/nfts?limit=1000",
-                {
-                    headers: {
-                        Accept: "application/json"
+            const r =
+                await fetch(
+                    "https://tonapi.io/v2/accounts/" +
+                    encodeURIComponent(wallet) +
+                    "/nfts?limit=1000",
+                    {
+                        headers: {
+                            Accept:
+                                "application/json"
+                        }
                     }
-                }
-            );
+                );
 
 
-            /*
-             * Проверяем HTTP-статус.
-             */
             if (!r.ok) {
+
                 throw new Error(
-                    "TonAPI HTTP " + r.status
+                    "TonAPI HTTP " +
+                    r.status
                 );
             }
 
 
-            /*
-             * Получаем JSON-ответ.
-             */
-            const d = await r.json();
+            const d =
+                await r.json();
+
 
             const items =
-                Array.isArray(d.nft_items)
+                Array.isArray(
+                    d.nft_items
+                )
                     ? d.nft_items
                     : [];
 
 
-            /*
-             * Ищем NFT нужной коллекции.
-             */
-            return items.some(n => {
+            return items.some(
+                n => {
 
-                const a =
-                    n.collection?.address ||
-                    n.collection_address ||
-                    "";
+                    const a =
+                        n.collection?.address ||
+                        n.collection_address ||
+                        "";
 
-                const x =
-                    normalizeTonAddress(a);
 
-                return (
-                    x === requiredCollection ||
-                    x === REQUIRED_COLLECTION_RAW
-                );
-            });
+                    const x =
+                        normalizeTonAddress(a);
+
+
+                    return (
+                        x ===
+                            requiredCollection ||
+                        x ===
+                            REQUIRED_COLLECTION_RAW
+                    );
+                }
+            );
         }
 
 
-        /*
-         * Состояние авторизации.
-         */
         let currentWallet = null;
         let accessGranted = false;
         let checkingNFT = false;
@@ -1287,26 +1357,23 @@
         /*
          * FUNCTION: processWallet
          *
-         * Назначение:
-         * Обрабатывает подключение TON-кошелька и проверяет NFT.
-         *
-         * INPUT:
-         * wallet — объект подключённого TON-кошелька.
-         *
-         * Результат:
-         * При наличии NFT пользователь получает доступ
-         * к основному меню приложения.
+         * Обрабатывает подключение TON-кошелька
+         * и проверяет NFT.
          */
-        async function processWallet(wallet) {
+        async function processWallet(
+            wallet
+        ) {
 
-            /*
-             * Если кошелёк отключён.
-             */
             if (!wallet) {
 
-                currentWallet = null;
-                accessGranted = false;
-                userWalletAddress.textContent = "";
+                currentWallet =
+                    null;
+
+                accessGranted =
+                    false;
+
+                userWalletAddress.textContent =
+                    "";
 
                 authStatus.textContent =
                     "Подключите TON-кошелёк";
@@ -1317,40 +1384,41 @@
             }
 
 
-            /*
-             * Не запускаем повторную проверку,
-             * если проверка уже выполняется.
-             */
             if (
                 checkingNFT ||
                 !wallet.account?.address
             ) {
+
                 return;
             }
 
 
-            /*
-             * Сохраняем адрес кошелька.
-             */
             currentWallet =
                 wallet.account.address;
 
-            accessGranted = false;
-            checkingNFT = true;
+            accessGranted =
+                false;
+
+            checkingNFT =
+                true;
 
 
             authStatus.textContent =
                 "Проверка NFT...";
 
-            loading.classList.add("active");
+
+            loading.classList.add(
+                "active"
+            );
 
 
             try {
 
-                /*
-                 * Проверяем NFT обязательной коллекции.
-                 */
-                if (!await checkCollectionNFT(currentWallet)) {
+                if (
+                    !await checkCollectionNFT(
+                        currentWallet
+                    )
+                ) {
 
                     authStatus.textContent =
                         "NFT нужной коллекции не найден";
@@ -1361,17 +1429,17 @@
                 }
 
 
-                /*
-                 * NFT найден.
-                 * Доступ к приложению разрешён.
-                 */
-                accessGranted = true;
+                accessGranted =
+                    true;
+
 
                 userWalletAddress.textContent =
                     currentWallet;
 
+
                 authStatus.textContent =
                     "Доступ разрешён";
+
 
                 show(homeScreen);
 
@@ -1382,16 +1450,21 @@
                     e
                 );
 
+
                 authStatus.textContent =
                     "Ошибка проверки NFT";
+
 
                 show(authScreen);
 
             } finally {
 
-                checkingNFT = false;
+                checkingNFT =
+                    false;
 
-                loading.classList.remove("active");
+                loading.classList.remove(
+                    "active"
+                );
             }
         }
 
@@ -1399,13 +1472,7 @@
         /*
          * FUNCTION: requireAccess
          *
-         * Назначение:
-         * Проверяет, имеет ли пользователь право использовать
-         * защищённые разделы приложения.
-         *
-         * OUTPUT:
-         * true  — доступ разрешён.
-         * false — доступ запрещён.
+         * Проверяет авторизацию пользователя.
          */
         function requireAccess() {
 
@@ -1422,6 +1489,7 @@
                 return false;
             }
 
+
             return true;
         }
 
@@ -1430,42 +1498,43 @@
            TON CONNECT
            ============================================================ */
 
-        /*
-         * Проверяем наличие библиотеки TON Connect UI.
-         */
         if (!window.TON_CONNECT_UI) {
+
             throw new Error(
                 "TON Connect UI не загрузился"
             );
         }
 
 
-        /*
-         * Создаём объект TON Connect UI.
-         */
         const tonConnectUI =
             new TON_CONNECT_UI.TonConnectUI({
-                manifestUrl: TON_MANIFEST,
-                buttonRootId: null,
-                restoreConnection: true
+                manifestUrl:
+                    TON_MANIFEST,
+
+                buttonRootId:
+                    null,
+
+                restoreConnection:
+                    true
             });
 
 
-        /*
-         * Настройки интерфейса TON Connect.
-         */
         tonConnectUI.uiOptions = {
-            language: "ru",
+
+            language:
+                "ru",
+
             uiPreferences: {
-                theme: "DARK",
-                borderRadius: "none"
+
+                theme:
+                    "DARK",
+
+                borderRadius:
+                    "none"
             }
         };
 
 
-        /*
-         * Открывает окно подключения кошелька.
-         */
         $("connectWallet").onclick =
             async () => {
 
@@ -1483,26 +1552,24 @@
             };
 
 
-        /*
-         * Отслеживает изменение состояния подключения кошелька.
-         */
         tonConnectUI.onStatusChange(
-            wallet => processWallet(wallet),
-            e => console.error(
-                "TON Connect:",
-                e
-            )
+            wallet =>
+                processWallet(wallet),
+
+            e =>
+                console.error(
+                    "TON Connect:",
+                    e
+                )
         );
 
 
-        /*
-         * Обрабатывает восстановление ранее существовавшего подключения.
-         */
         tonConnectUI.connectionRestored.catch(
-            e => console.error(
-                "TON RESTORE:",
-                e
-            )
+            e =>
+                console.error(
+                    "TON RESTORE:",
+                    e
+                )
         );
 
 
@@ -1510,56 +1577,35 @@
            GENERATION
            ============================================================ */
 
-        /*
-         * FUNCTION: generationCode.oninput
-         *
-         * Назначение:
-         * Контролирует поле кода генерации.
-         *
-         * Разрешаются только цифры.
-         * Максимальная длина — 5 цифр.
-         */
-        generationCode.oninput = () => {
+        generationCode.oninput =
+            () => {
 
-            generationCode.value =
-                generationCode.value
-                    .replace(/\D/g, "")
-                    .slice(0, 5);
-
-            generationSubmit.disabled =
-                generationCode.value.length !== 5;
-        };
+                generationCode.value =
+                    generationCode.value
+                        .replace(/\D/g, "")
+                        .slice(0, 5);
 
 
-        /*
-         * FUNCTION: generationSubmit.onclick
-         *
-         * Назначение:
-         * Отправляет введённый пятизначный код
-         * и адрес TON-кошелька на API генерации.
-         */
+                generationSubmit.disabled =
+                    generationCode.value.length !== 5;
+            };
+
+
         generationSubmit.onclick =
             async () => {
 
-                /*
-                 * Проверяем доступ пользователя.
-                 */
                 if (!requireAccess()) {
                     return;
                 }
 
 
-                /*
-                 * Получаем код.
-                 */
                 const code =
                     generationCode.value.trim();
 
 
-                /*
-                 * Проверяем формат кода.
-                 */
-                if (!/^\d{5}$/.test(code)) {
+                if (
+                    !/^\d{5}$/.test(code)
+                ) {
 
                     generationStatus.textContent =
                         "Введите 5 цифр";
@@ -1568,7 +1614,9 @@
                 }
 
 
-                generationSubmit.disabled = true;
+                generationSubmit.disabled =
+                    true;
+
 
                 generationStatus.textContent =
                     "Отправка...";
@@ -1576,41 +1624,32 @@
 
                 try {
 
-                    /*
-                     * POST-запрос на API генерации.
-                     */
-                    const r = await fetch(
-                        GENERATION_API,
-                        {
-                            method: "POST",
+                    const r =
+                        await fetch(
+                            GENERATION_API,
+                            {
+                                method:
+                                    "POST",
 
-                            headers: {
-                                "Content-Type":
-                                    "application/json"
-                            },
+                                headers: {
+                                    "Content-Type":
+                                        "application/json"
+                                },
 
-                            /*
-                             * Передаём:
-                             * code   — код генерации.
-                             * wallet — адрес кошелька.
-                             */
-                            body: JSON.stringify({
-                                code,
-                                wallet: currentWallet
-                            })
-                        }
-                    );
+                                body:
+                                    JSON.stringify({
+                                        code,
+                                        wallet:
+                                            currentWallet
+                                    })
+                            }
+                        );
 
 
-                    /*
-                     * Получаем JSON-ответ сервера.
-                     */
-                    const d = await r.json();
+                    const d =
+                        await r.json();
 
 
-                    /*
-                     * Проверяем успешность операции.
-                     */
                     if (
                         !r.ok ||
                         d.success !== true
@@ -1623,13 +1662,12 @@
                     }
 
 
-                    /*
-                     * Успешная отправка.
-                     */
                     generationStatus.textContent =
                         "Данные отправлены";
 
-                    generationCode.value = "";
+
+                    generationCode.value =
+                        "";
 
                 } catch (e) {
 
@@ -1645,30 +1683,19 @@
            ROOM DATA
            ============================================================ */
 
-        /*
-         * Массив доступных комнат.
-         */
         let rooms = [];
-
-
-        /*
-         * Текущая открытая комната.
-         */
         let currentRoom = null;
 
 
         /*
          * FUNCTION: roomNumber
          *
-         * Назначение:
-         * Определяет номер комнаты.
-         *
-         * Приоритет:
-         * 1. item.number
-         * 2. цифры из item.name
-         * 3. порядковый номер.
+         * Получает номер комнаты.
          */
-        function roomNumber(item, i) {
+        function roomNumber(
+            item,
+            i
+        ) {
 
             return (
                 item?.number ??
@@ -1686,13 +1713,12 @@
         /*
          * FUNCTION: roomName
          *
-         * Назначение:
-         * Определяет отображаемое имя комнаты.
-         *
-         * Приоритет:
-         * name → folder → title → room_N.
+         * Получает имя комнаты.
          */
-        function roomName(item, i) {
+        function roomName(
+            item,
+            i
+        ) {
 
             return String(
                 item?.name ||
@@ -1707,15 +1733,12 @@
         /*
          * FUNCTION: fileUrl
          *
-         * Назначение:
-         * Формирует URL файла комнаты.
-         *
-         * Если передан полный HTTP/data URL,
-         * он возвращается без изменений.
-         *
-         * Иначе URL формируется через API комнат.
+         * Создаёт URL файла комнаты.
          */
-        function fileUrl(folder, file) {
+        function fileUrl(
+            folder,
+            file
+        ) {
 
             if (!file) {
                 return "";
@@ -1723,8 +1746,11 @@
 
 
             if (
-                /^https?:\/\//i.test(String(file)) ||
-                String(file).startsWith("data:")
+                /^https?:\/\//i.test(
+                    String(file)
+                ) ||
+                String(file)
+                    .startsWith("data:")
             ) {
 
                 return String(file);
@@ -1742,20 +1768,11 @@
         /*
          * FUNCTION: resolveTextures
          *
-         * Назначение:
-         * Формирует адреса шести текстур комнаты:
-         *
-         * back
-         * left
-         * right
-         * front
-         * ceiling
-         * floor
-         *
-         * Также учитывает текстуры,
-         * которые сервер может вернуть в manifest.
+         * Определяет URL шести текстур комнаты.
          */
-        function resolveTextures(item) {
+        function resolveTextures(
+            item
+        ) {
 
             const folder =
                 String(
@@ -1765,42 +1782,46 @@
                 ).trim();
 
 
-            /*
-             * Стандартные имена файлов текстур.
-             */
             const names = {
 
-                back: "01_BACKGROUND.png",
-                left: "02_LEFT.png",
-                right: "03_RIGHT.png",
-                front: "04_FRONT.png",
-                ceiling: "05_SKY.png",
-                floor: "06_GROUND.png"
+                back:
+                    "01_BACKGROUND.png",
 
+                left:
+                    "02_LEFT.png",
+
+                right:
+                    "03_RIGHT.png",
+
+                front:
+                    "04_FRONT.png",
+
+                ceiling:
+                    "05_SKY.png",
+
+                floor:
+                    "06_GROUND.png"
             };
 
 
             const out = {};
 
 
-            /*
-             * Формируем стандартные URL.
-             */
             for (
                 const [k, n]
                 of Object.entries(names)
             ) {
 
                 out[k] =
-                    fileUrl(folder, n);
+                    fileUrl(
+                        folder,
+                        n
+                    );
             }
 
 
-            /*
-             * Если сервер передал собственный
-             * объект textures, используем его значения.
-             */
-            const t = item?.textures;
+            const t =
+                item?.textures;
 
 
             if (
@@ -1851,8 +1872,12 @@
 
 
                     if (u) {
+
                         out[k] =
-                            fileUrl(folder, u);
+                            fileUrl(
+                                folder,
+                                u
+                            );
                     }
                 }
             }
@@ -1862,127 +1887,848 @@
         }
 
 
+        /* ============================================================
+           ROOM RESPONSE PARSER
+           ============================================================ */
+
+        /*
+         * FUNCTION: findRoomArray
+         *
+         * Назначение:
+         * Ищет массив комнат внутри ответа API.
+         *
+         * Поддерживаемые варианты:
+         *
+         * [
+         *     {...},
+         *     {...}
+         * ]
+         *
+         * {
+         *     rooms: [...]
+         * }
+         *
+         * {
+         *     items: [...]
+         * }
+         *
+         * {
+         *     data: [...]
+         * }
+         *
+         * {
+         *     folders: [...]
+         * }
+         *
+         * и вложенные варианты.
+         *
+         * Это основное исправление проблемы,
+         * когда API работает, но возвращает не прямой массив.
+         */
+        function findRoomArray(
+            value,
+            depth = 0
+        ) {
+
+            /*
+             * Защита от слишком глубокой рекурсии.
+             */
+            if (depth > 6) {
+                return null;
+            }
+
+
+            /*
+             * Если сам ответ уже массив,
+             * считаем его списком комнат.
+             */
+            if (Array.isArray(value)) {
+
+                return value;
+            }
+
+
+            /*
+             * Если ответ не объект,
+             * массив внутри него найти нельзя.
+             */
+            if (
+                !value ||
+                typeof value !== "object"
+            ) {
+
+                return null;
+            }
+
+
+            /*
+             * Наиболее вероятные названия полей.
+             */
+            const preferredKeys = [
+
+                "rooms",
+                "items",
+                "data",
+                "folders",
+                "directories",
+                "directories_list",
+                "room_list",
+                "roomList",
+                "results",
+                "entries"
+            ];
+
+
+            /*
+             * Сначала проверяем наиболее вероятные поля.
+             */
+            for (
+                const key
+                of preferredKeys
+            ) {
+
+                if (
+                    Object.prototype
+                        .hasOwnProperty
+                        .call(value, key)
+                ) {
+
+                    const candidate =
+                        value[key];
+
+
+                    if (
+                        Array.isArray(candidate)
+                    ) {
+
+                        return candidate;
+                    }
+
+
+                    const nested =
+                        findRoomArray(
+                            candidate,
+                            depth + 1
+                        );
+
+
+                    if (nested) {
+                        return nested;
+                    }
+                }
+            }
+
+
+            /*
+             * Если стандартные поля не нашли,
+             * просматриваем остальные поля объекта.
+             */
+            for (
+                const [key, candidate]
+                of Object.entries(value)
+            ) {
+
+                if (
+                    preferredKeys.includes(key)
+                ) {
+
+                    continue;
+                }
+
+
+                if (
+                    Array.isArray(candidate)
+                ) {
+
+                    /*
+                     * Массив объектов считаем
+                     * потенциальным списком комнат.
+                     */
+                    if (
+                        candidate.length === 0 ||
+                        candidate.every(
+                            item =>
+                                item &&
+                                typeof item === "object"
+                        )
+                    ) {
+
+                        return candidate;
+                    }
+                }
+
+
+                if (
+                    candidate &&
+                    typeof candidate === "object"
+                ) {
+
+                    const nested =
+                        findRoomArray(
+                            candidate,
+                            depth + 1
+                        );
+
+
+                    if (nested) {
+                        return nested;
+                    }
+                }
+            }
+
+
+            return null;
+        }
+
+
+        /*
+         * FUNCTION: normalizeRoomItem
+         *
+         * Назначение:
+         * Приводит разные форматы ответа сервера
+         * к единому объекту комнаты.
+         */
+        function normalizeRoomItem(
+            item,
+            index
+        ) {
+
+            /*
+             * Если сервер вернул строку,
+             * считаем её названием папки.
+             */
+            if (
+                typeof item === "string"
+            ) {
+
+                return {
+
+                    number:
+                        index + 1,
+
+                    name:
+                        item,
+
+                    folder:
+                        item
+                };
+            }
+
+
+            /*
+             * Если сервер вернул объект,
+             * сохраняем все исходные поля.
+             */
+            if (
+                item &&
+                typeof item === "object"
+            ) {
+
+                const result = {
+                    ...item
+                };
+
+
+                /*
+                 * Если есть folder,
+                 * но отсутствует name,
+                 * используем folder как имя.
+                 */
+                if (
+                    !result.name &&
+                    result.folder
+                ) {
+
+                    result.name =
+                        result.folder;
+                }
+
+
+                /*
+                 * Если есть path,
+                 * но отсутствует folder,
+                 * пытаемся использовать path.
+                 */
+                if (
+                    !result.folder &&
+                    result.path
+                ) {
+
+                    result.folder =
+                        result.path;
+                }
+
+
+                /*
+                 * Если есть directory,
+                 * используем его как папку.
+                 */
+                if (
+                    !result.folder &&
+                    result.directory
+                ) {
+
+                    result.folder =
+                        result.directory;
+                }
+
+
+                /*
+                 * Если сервер использует id
+                 * вместо number, сохраняем id,
+                 * но номер интерфейса остаётся индексом,
+                 * если number отсутствует.
+                 */
+                if (
+                    result.number == null
+                ) {
+
+                    if (
+                        result.roomNumber != null
+                    ) {
+
+                        result.number =
+                            result.roomNumber;
+
+                    } else {
+
+                        result.number =
+                            index + 1;
+                    }
+                }
+
+
+                /*
+                 * Если name отсутствует полностью,
+                 * создаём имя из номера.
+                 */
+                if (!result.name) {
+
+                    result.name =
+                        "room_" +
+                        result.number;
+                }
+
+
+                /*
+                 * Если folder отсутствует,
+                 * используем name.
+                 */
+                if (!result.folder) {
+
+                    result.folder =
+                        result.name;
+                }
+
+
+                return result;
+            }
+
+
+            return {
+
+                number:
+                    index + 1,
+
+                name:
+                    "room_" +
+                    (index + 1),
+
+                folder:
+                    "room_" +
+                    (index + 1)
+            };
+        }
+
+
+        /*
+         * FUNCTION: formatApiPreview
+         *
+         * Назначение:
+         * Создаёт компактный текст ответа сервера,
+         * чтобы при проблеме формата было видно,
+         * что именно реально вернул API.
+         */
+        function formatApiPreview(
+            data
+        ) {
+
+            try {
+
+                const text =
+                    JSON.stringify(
+                        data,
+                        null,
+                        2
+                    );
+
+
+                if (
+                    text.length > 1200
+                ) {
+
+                    return (
+                        text.slice(
+                            0,
+                            1200
+                        ) +
+                        "\n..."
+                    );
+                }
+
+
+                return text;
+
+            } catch {
+
+                return String(data);
+            }
+        }
+
+
         /*
          * FUNCTION: loadRooms
          *
-         * Назначение:
-         * Загружает список комнат с PC-сервера
-         * и создаёт кнопки комнат в интерфейсе.
+         * НОВАЯ УСИЛЕННАЯ ВЕРСИЯ.
+         *
+         * Получает список комнат с PC-сервера.
+         *
+         * Исправления:
+         *
+         * 1. Не ограничивается только массивом.
+         * 2. Поддерживает rooms/items/data/folders.
+         * 3. Ищет массив глубже внутри JSON.
+         * 4. Поддерживает строки-папки.
+         * 5. Показывает реальный ответ API.
+         * 6. Показывает HTTP-код.
+         * 7. Показывает CORS/network ошибку.
+         * 8. Использует AbortController.
+         * 9. Не маскирует неизвестный формат ответом
+         *    «Комнаты не найдены».
          */
         async function loadRooms() {
 
             roomStatusList.textContent =
                 "Загрузка комнат с PC-сервера...";
 
-            roomGrid.innerHTML = "";
+
+            roomGrid.innerHTML =
+                "";
 
 
             /*
-             * AbortController используется,
-             * чтобы ограничить время ожидания сервера.
+             * Контроллер тайм-аута.
              */
-            const c = new AbortController();
+            const controller =
+                new AbortController();
 
-            const t = setTimeout(
-                () => c.abort(),
-                12000
-            );
+
+            const timeout =
+                setTimeout(
+                    () => controller.abort(),
+                    15000
+                );
 
 
             try {
 
                 /*
-                 * Получаем список комнат.
+                 * Формируем URL отдельно,
+                 * чтобы его было легко контролировать.
                  */
-                const r = await fetch(
-                    ROOMS_API,
-                    {
-                        cache: "no-store",
-                        signal: c.signal
-                    }
+                const url =
+                    `${ROOMS_API}?_=${Date.now()}`;
+
+
+                console.log(
+                    "[ROOM] GET:",
+                    url
                 );
 
 
-                if (!r.ok) {
+                /*
+                 * GET-запрос к PC-серверу.
+                 */
+                const response =
+                    await fetch(
+                        url,
+                        {
+                            method:
+                                "GET",
+
+                            cache:
+                                "no-store",
+
+                            signal:
+                                controller.signal,
+
+                            headers: {
+                                Accept:
+                                    "application/json"
+                            },
+
+                            /*
+                             * Разрешаем cookies,
+                             * если сервер работает через прокси.
+                             */
+                            credentials:
+                                "include"
+                        }
+                    );
+
+
+                console.log(
+                    "[ROOM] HTTP:",
+                    response.status,
+                    response.statusText
+                );
+
+
+                /*
+                 * Получаем текст сначала,
+                 * а не сразу response.json().
+                 *
+                 * Это важно:
+                 * если сервер вернул HTML,
+                 * текст ошибки или другой формат,
+                 * мы увидим его.
+                 */
+                const raw =
+                    await response.text();
+
+
+                console.log(
+                    "[ROOM] RAW RESPONSE:",
+                    raw
+                );
+
+
+                /*
+                 * HTTP-ошибка.
+                 */
+                if (!response.ok) {
+
                     throw new Error(
-                        "HTTP " + r.status
+                        `HTTP ${response.status}: ` +
+                        `${raw.slice(0, 500)}`
                     );
                 }
 
 
-                const d = await r.json();
-
-
                 /*
-                 * API может вернуть либо массив,
-                 * либо объект с items/rooms.
+                 * Пустой ответ.
                  */
-                rooms =
-                    Array.isArray(d)
-                        ? d
-                        : (
-                            d.items ||
-                            d.rooms ||
-                            []
-                        );
-
-
-                if (!rooms.length) {
+                if (
+                    !raw.trim()
+                ) {
 
                     roomStatusList.textContent =
-                        "Комнаты не найдены";
+                        "PC-сервер ответил пустым ответом";
+
+
+                    console.warn(
+                        "[ROOM] Empty response"
+                    );
+
 
                     return;
                 }
 
 
+                /*
+                 * Преобразуем JSON.
+                 */
+                let data;
+
+
+                try {
+
+                    data =
+                        JSON.parse(raw);
+
+                } catch (parseError) {
+
+                    /*
+                     * Сервер ответил не JSON.
+                     */
+                    roomStatusList.textContent =
+                        "PC-сервер вернул не JSON";
+
+
+                    console.error(
+                        "[ROOM] JSON PARSE ERROR:",
+                        parseError
+                    );
+
+
+                    console.error(
+                        "[ROOM] SERVER RESPONSE:",
+                        raw
+                    );
+
+
+                    return;
+                }
+
+
+                console.log(
+                    "[ROOM] JSON:",
+                    data
+                );
+
+
+                /*
+                 * Ищем массив комнат.
+                 */
+                let list =
+                    findRoomArray(data);
+
+
+                /*
+                 * Отдельный случай:
+                 *
+                 * API может вернуть одну комнату
+                 * напрямую как объект.
+                 *
+                 * Например:
+                 *
+                 * {
+                 *     "name": "room_1",
+                 *     "folder": "room_1"
+                 * }
+                 */
+                if (
+                    !list &&
+                    data &&
+                    typeof data === "object" &&
+                    !Array.isArray(data)
+                ) {
+
+                    const looksLikeRoom =
+                        Boolean(
+                            data.name ||
+                            data.folder ||
+                            data.room ||
+                            data.path ||
+                            data.directory
+                        );
+
+
+                    if (
+                        looksLikeRoom
+                    ) {
+
+                        list =
+                            [data];
+                    }
+                }
+
+
+                /*
+                 * Если массив не найден,
+                 * НЕ показываем ложное
+                 * «Комнаты не найдены».
+                 *
+                 * Показываем структуру ответа.
+                 */
+                if (!list) {
+
+                    roomStatusList.textContent =
+                        "Сервер доступен, " +
+                        "но формат списка комнат " +
+                        "не распознан.\n" +
+                        "Ответ выведен в Console.";
+
+
+                    console.error(
+                        "[ROOM] UNKNOWN API FORMAT:\n" +
+                        formatApiPreview(data)
+                    );
+
+
+                    return;
+                }
+
+
+                /*
+                 * Нормализуем комнаты.
+                 */
+                rooms =
+                    list
+                        .map(
+                            (item, index) =>
+                                normalizeRoomItem(
+                                    item,
+                                    index
+                                )
+                        )
+                        .filter(
+                            item =>
+                                item &&
+                                (
+                                    item.name ||
+                                    item.folder
+                                )
+                        );
+
+
+                /*
+                 * Реально массив пустой.
+                 */
+                if (
+                    rooms.length === 0
+                ) {
+
+                    roomStatusList.textContent =
+                        "PC-сервер ответил успешно, " +
+                        "но список комнат пуст.\n" +
+                        "Проверьте папки комнат на PC-сервере.";
+
+
+                    console.warn(
+                        "[ROOM] Server returned empty room list:",
+                        data
+                    );
+
+
+                    return;
+                }
+
+
+                /*
+                 * Показываем количество.
+                 */
                 roomStatusList.textContent =
                     `Получено комнат: ${rooms.length}`;
 
 
+                console.log(
+                    "[ROOM] NORMALIZED ROOMS:",
+                    rooms
+                );
+
+
                 /*
-                 * Создаём кнопку для каждой комнаты.
+                 * Создаём интерфейс каждой комнаты.
                  */
-                rooms.forEach((item, i) => {
+                rooms.forEach(
+                    (item, i) => {
 
-                    const b =
-                        document.createElement("button");
-
-                    b.className = "roomItem";
-                    b.type = "button";
-
-
-                    /*
-                     * Отображаем номер и название комнаты.
-                     */
-                    b.innerHTML =
-                        `<div>${roomNumber(item, i)}</div>` +
-                        `<small>${roomName(item, i)}</small>`;
+                        const button =
+                            document.createElement(
+                                "button"
+                            );
 
 
-                    /*
-                     * При нажатии открывается выбранная комната.
-                     */
-                    b.onclick =
-                        () => openRoom(i);
+                        button.className =
+                            "roomItem";
 
 
-                    roomGrid.appendChild(b);
-                });
+                        button.type =
+                            "button";
+
+
+                        /*
+                         * Номер комнаты.
+                         */
+                        const number =
+                            roomNumber(
+                                item,
+                                i
+                            );
+
+
+                        /*
+                         * Имя комнаты.
+                         */
+                        const name =
+                            roomName(
+                                item,
+                                i
+                            );
+
+
+                        button.innerHTML =
+                            `
+                                <div>
+                                    ${number}
+                                </div>
+
+                                <small>
+                                    ${name}
+                                </small>
+                            `;
+
+
+                        /*
+                         * Открытие комнаты
+                         * по нажатию.
+                         */
+                        button.onclick =
+                            () =>
+                                openRoom(i);
+
+
+                        roomGrid.appendChild(
+                            button
+                        );
+                    }
+                );
 
             } catch (e) {
 
+                console.error(
+                    "[ROOM] LOAD ERROR:",
+                    e
+                );
+
+
+                /*
+                 * Тайм-аут.
+                 */
+                if (
+                    e.name ===
+                    "AbortError"
+                ) {
+
+                    roomStatusList.textContent =
+                        "Тайм-аут PC-сервера.\n" +
+                        "Сервер не ответил за 15 секунд.";
+
+
+                    return;
+                }
+
+
+                /*
+                 * Ошибка сети/CORS/DNS.
+                 */
+                if (
+                    e instanceof TypeError
+                ) {
+
+                    roomStatusList.textContent =
+                        "Ошибка подключения к PC-серверу.\n" +
+                        "Возможна проблема CORS, HTTPS, " +
+                        "Cloudflare Tunnel или доступности API.";
+
+
+                    return;
+                }
+
+
+                /*
+                 * Остальные ошибки.
+                 */
                 roomStatusList.textContent =
-                    e.name === "AbortError"
-                        ? "Тайм-аут PC-сервера"
-                        : `Ошибка ROOM: ${e.message}`;
+                    "Ошибка ROOM:\n" +
+                    e.message;
 
             } finally {
 
-                /*
-                 * Удаляем таймер ожидания.
-                 */
-                clearTimeout(t);
+                clearTimeout(
+                    timeout
+                );
             }
         }
 
@@ -1994,17 +2740,11 @@
         /*
          * FUNCTION: requestRoom
          *
-         * Назначение:
-         * Отправляет PC-серверу запрос на получение
-         * данных выбранной комнаты.
-         *
-         * INPUT:
-         * item — объект выбранной комнаты.
-         *
-         * OUTPUT:
-         * Объект комнаты с manifest и дополнительными данными.
+         * Запрашивает конкретную комнату у PC-сервера.
          */
-        async function requestRoom(item) {
+        async function requestRoom(
+            item
+        ) {
 
             const folder =
                 String(
@@ -2014,41 +2754,92 @@
                 ).trim();
 
 
-            /*
-             * Отправляем запрос серверу.
-             */
-            const r = await fetch(
-                `${ROOMS_API}/request`,
-                {
-                    method: "POST",
+            if (!folder) {
 
-                    headers: {
-                        "Content-Type":
-                            "application/json",
-
-                        "Accept":
-                            "application/json"
-                    },
-
-                    body: JSON.stringify({
-                        room: folder,
-                        wallet: currentWallet
-                    })
-                }
-            );
-
-
-            if (!r.ok) {
                 throw new Error(
-                    "ROOM HTTP " + r.status
+                    "У комнаты отсутствует folder/name"
                 );
             }
 
 
-            const d = await r.json();
+            console.log(
+                "[ROOM] REQUEST:",
+                folder
+            );
 
 
-            if (d.success === false) {
+            const r =
+                await fetch(
+                    `${ROOMS_API}/request`,
+                    {
+                        method:
+                            "POST",
+
+                        headers: {
+                            "Content-Type":
+                                "application/json",
+
+                            "Accept":
+                                "application/json"
+                        },
+
+                        credentials:
+                            "include",
+
+                        body:
+                            JSON.stringify({
+                                room:
+                                    folder,
+
+                                wallet:
+                                    currentWallet
+                            })
+                    }
+                );
+
+
+            const raw =
+                await r.text();
+
+
+            console.log(
+                "[ROOM] REQUEST RESPONSE:",
+                r.status,
+                raw
+            );
+
+
+            if (!r.ok) {
+
+                throw new Error(
+                    "ROOM HTTP " +
+                    r.status +
+                    ": " +
+                    raw.slice(0, 500)
+                );
+            }
+
+
+            let d;
+
+
+            try {
+
+                d =
+                    JSON.parse(raw);
+
+            } catch {
+
+                throw new Error(
+                    "PC-сервер /request " +
+                    "вернул не JSON"
+                );
+            }
+
+
+            if (
+                d.success === false
+            ) {
 
                 throw new Error(
                     d.error ||
@@ -2065,12 +2856,10 @@
             }
 
 
-            /*
-             * Объединяем исходные данные комнаты
-             * с данными, полученными от сервера.
-             */
             return {
+
                 ...item,
+
                 ...d.room,
 
                 folder:
@@ -2087,20 +2876,18 @@
         /*
          * FUNCTION: loadTexture
          *
-         * Назначение:
-         * Загружает одну текстуру через Three.js TextureLoader.
-         *
-         * INPUT:
-         * url   — URL текстуры.
-         * label — название текстуры для сообщений об ошибках.
-         *
-         * OUTPUT:
-         * Promise, возвращающий THREE.Texture.
+         * Загружает одну текстуру.
          */
-        function loadTexture(url, label) {
+        function loadTexture(
+            url,
+            label
+        ) {
 
             return new Promise(
-                (resolve, reject) => {
+                (
+                    resolve,
+                    reject
+                ) => {
 
                     if (!url) {
 
@@ -2113,59 +2900,56 @@
                     }
 
 
-                    new THREE.TextureLoader().load(
+                    new THREE.TextureLoader()
+                        .load(
 
-                        url,
+                            url,
 
-                        t => {
+                            texture => {
 
-                            /*
-                             * Текстура используется
-                             * как sRGB-изображение.
-                             */
-                            t.colorSpace =
-                                THREE.SRGBColorSpace;
+                                texture.colorSpace =
+                                    THREE.SRGBColorSpace;
 
 
-                            /*
-                             * Ограничиваем текстуру краями.
-                             */
-                            t.wrapS =
-                                THREE.ClampToEdgeWrapping;
-
-                            t.wrapT =
-                                THREE.ClampToEdgeWrapping;
+                                texture.wrapS =
+                                    THREE.ClampToEdgeWrapping;
 
 
-                            /*
-                             * Используем анизотропную фильтрацию
-                             * при наличии renderer.
-                             */
-                            if (roomRenderer) {
+                                texture.wrapT =
+                                    THREE.ClampToEdgeWrapping;
 
-                                t.anisotropy =
-                                    Math.min(
-                                        roomRenderer
-                                            .capabilities
-                                            .getMaxAnisotropy(),
-                                        4
-                                    );
+
+                                if (
+                                    roomRenderer
+                                ) {
+
+                                    texture.anisotropy =
+                                        Math.min(
+                                            roomRenderer
+                                                .capabilities
+                                                .getMaxAnisotropy(),
+                                            4
+                                        );
+                                }
+
+
+                                resolve(
+                                    texture
+                                );
+                            },
+
+                            undefined,
+
+                            () => {
+
+                                reject(
+                                    new Error(
+                                        "Не удалось загрузить " +
+                                        label
+                                    )
+                                );
                             }
-
-
-                            resolve(t);
-                        },
-
-                        undefined,
-
-                        () =>
-                            reject(
-                                new Error(
-                                    "Не удалось загрузить " +
-                                    label
-                                )
-                            )
-                    );
+                        );
                 }
             );
         }
@@ -2174,18 +2958,8 @@
         /*
          * FUNCTION: surface
          *
-         * Назначение:
-         * Создаёт плоскую поверхность комнаты.
-         *
-         * INPUT:
-         * w     — ширина.
-         * h     — высота.
-         * pos   — положение.
-         * rot   — вращение.
-         * label — идентификатор поверхности.
-         *
-         * OUTPUT:
-         * THREE.Mesh.
+         * Создаёт плоскость стены,
+         * потолка или пола.
          */
         function surface(
             w,
@@ -2195,45 +2969,50 @@
             label
         ) {
 
-            const m =
+            const material =
                 new THREE.MeshBasicMaterial({
-                    color: 0x222222,
-                    side: THREE.DoubleSide
+                    color:
+                        0x222222,
+
+                    side:
+                        THREE.DoubleSide
                 });
 
 
-            const x =
+            const mesh =
                 new THREE.Mesh(
-                    new THREE.PlaneGeometry(w, h),
-                    m
+                    new THREE.PlaneGeometry(
+                        w,
+                        h
+                    ),
+                    material
                 );
 
 
-            x.position.copy(pos);
+            mesh.position.copy(
+                pos
+            );
 
-            x.rotation.set(
+
+            mesh.rotation.set(
                 rot.x,
                 rot.y,
                 rot.z
             );
 
 
-            x.userData.roomSurface =
+            mesh.userData.roomSurface =
                 label;
 
 
-            return x;
+            return mesh;
         }
 
 
         /*
          * FUNCTION: clearRoom
          *
-         * Назначение:
-         * Удаляет текущие поверхности комнаты
-         * и загруженную 3D-модель.
-         *
-         * Также освобождает ресурсы Three.js.
+         * Полностью очищает предыдущую комнату.
          */
         function clearRoom() {
 
@@ -2242,34 +3021,49 @@
             }
 
 
-            /*
-             * Удаляем поверхности комнаты.
-             */
             [
                 ...roomScene.children
-            ].forEach(o => {
+            ].forEach(
+                object => {
 
-                if (o.userData?.roomSurface) {
+                    if (
+                        object
+                            .userData
+                            ?.roomSurface
+                    ) {
 
-                    o.geometry?.dispose();
+                        object
+                            .geometry
+                            ?.dispose();
 
-                    o.material?.map?.dispose();
 
-                    o.material?.dispose();
+                        object
+                            .material
+                            ?.map
+                            ?.dispose();
 
-                    roomScene.remove(o);
+
+                        object
+                            .material
+                            ?.dispose();
+
+
+                        roomScene.remove(
+                            object
+                        );
+                    }
                 }
-            });
+            );
 
 
-            /*
-             * Удаляем 3D-модель.
-             */
             if (roomModel) {
 
-                roomScene.remove(roomModel);
+                roomScene.remove(
+                    roomModel
+                );
 
-                roomModel = null;
+                roomModel =
+                    null;
             }
         }
 
@@ -2281,14 +3075,22 @@
         /*
          * FUNCTION: loadRoomModel
          *
-         * Назначение:
-         * Загружает GLB/GLTF-модель комнаты.
+         * Загружает GLTF/GLB модель.
          *
-         * Дополнительно:
-         * URLModifier перенаправляет относительные пути
-         * файлов модели на PC-сервер.
+         * Важная часть:
+         *
+         * Если GLTF содержит относительные ссылки
+         * на дополнительные файлы, например:
+         *
+         * texture.jpg
+         * model.bin
+         *
+         * LoadingManager перенаправляет их
+         * на PC-сервер комнаты.
          */
-        async function loadRoomModel(info) {
+        async function loadRoomModel(
+            info
+        ) {
 
             const url =
                 String(
@@ -2305,37 +3107,36 @@
             }
 
 
-            /*
-             * LoadingManager позволяет изменить
-             * URL внутренних ресурсов GLTF/GLB.
-             */
             const manager =
                 new THREE.LoadingManager();
 
 
             manager.setURLModifier(
-                u => {
+                originalUrl => {
 
                     /*
-                     * Полные URL и data URL
-                     * не изменяются.
+                     * Data URL и абсолютные HTTP/HTTPS
+                     * URL не изменяем.
                      */
                     if (
-                        !u ||
-                        u.startsWith("data:") ||
-                        /^https?:\/\//i.test(u)
+                        !originalUrl ||
+                        originalUrl.startsWith(
+                            "data:"
+                        ) ||
+                        /^https?:\/\//i.test(
+                            originalUrl
+                        )
                     ) {
 
-                        return u;
+                        return originalUrl;
                     }
 
 
                     /*
-                     * Из относительного URL
-                     * получаем имя файла.
+                     * Извлекаем имя файла.
                      */
-                    const f =
-                        u
+                    const filename =
+                        originalUrl
                             .split("?")[0]
                             .split("/")
                             .pop();
@@ -2343,36 +3144,50 @@
 
                     /*
                      * Если известна папка комнаты,
-                     * файл направляется через API.
+                     * направляем внутренний ресурс
+                     * через PC API.
                      */
-                    return info?.room
-                        ? `${ROOMS_API}/model-file/` +
-                          `${encodeURIComponent(info.room)}/` +
-                          `${encodeURIComponent(f)}`
-                        : u;
+                    if (
+                        info?.room
+                    ) {
+
+                        return (
+                            `${ROOMS_API}/model-file/` +
+                            `${encodeURIComponent(
+                                info.room
+                            )}/` +
+                            `${encodeURIComponent(
+                                filename
+                            )}`
+                        );
+                    }
+
+
+                    return originalUrl;
                 }
             );
 
 
-            /*
-             * Создаём GLTFLoader с нашим LoadingManager.
-             */
             const loader =
-                new GLTFLoader(manager);
+                new GLTFLoader(
+                    manager
+                );
 
 
-            /*
-             * Загружаем модель.
-             */
             const gltf =
                 await new Promise(
-                    (res, rej) =>
+                    (
+                        resolve,
+                        reject
+                    ) => {
+
                         loader.load(
                             url,
-                            res,
+                            resolve,
                             undefined,
-                            rej
-                        )
+                            reject
+                        );
+                    }
                 );
 
 
@@ -2380,12 +3195,12 @@
                 gltf.scene;
 
 
-            /*
-             * Получаем размеры модели.
-             */
             const box =
                 new THREE.Box3()
-                    .setFromObject(model);
+                    .setFromObject(
+                        model
+                    );
+
 
             const size =
                 box.getSize(
@@ -2393,9 +3208,6 @@
                 );
 
 
-            /*
-             * Проверяем наличие геометрии.
-             */
             if (
                 Math.max(
                     size.x,
@@ -2411,8 +3223,7 @@
 
 
             /*
-             * Масштабируем модель до максимального
-             * размера 3.2 единицы.
+             * Масштабирование модели.
              */
             model.scale.setScalar(
                 3.2 /
@@ -2424,16 +3235,19 @@
             );
 
 
-            model.updateMatrixWorld(true);
+            model.updateMatrixWorld(
+                true
+            );
 
 
             /*
-             * Повторно вычисляем bounding box
-             * после масштабирования.
+             * Получаем новый bounding box.
              */
             const b =
                 new THREE.Box3()
-                    .setFromObject(model);
+                    .setFromObject(
+                        model
+                    );
 
 
             const center =
@@ -2443,7 +3257,7 @@
 
 
             /*
-             * Центрируем модель по X/Z.
+             * Центрируем модель.
              */
             model.position.x -=
                 center.x;
@@ -2453,19 +3267,20 @@
 
 
             /*
-             * Ставим нижнюю часть модели на Y=0.
+             * Нижняя точка модели
+             * ставится на уровень пола.
              */
             model.position.y -=
                 b.min.y;
 
 
-            /*
-             * Сохраняем модель
-             * и добавляем её в сцену.
-             */
-            roomModel = model;
+            roomModel =
+                model;
 
-            roomScene.add(model);
+
+            roomScene.add(
+                model
+            );
         }
 
 
@@ -2473,9 +3288,6 @@
            ROOM VIEWER
            ============================================================ */
 
-        /*
-         * Основные объекты Three.js.
-         */
         let roomScene;
         let roomCamera;
         let roomRenderer;
@@ -2483,49 +3295,46 @@
         let roomModel;
 
 
-        /*
-         * Начальные углы камеры.
-         */
-        let roomYaw = Math.PI;
-        let roomPitch = 0;
-        let roomRoll = 0;
+        let roomYaw =
+            Math.PI;
+
+        let roomPitch =
+            0;
+
+        let roomRoll =
+            0;
 
 
-        /*
-         * Состояние управления джойстиком.
-         */
-        let roomPadX = 0;
-        let roomPadY = 0;
-        let verticalInput = 0;
+        let roomPadX =
+            0;
+
+        let roomPadY =
+            0;
+
+        let verticalInput =
+            0;
+
+        let padId =
+            null;
+
+        let lookId =
+            null;
+
+        let lastLX =
+            0;
+
+        let lastLY =
+            0;
 
 
-        /*
-         * Идентификаторы активных touch/pointer событий.
-         */
-        let padId = null;
-        let lookId = null;
-
-
-        /*
-         * Последняя позиция пальца
-         * при управлении взглядом.
-         */
-        let lastLX = 0;
-        let lastLY = 0;
-
-
-        /*
-         * Нажатые клавиши клавиатуры.
-         */
-        const keys = new Set();
+        const keys =
+            new Set();
 
 
         /*
          * FUNCTION: updateCamera
          *
-         * Назначение:
-         * Обновляет направление взгляда камеры
-         * на основе yaw, pitch и roll.
+         * Обновляет направление камеры.
          */
         function updateCamera() {
 
@@ -2534,47 +3343,53 @@
             }
 
 
-            /*
-             * Рассчитываем направление взгляда.
-             */
-            const d =
+            const direction =
                 new THREE.Vector3(
-                    Math.sin(roomYaw) *
-                        Math.cos(roomPitch),
 
-                    Math.sin(roomPitch),
+                    Math.sin(
+                        roomYaw
+                    ) *
+                    Math.cos(
+                        roomPitch
+                    ),
 
-                    Math.cos(roomYaw) *
-                        Math.cos(roomPitch)
+                    Math.sin(
+                        roomPitch
+                    ),
+
+                    Math.cos(
+                        roomYaw
+                    ) *
+                    Math.cos(
+                        roomPitch
+                    )
                 );
 
 
-            /*
-             * Направляем камеру в рассчитанную точку.
-             */
             roomCamera.lookAt(
-                roomCamera.position.x + d.x,
-                roomCamera.position.y + d.y,
-                roomCamera.position.z + d.z
+
+                roomCamera.position.x +
+                    direction.x,
+
+                roomCamera.position.y +
+                    direction.y,
+
+                roomCamera.position.z +
+                    direction.z
             );
 
 
-            /*
-             * Добавляем крен камеры.
-             */
-            roomCamera.rotateZ(roomRoll);
+            roomCamera.rotateZ(
+                roomRoll
+            );
         }
 
 
         /*
          * FUNCTION: clampCamera
          *
-         * Назначение:
-         * Ограничивает положение камеры
-         * пределами комнаты.
-         *
-         * Камера не может выйти за стены,
-         * потолок и пол.
+         * Не позволяет камере выйти
+         * за границы комнаты.
          */
         function clampCamera() {
 
@@ -2583,40 +3398,41 @@
             }
 
 
-            /*
-             * Ограничение по X.
-             */
             roomCamera.position.x =
                 THREE.MathUtils.clamp(
+
                     roomCamera.position.x,
+
                     -ROOM_LENGTH / 2 +
                         ROOM_CAMERA_RADIUS,
+
                     ROOM_LENGTH / 2 -
                         ROOM_CAMERA_RADIUS
                 );
 
 
-            /*
-             * Ограничение по Z.
-             */
             roomCamera.position.z =
                 THREE.MathUtils.clamp(
+
                     roomCamera.position.z,
+
                     -ROOM_WIDTH / 2 +
                         ROOM_CAMERA_RADIUS,
+
                     ROOM_WIDTH / 2 -
                         ROOM_CAMERA_RADIUS
                 );
 
 
-            /*
-             * Ограничение по высоте.
-             */
             roomCamera.position.y =
                 THREE.MathUtils.clamp(
+
                     roomCamera.position.y,
+
                     .35,
-                    ROOM_HEIGHT - .35
+
+                    ROOM_HEIGHT -
+                        .35
                 );
         }
 
@@ -2624,34 +3440,26 @@
         /*
          * FUNCTION: initRoomViewer
          *
-         * Назначение:
-         * Один раз создаёт Three.js-сцену,
-         * камеру, WebGLRenderer и обработчики управления.
+         * Создаёт Three.js-сцену и
+         * все элементы управления.
          */
         function initRoomViewer() {
 
-            /*
-             * Если renderer уже существует,
-             * повторно сцену не создаём.
-             */
             if (roomRenderer) {
                 return;
             }
 
 
-            /*
-             * Создаём сцену.
-             */
             roomScene =
                 new THREE.Scene();
 
+
             roomScene.background =
-                new THREE.Color(0x000000);
+                new THREE.Color(
+                    0x000000
+                );
 
 
-            /*
-             * Создаём перспективную камеру.
-             */
             roomCamera =
                 new THREE.PerspectiveCamera(
                     70,
@@ -2661,20 +3469,16 @@
                 );
 
 
-            /*
-             * Создаём WebGLRenderer.
-             */
             roomRenderer =
                 new THREE.WebGLRenderer({
-                    antialias: true,
+                    antialias:
+                        true,
+
                     powerPreference:
                         "high-performance"
                 });
 
 
-            /*
-             * Ограничиваем pixel ratio.
-             */
             roomRenderer.setPixelRatio(
                 Math.min(
                     devicePixelRatio || 1,
@@ -2683,9 +3487,6 @@
             );
 
 
-            /*
-             * Устанавливаем размер renderer.
-             */
             roomRenderer.setSize(
                 innerWidth,
                 innerHeight,
@@ -2693,60 +3494,55 @@
             );
 
 
-            /*
-             * Используем цветовое пространство sRGB.
-             */
             roomRenderer.outputColorSpace =
                 THREE.SRGBColorSpace;
 
 
-            /*
-             * Добавляем Canvas в DOM.
-             */
             roomCanvas.appendChild(
                 roomRenderer.domElement
             );
 
 
-            /*
-             * Таймер кадров.
-             */
             roomClock =
                 new THREE.Clock();
 
 
             /* ========================================================
-               POINTER EVENTS — ОСНОВНОЙ CANVAS
+               MAIN CANVAS POINTER
                ======================================================== */
 
-            /*
-             * Нажатие на Canvas.
-             */
-            roomRenderer.domElement.onpointerdown =
+            roomRenderer
+                .domElement
+                .onpointerdown =
                 e => {
 
-                    /*
-                     * Управление мышью на ПК.
-                     */
-                    if (e.pointerType === "mouse") {
+                    if (
+                        e.pointerType ===
+                        "mouse"
+                    ) {
 
-                        roomRenderer.domElement._mouse =
+                        roomRenderer
+                            .domElement
+                            ._mouse =
                             true;
 
-                        roomRenderer.domElement._mx =
+
+                        roomRenderer
+                            .domElement
+                            ._mx =
                             e.clientX;
 
-                        roomRenderer.domElement._my =
+
+                        roomRenderer
+                            .domElement
+                            ._my =
                             e.clientY;
+
 
                         return;
                     }
 
 
-                    /*
-                     * Левая часть экрана —
-                     * управление перемещением.
-                     */
                     if (
                         e.clientX <
                             innerWidth / 2 &&
@@ -2760,24 +3556,19 @@
                         lookId === null
                     ) {
 
-                        /*
-                         * Правая часть —
-                         * управление взглядом.
-                         */
                         lookId =
                             e.pointerId;
 
+
                         lastLX =
                             e.clientX;
+
 
                         lastLY =
                             e.clientY;
                     }
 
 
-                    /*
-                     * Захватываем pointer.
-                     */
                     roomRenderer
                         .domElement
                         .setPointerCapture?.(
@@ -2786,15 +3577,11 @@
                 };
 
 
-            /*
-             * Движение мыши/пальца.
-             */
-            roomRenderer.domElement.onpointermove =
+            roomRenderer
+                .domElement
+                .onpointermove =
                 e => {
 
-                    /*
-                     * Управление мышью.
-                     */
                     if (
                         e.pointerType ===
                         "mouse"
@@ -2805,6 +3592,7 @@
                                 .domElement
                                 ._mouse
                         ) {
+
                             return;
                         }
 
@@ -2814,6 +3602,7 @@
                             roomRenderer
                                 .domElement
                                 ._mx;
+
 
                         const dy =
                             e.clientY -
@@ -2827,25 +3616,27 @@
                             ._mx =
                             e.clientX;
 
+
                         roomRenderer
                             .domElement
                             ._my =
                             e.clientY;
 
 
-                        /*
-                         * Изменяем yaw и pitch.
-                         */
                         roomYaw -=
                             dx *
                             ROOM_LOOK_SPEED;
 
+
                         roomPitch =
                             THREE.MathUtils.clamp(
+
                                 roomPitch -
                                     dy *
                                     ROOM_LOOK_SPEED,
+
                                 -1.52,
+
                                 1.52
                             );
 
@@ -2856,9 +3647,6 @@
                     }
 
 
-                    /*
-                     * Управление взглядом пальцем.
-                     */
                     if (
                         e.pointerId ===
                         lookId
@@ -2868,6 +3656,7 @@
                             e.clientX -
                             lastLX;
 
+
                         const dy =
                             e.clientY -
                             lastLY;
@@ -2875,6 +3664,7 @@
 
                         lastLX =
                             e.clientX;
+
 
                         lastLY =
                             e.clientY;
@@ -2884,12 +3674,16 @@
                             dx *
                             ROOM_LOOK_SPEED;
 
+
                         roomPitch =
                             THREE.MathUtils.clamp(
+
                                 roomPitch -
                                     dy *
                                     ROOM_LOOK_SPEED,
+
                                 -1.52,
+
                                 1.52
                             );
 
@@ -2898,48 +3692,55 @@
                     }
 
 
-                    /*
-                     * Управление перемещением
-                     * через левую часть Canvas.
-                     */
                     if (
                         e.pointerId ===
                         padId
                     ) {
 
+                        const rect =
+                            roomMovePad
+                                .getBoundingClientRect();
+
+
                         roomPadX =
                             THREE.MathUtils.clamp(
+
                                 (
                                     e.clientX -
                                     (
-                                        roomMovePad
-                                            .getBoundingClientRect()
-                                            .left +
+                                        rect.left +
                                         50
                                     )
-                                ) / 35,
+                                ) /
+                                35,
+
                                 -1,
+
                                 1
                             );
 
 
                         roomPadY =
                             THREE.MathUtils.clamp(
+
                                 (
                                     e.clientY -
                                     (
-                                        roomMovePad
-                                            .getBoundingClientRect()
-                                            .top +
+                                        rect.top +
                                         50
                                     )
-                                ) / 35,
+                                ) /
+                                35,
+
                                 -1,
+
                                 1
                             );
 
 
-                        roomMoveKnob.style.transform =
+                        roomMoveKnob
+                            .style
+                            .transform =
                             `translate3d(` +
                             `${roomPadX * 35}px,` +
                             `${roomPadY * 35}px,0)`;
@@ -2947,10 +3748,9 @@
                 };
 
 
-            /*
-             * Завершение pointer-события.
-             */
-            roomRenderer.domElement.onpointerup =
+            roomRenderer
+                .domElement
+                .onpointerup =
                 e => {
 
                     if (
@@ -2960,7 +3760,8 @@
 
                         roomRenderer
                             .domElement
-                            ._mouse = false;
+                            ._mouse =
+                            false;
                     }
 
 
@@ -2969,12 +3770,17 @@
                         padId
                     ) {
 
-                        padId = null;
+                        padId =
+                            null;
 
                         roomPadX =
-                            roomPadY = 0;
+                            roomPadY =
+                                0;
 
-                        roomMoveKnob.style.transform =
+
+                        roomMoveKnob
+                            .style
+                            .transform =
                             "translate3d(0,0,0)";
                     }
 
@@ -2984,16 +3790,15 @@
                         lookId
                     ) {
 
-                        lookId = null;
+                        lookId =
+                            null;
                     }
                 };
 
 
-            /*
-             * Отмена pointer-события
-             * использует ту же логику, что и pointerup.
-             */
-            roomRenderer.domElement.onpointercancel =
+            roomRenderer
+                .domElement
+                .onpointercancel =
                 roomRenderer
                     .domElement
                     .onpointerup;
@@ -3003,9 +3808,6 @@
                MOVE PAD
                ======================================================== */
 
-            /*
-             * Нажатие на джойстик.
-             */
             roomMovePad.onpointerdown =
                 e => {
 
@@ -3014,6 +3816,7 @@
                     padId =
                         e.pointerId;
 
+
                     roomMovePad
                         .setPointerCapture?.(
                             e.pointerId
@@ -3021,9 +3824,6 @@
                 };
 
 
-            /*
-             * Движение ручки джойстика.
-             */
             roomMovePad.onpointermove =
                 e => {
 
@@ -3031,6 +3831,7 @@
                         e.pointerId !==
                         padId
                     ) {
+
                         return;
                     }
 
@@ -3048,7 +3849,10 @@
                                 r.width / 2
                             )
                         ) /
-                        (r.width * .32);
+                        (
+                            r.width *
+                            .32
+                        );
 
 
                     const y =
@@ -3059,7 +3863,10 @@
                                 r.height / 2
                             )
                         ) /
-                        (r.height * .32);
+                        (
+                            r.height *
+                            .32
+                        );
 
 
                     roomPadX =
@@ -3069,6 +3876,7 @@
                             1
                         );
 
+
                     roomPadY =
                         THREE.MathUtils.clamp(
                             y,
@@ -3077,26 +3885,30 @@
                         );
 
 
-                    roomMoveKnob.style.transform =
+                    roomMoveKnob
+                        .style
+                        .transform =
                         `translate3d(` +
                         `${roomPadX * r.width * .32}px,` +
                         `${roomPadY * r.height * .32}px,0)`;
                 };
 
 
-            /*
-             * Отпускание джойстика.
-             */
             roomMovePad.onpointerup =
                 roomMovePad.onpointercancel =
                 () => {
 
-                    padId = null;
+                    padId =
+                        null;
 
                     roomPadX =
-                        roomPadY = 0;
+                        roomPadY =
+                            0;
 
-                    roomMoveKnob.style.transform =
+
+                    roomMoveKnob
+                        .style
+                        .transform =
                         "translate3d(0,0,0)";
                 };
 
@@ -3105,9 +3917,6 @@
                LOOK PAD
                ======================================================== */
 
-            /*
-             * Нажатие на область управления взглядом.
-             */
             roomLookPad.onpointerdown =
                 e => {
 
@@ -3122,6 +3931,7 @@
                     lastLY =
                         e.clientY;
 
+
                     roomLookPad
                         .setPointerCapture?.(
                             e.pointerId
@@ -3129,9 +3939,6 @@
                 };
 
 
-            /*
-             * Движение пальца по lookPad.
-             */
             roomLookPad.onpointermove =
                 e => {
 
@@ -3139,6 +3946,7 @@
                         e.pointerId !==
                         lookId
                     ) {
+
                         return;
                     }
 
@@ -3147,6 +3955,7 @@
                         e.clientX -
                         lastLX;
 
+
                     const dy =
                         e.clientY -
                         lastLY;
@@ -3154,6 +3963,7 @@
 
                     lastLX =
                         e.clientX;
+
 
                     lastLY =
                         e.clientY;
@@ -3166,10 +3976,13 @@
 
                     roomPitch =
                         THREE.MathUtils.clamp(
+
                             roomPitch -
                                 dy *
                                 ROOM_LOOK_SPEED,
+
                             -1.52,
+
                             1.52
                         );
 
@@ -3178,107 +3991,123 @@
                 };
 
 
-            /*
-             * Завершение управления взглядом.
-             */
             roomLookPad.onpointerup =
                 roomLookPad.onpointercancel =
-                () => lookId = null;
+                () =>
+                    lookId =
+                        null;
 
 
             /* ========================================================
-               VERTICAL MOVEMENT
+               VERTICAL
                ======================================================== */
 
-            /*
-             * Кнопки ↑ и ↓ изменяют вертикальное движение камеры.
-             */
             for (
-                const [el, v]
+                const [
+                    element,
+                    value
+                ]
                 of [
-                    [roomMoveUp, 1],
-                    [roomMoveDown, -1]
+                    [
+                        roomMoveUp,
+                        1
+                    ],
+                    [
+                        roomMoveDown,
+                        -1
+                    ]
                 ]
             ) {
 
-                el.onpointerdown =
+                element.onpointerdown =
                     e => {
 
                         e.preventDefault();
 
-                        verticalInput = v;
+                        verticalInput =
+                            value;
                     };
 
 
-                el.onpointerup =
-                    el.onpointercancel =
+                element.onpointerup =
+                    element.onpointercancel =
                     () => {
 
                         if (
                             verticalInput ===
-                            v
+                            value
                         ) {
 
-                            verticalInput = 0;
+                            verticalInput =
+                                0;
                         }
                     };
             }
 
 
             /* ========================================================
-               CAMERA ROLL
+               ROLL
                ======================================================== */
 
-            /*
-             * Наклон камеры влево.
-             */
             roomRollLeft.onclick =
                 () => {
 
                     roomRoll =
                         THREE.MathUtils.clamp(
-                            roomRoll + .12,
+
+                            roomRoll +
+                                .12,
+
                             -Math.PI / 3,
+
                             Math.PI / 3
                         );
+
 
                     updateCamera();
                 };
 
 
-            /*
-             * Наклон камеры вправо.
-             */
             roomRollRight.onclick =
                 () => {
 
                     roomRoll =
                         THREE.MathUtils.clamp(
-                            roomRoll - .12,
+
+                            roomRoll -
+                                .12,
+
                             -Math.PI / 3,
+
                             Math.PI / 3
                         );
+
 
                     updateCamera();
                 };
 
 
-            /*
-             * FUNCTION: roomReset.onclick
-             *
-             * Назначение:
-             * Возвращает камеру в начальное положение.
-             */
+            /* ========================================================
+               RESET
+               ======================================================== */
+
             roomReset.onclick =
                 () => {
 
                     roomYaw =
                         Math.PI;
 
-                    roomPitch =
-                        roomRoll = 0;
 
-                    verticalInput = 0;
+                    roomPitch =
+                        0;
+
+
+                    roomRoll =
+                        0;
+
+
+                    verticalInput =
+                        0;
 
 
                     roomCamera.position.set(
@@ -3298,56 +4127,48 @@
                KEYBOARD
                ======================================================== */
 
-            /*
-             * Запоминаем нажатые клавиши.
-             */
             addEventListener(
                 "keydown",
-                e => keys.add(e.code)
+                e =>
+                    keys.add(
+                        e.code
+                    )
             );
 
 
-            /*
-             * Удаляем клавишу после отпускания.
-             */
             addEventListener(
                 "keyup",
-                e => keys.delete(e.code)
+                e =>
+                    keys.delete(
+                        e.code
+                    )
             );
 
 
-            /*
-             * При потере фокуса очищаем список клавиш.
-             */
             addEventListener(
                 "blur",
-                () => keys.clear()
+                () =>
+                    keys.clear()
             );
 
 
-            /*
-             * Пересчитываем размер Canvas
-             * при изменении размера окна.
-             */
             addEventListener(
                 "resize",
                 resizeRoom
             );
 
 
-            /*
-             * Запускаем главный цикл комнаты.
-             */
-            requestAnimationFrame(roomLoop);
+            requestAnimationFrame(
+                roomLoop
+            );
         }
 
 
         /*
          * FUNCTION: resizeRoom
          *
-         * Назначение:
-         * Подгоняет камеру и WebGLRenderer
-         * под текущий размер окна.
+         * Обновляет пропорции камеры
+         * и размер WebGL Canvas.
          */
         function resizeRoom() {
 
@@ -3355,6 +4176,7 @@
                 !roomRenderer ||
                 !roomCamera
             ) {
+
                 return;
             }
 
@@ -3378,44 +4200,28 @@
         /*
          * FUNCTION: roomLoop
          *
-         * Назначение:
-         * Главный игровой цикл 3D-комнаты.
-         *
-         * Выполняет:
-         * 1. Чтение клавиатуры.
-         * 2. Чтение джойстика.
-         * 3. Расчёт направления движения.
-         * 4. Перемещение камеры.
-         * 5. Ограничение камеры внутри комнаты.
-         * 6. Обновление направления взгляда.
-         * 7. Рендеринг Three.js-сцены.
+         * Главный цикл 3D-комнаты.
          */
         function roomLoop() {
 
-            /*
-             * Следующий кадр.
-             */
-            requestAnimationFrame(roomLoop);
+            requestAnimationFrame(
+                roomLoop
+            );
 
 
-            /*
-             * Если экран комнаты не активен,
-             * ничего не рендерим.
-             */
             if (
                 !roomRenderer ||
                 !roomViewerScreen
                     .classList
-                    .contains("active")
+                    .contains(
+                        "active"
+                    )
             ) {
+
                 return;
             }
 
 
-            /*
-             * Получаем время между кадрами.
-             * Максимум ограничен 0.05 секунды.
-             */
             const dt =
                 Math.min(
                     roomClock.getDelta(),
@@ -3423,13 +4229,6 @@
                 );
 
 
-            /*
-             * Вперёд/назад:
-             *
-             * W / ArrowUp  — вперёд.
-             * S / ArrowDown — назад.
-             * roomPadY — джойстик.
-             */
             let f =
                 (
                     keys.has("KeyW") ||
@@ -3446,13 +4245,6 @@
                 roomPadY;
 
 
-            /*
-             * Влево/вправо:
-             *
-             * D / ArrowRight — вправо.
-             * A / ArrowLeft — влево.
-             * roomPadX — джойстик.
-             */
             let s =
                 (
                     keys.has("KeyD") ||
@@ -3469,73 +4261,70 @@
                 roomPadX;
 
 
-            /*
-             * Нормализуем диагональное движение,
-             * чтобы по диагонали скорость не увеличивалась.
-             */
             const len =
-                Math.hypot(f, s);
+                Math.hypot(
+                    f,
+                    s
+                );
 
 
-            if (len > 1) {
+            if (
+                len > 1
+            ) {
 
-                f /= len;
-                s /= len;
+                f /=
+                    len;
+
+                s /=
+                    len;
             }
 
 
-            /*
-             * Расчёт скорости движения.
-             */
             const sp =
-                ROOM_SPEED * dt;
+                ROOM_SPEED *
+                dt;
 
 
-            /*
-             * Направление вперёд
-             * относительно yaw камеры.
-             */
             const fx =
-                Math.sin(roomYaw);
+                Math.sin(
+                    roomYaw
+                );
+
 
             const fz =
-                Math.cos(roomYaw);
+                Math.cos(
+                    roomYaw
+                );
 
 
-            /*
-             * Направление вправо
-             * относительно yaw камеры.
-             */
             const rx =
-                Math.cos(roomYaw);
+                Math.cos(
+                    roomYaw
+                );
+
 
             const rz =
-                -Math.sin(roomYaw);
+                -Math.sin(
+                    roomYaw
+                );
 
 
-            /*
-             * Перемещение камеры по X/Z.
-             */
             roomCamera.position.x +=
                 (
                     fx * f +
                     rx * s
-                ) * sp;
+                ) *
+                sp;
+
 
             roomCamera.position.z +=
                 (
                     fz * f +
                     rz * s
-                ) * sp;
+                ) *
+                sp;
 
 
-            /*
-             * Вертикальное движение:
-             *
-             * R — вверх.
-             * F — вниз.
-             * verticalInput — кнопки интерфейса.
-             */
             const vert =
                 (
                     keys.has("KeyR")
@@ -3551,24 +4340,15 @@
 
 
             roomCamera.position.y +=
-                vert * sp;
+                vert *
+                sp;
 
 
-            /*
-             * Не позволяем камере выйти за границы комнаты.
-             */
             clampCamera();
 
-
-            /*
-             * Обновляем направление взгляда.
-             */
             updateCamera();
 
 
-            /*
-             * Рендерим сцену.
-             */
             roomRenderer.render(
                 roomScene,
                 roomCamera
@@ -3583,28 +4363,22 @@
         /*
          * FUNCTION: buildRoom
          *
-         * Назначение:
          * Полностью собирает выбранную комнату:
          *
-         * 1. Очищает предыдущую комнату.
-         * 2. Запрашивает manifest с PC-сервера.
-         * 3. Создаёт 6 поверхностей комнаты.
-         * 4. Загружает 6 текстур.
-         * 5. Получает информацию о 3D-модели.
+         * 1. Очищает предыдущую.
+         * 2. Запрашивает manifest.
+         * 3. Создаёт поверхности.
+         * 4. Загружает текстуры.
+         * 5. Получает 3D-модель.
          * 6. Загружает 3D-модель.
-         * 7. Показывает итоговый статус.
          */
-        async function buildRoom(item) {
+        async function buildRoom(
+            item
+        ) {
 
-            /*
-             * Удаляем предыдущую комнату.
-             */
             clearRoom();
 
 
-            /*
-             * Получаем папку текущей комнаты.
-             */
             const folder =
                 String(
                     item?.folder ||
@@ -3619,28 +4393,25 @@
 
 
             /*
-             * Запрашиваем данные комнаты.
+             * Получаем manifest комнаты.
              */
             const data =
-                await requestRoom(item);
+                await requestRoom(
+                    item
+                );
 
 
             /*
-             * Формируем URL текстур.
+             * Определяем текстуры.
              */
             const textures =
-                resolveTextures(data);
+                resolveTextures(
+                    data
+                );
 
 
             /*
-             * Создаём шесть поверхностей:
-             *
-             * 01_BACKGROUND — задняя стена.
-             * 02_LEFT       — левая стена.
-             * 03_RIGHT      — правая стена.
-             * 04_FRONT      — передняя стена.
-             * 05_SKY        — потолок.
-             * 06_GROUND     — земля.
+             * Создаём шесть поверхностей.
              */
             const surfaces = [
 
@@ -3742,11 +4513,11 @@
             ];
 
 
-            /*
-             * Добавляем все поверхности в сцену.
-             */
             surfaces.forEach(
-                x => roomScene.add(x)
+                surfaceObject =>
+                    roomScene.add(
+                        surfaceObject
+                    )
             );
 
 
@@ -3760,33 +4531,61 @@
             );
 
 
-            roomYaw = Math.PI;
+            roomYaw =
+                Math.PI;
+
             roomPitch =
-                roomRoll = 0;
+                0;
+
+            roomRoll =
+                0;
 
 
             clampCamera();
+
             updateCamera();
 
 
             /*
-             * Счётчик успешно загруженных текстур.
+             * Количество загруженных текстур.
              */
-            let n = 0;
+            let loadedTextures =
+                0;
 
 
             /*
-             * Загружаем шесть текстур последовательно.
+             * Последовательно загружаем 6 текстур.
              */
             for (
-                const [key, label]
+                const [
+                    key,
+                    label
+                ]
                 of [
-                    ["back", "01_BACKGROUND"],
-                    ["left", "02_LEFT"],
-                    ["right", "03_RIGHT"],
-                    ["front", "04_FRONT"],
-                    ["ceiling", "05_SKY"],
-                    ["floor", "06_GROUND"]
+                    [
+                        "back",
+                        "01_BACKGROUND"
+                    ],
+                    [
+                        "left",
+                        "02_LEFT"
+                    ],
+                    [
+                        "right",
+                        "03_RIGHT"
+                    ],
+                    [
+                        "front",
+                        "04_FRONT"
+                    ],
+                    [
+                        "ceiling",
+                        "05_SKY"
+                    ],
+                    [
+                        "floor",
+                        "06_GROUND"
+                    ]
                 ]
             ) {
 
@@ -3794,110 +4593,134 @@
 
                     roomStatus(
                         `ROOM ${folder}: ` +
-                        `загрузка ${label}.png (${n}/6)`
+                        `загрузка ${label}.png ` +
+                        `(${loadedTextures}/6)`
                     );
 
 
-                    /*
-                     * Загружаем текстуру.
-                     */
-                    const t =
+                    const texture =
                         await loadTexture(
                             textures[key],
                             label
                         );
 
 
-                    /*
-                     * Находим соответствующую
-                     * поверхность комнаты.
-                     */
-                    const m =
+                    const materialMesh =
                         surfaces.find(
-                            x =>
-                                x.userData
+                            object =>
+                                object
+                                    .userData
                                     .roomSurface ===
                                 label
                         );
 
 
-                    /*
-                     * Назначаем текстуру материалу.
-                     */
-                    m.material.map = t;
+                    if (!materialMesh) {
 
-                    m.material.color.set(
-                        0xffffff
-                    );
+                        throw new Error(
+                            "Поверхность " +
+                            label +
+                            " не найдена"
+                        );
+                    }
 
-                    m.material.needsUpdate =
+
+                    materialMesh
+                        .material
+                        .map =
+                        texture;
+
+
+                    materialMesh
+                        .material
+                        .color
+                        .set(
+                            0xffffff
+                        );
+
+
+                    materialMesh
+                        .material
+                        .needsUpdate =
                         true;
 
 
-                    n++;
+                    loadedTextures++;
 
                 } catch (e) {
 
-                    /*
-                     * Ошибка отдельной текстуры
-                     * не останавливает загрузку остальных.
-                     */
-                    console.warn(e);
+                    console.warn(
+                        "[TEXTURE]",
+                        label,
+                        e
+                    );
                 }
             }
 
 
             roomStatus(
                 `ROOM ${folder}: ` +
-                `текстуры ${n}/6.\n` +
+                `текстуры ${loadedTextures}/6.\n` +
                 `Загрузка 3D модели...`
             );
 
 
             /*
-             * Получаем информацию о модели.
+             * Информация о модели.
              */
             let modelInfo =
                 data.model;
 
 
             /*
-             * Если URL модели отсутствует,
-             * запрашиваем его отдельно по ID.
+             * Если URL отсутствует,
+             * пробуем отдельный endpoint.
              */
-            if (!modelInfo?.url) {
+            if (
+                !modelInfo?.url
+            ) {
 
                 const id =
                     Number(
-                        data.id || 0
+                        data.id ||
+                        0
                     );
 
 
                 if (id) {
 
-                    const r =
+                    const modelResponse =
                         await fetch(
                             `${ROOMS_API}/` +
-                            `${encodeURIComponent(folder)}/model` +
+                            `${encodeURIComponent(
+                                folder
+                            )}/model` +
                             `?request_id=${id}`,
                             {
-                                cache: "no-store"
+                                cache:
+                                    "no-store",
+
+                                headers: {
+                                    Accept:
+                                        "application/json"
+                                }
                             }
                         );
 
 
-                    if (r.ok) {
+                    if (
+                        modelResponse.ok
+                    ) {
 
                         modelInfo =
-                            await r.json();
+                            await modelResponse.json();
                     }
                 }
             }
 
 
             /*
-             * Если модель ещё не готова,
-             * ожидаем её появления на PC-сервере.
+             * Модель ещё генерируется.
              */
             if (
                 modelInfo?.ready === false &&
@@ -3909,18 +4732,21 @@
                     `модель ожидается от PC-сервера`
                 );
 
+
                 return;
             }
 
 
             /*
-             * Загружаем модель,
-             * если сервер вернул URL.
+             * Загружаем модель.
              */
-            if (modelInfo?.url) {
+            if (
+                modelInfo?.url
+            ) {
 
                 modelInfo.room =
                     folder;
+
 
                 await loadRoomModel(
                     modelInfo
@@ -3928,31 +4754,27 @@
             }
 
 
-            /*
-             * Итоговый статус комнаты.
-             */
             roomStatus(
                 `ROOM ${folder} готов.\n` +
-                `Текстуры: ${n}/6.\n` +
+                `Текстуры: ${loadedTextures}/6.\n` +
                 `3D модель: ` +
-                `${
+                (
                     modelInfo?.url
                         ? "загружена"
                         : "не получена"
-                }`
+                )
             );
 
 
-            /*
-             * Через 2.2 секунды скрываем сообщение.
-             */
             setTimeout(
                 () => {
 
                     if (
                         roomViewerScreen
                             .classList
-                            .contains("active")
+                            .contains(
+                                "active"
+                            )
                     ) {
 
                         roomStatus(
@@ -3972,203 +4794,220 @@
            ============================================================ */
 
         /*
-         * Открытие списка комнат.
+         * Открывает список ROOM.
          */
         $("openRoom").onclick =
             async () => {
 
-                if (!requireAccess()) {
+                if (
+                    !requireAccess()
+                ) {
+
                     return;
                 }
 
-                show(roomScreen);
+
+                show(
+                    roomScreen
+                );
+
 
                 await loadRooms();
             };
 
 
         /*
-         * Возврат из списка комнат
-         * в главное меню.
+         * Назад из списка комнат.
          */
         $("roomBack").onclick =
-            () => show(homeScreen);
+            () =>
+                show(
+                    homeScreen
+                );
 
 
         /*
-         * Возврат из 3D-комнаты
-         * к списку комнат.
+         * Назад из 3D-комнаты.
          */
         $("roomViewerBack").onclick =
             () => {
 
-                currentRoom = null;
+                currentRoom =
+                    null;
+
 
                 clearRoom();
 
-                show(roomScreen);
+
+                show(
+                    roomScreen
+                );
             };
 
 
         /*
          * FUNCTION: openRoom
          *
-         * Назначение:
-         * Открывает выбранную комнату,
-         * инициализирует 3D-просмотр
-         * и запускает загрузку комнаты.
-         *
-         * INPUT:
-         * i — индекс комнаты в массиве rooms.
+         * Открывает выбранную комнату.
          */
-        function openRoom(i) {
+        function openRoom(
+            index
+        ) {
 
-            /*
-             * Проверяем доступ.
-             */
-            if (!requireAccess()) {
+            if (
+                !requireAccess()
+            ) {
+
                 return;
             }
 
 
-            /*
-             * Получаем выбранную комнату.
-             */
             currentRoom =
-                rooms[i];
+                rooms[index];
 
 
-            /*
-             * Получаем номер комнаты.
-             */
-            const n =
+            const number =
                 roomNumber(
                     currentRoom,
-                    i
+                    index
                 );
 
 
-            /*
-             * Устанавливаем заголовок.
-             */
             roomViewerTitle.textContent =
-                `ROOM ${n}`;
+                `ROOM ${number}`;
 
 
-            /*
-             * Показываем 3D-экран.
-             */
-            show(roomViewerScreen);
+            show(
+                roomViewerScreen
+            );
 
 
-            /*
-             * Создаём Three.js Viewer.
-             */
             initRoomViewer();
 
-
-            /*
-             * Обновляем размер Canvas.
-             */
             resizeRoom();
 
 
-            /*
-             * Загружаем содержимое комнаты.
-             */
-            buildRoom(currentRoom)
-                .catch(e => {
+            buildRoom(
+                currentRoom
+            )
+                .catch(
+                    error => {
 
-                    console.error(e);
+                        console.error(
+                            "[ROOM] BUILD ERROR:",
+                            error
+                        );
 
-                    roomStatus(
-                        `Ошибка ROOM: ${e.message}`
-                    );
-                });
+
+                        roomStatus(
+                            "Ошибка ROOM: " +
+                            error.message
+                        );
+                    }
+                );
         }
 
 
         /*
-         * Открытие экрана генерации.
+         * Открытие генерации.
          */
         $("openGeneration").onclick =
             () => {
 
-                if (!requireAccess()) {
+                if (
+                    !requireAccess()
+                ) {
+
                     return;
                 }
 
 
-                generationCode.value = "";
+                generationCode.value =
+                    "";
+
 
                 generationStatus.textContent =
                     "";
 
+
                 generationSubmit.disabled =
                     true;
 
-                show(generationScreen);
+
+                show(
+                    generationScreen
+                );
             };
 
 
         /*
-         * Возврат из генерации
-         * в главное меню.
+         * Назад из генерации.
          */
         $("generationBack").onclick =
-            () => show(homeScreen);
+            () =>
+                show(
+                    homeScreen
+                );
 
 
         /*
-         * Открытие пользовательского экрана.
+         * Открытие профиля.
          */
         $("openUser").onclick =
             () => {
 
-                if (!requireAccess()) {
+                if (
+                    !requireAccess()
+                ) {
+
                     return;
                 }
 
 
                 userWalletAddress.textContent =
-                    currentWallet || "";
+                    currentWallet ||
+                    "";
 
 
-                show(userScreen);
+                show(
+                    userScreen
+                );
             };
 
 
         /*
-         * Возврат из пользовательского экрана.
+         * Назад из профиля.
          */
         $("userBack").onclick =
-            () => show(homeScreen);
+            () =>
+                show(
+                    homeScreen
+                );
 
 
         /*
          * Отключение TON-кошелька.
-         *
-         * После отключения:
-         * currentWallet = null
-         * accessGranted = false
-         *
-         * Пользователь возвращается
-         * на экран авторизации.
          */
         $("disconnectWallet").onclick =
             async () => {
 
                 try {
 
-                    await tonConnectUI.disconnect();
+                    await tonConnectUI
+                        .disconnect();
 
                 } finally {
 
-                    currentWallet = null;
+                    currentWallet =
+                        null;
 
-                    accessGranted = false;
+                    accessGranted =
+                        false;
 
-                    show(authScreen);
+
+                    show(
+                        authScreen
+                    );
                 }
             };
 
