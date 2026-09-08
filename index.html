@@ -9,7 +9,10 @@
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     >
 
-    <title>AR Gallery</title>
+    <title>AR Game Cam</title>
+
+    <!-- TELEGRAM WEB APP -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
     <!-- TON CONNECT -->
     <script src="https://unpkg.com/@tonconnect/ui@3.0.0/dist/tonconnect-ui.min.js">
@@ -199,6 +202,36 @@
 
         .connectButton:active {
             opacity: .65;
+        }
+
+        .telegramLoginButton {
+            width: 100%;
+            min-height: 50px;
+            margin-top: 14px;
+            padding: 0 18px;
+            border: 1px solid #2d2d2d;
+            border-radius: 14px;
+            background: #151515;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .telegramLoginButton:active {
+            background: #222;
+        }
+
+        .telegramLoginButton:disabled {
+            opacity: .45;
+            cursor: default;
+        }
+
+        .telegramInfo {
+            min-height: 18px;
+            margin-top: 10px;
+            color: #777;
+            font-size: 11px;
+            text-align: center;
         }
 
         .authStatus {
@@ -883,6 +916,21 @@
         </div>
 
         <button
+            id="telegramLogin"
+            class="telegramLoginButton"
+            type="button"
+        >
+            ВОЙТИ ЧЕРЕЗ TELEGRAM
+        </button>
+
+        <div
+            id="telegramInfo"
+            class="telegramInfo"
+        >
+            Вход через Telegram доступен внутри Telegram Web App
+        </div>
+
+        <button
             id="connectWallet"
             class="connectButton"
             type="button"
@@ -1363,6 +1411,12 @@ const connectWallet =
 const authStatus =
     document.getElementById("authStatus");
 
+const telegramLogin =
+    document.getElementById("telegramLogin");
+
+const telegramInfo =
+    document.getElementById("telegramInfo");
+
 const userWalletAddress =
     document.getElementById("userWalletAddress");
 
@@ -1402,6 +1456,103 @@ function showScreen(screen) {
 
     screen.classList.add("active");
 }
+
+
+/* =============================================================
+   TELEGRAM LOGIN / WEB APP SESSION
+============================================================= */
+
+const telegramWebApp =
+    window.Telegram?.WebApp || null;
+
+let telegramUser = null;
+
+function applyTelegramUser(user) {
+    if (!user) return false;
+
+    telegramUser = {
+        id: user.id || null,
+        first_name: user.first_name || "",
+        last_name: user.last_name || "",
+        username: user.username || ""
+    };
+
+    const displayName =
+        telegramUser.username
+            ? "@" + telegramUser.username
+            : [telegramUser.first_name, telegramUser.last_name]
+                .filter(Boolean)
+                .join(" ");
+
+    telegramInfo.textContent =
+        displayName
+            ? `Telegram: ${displayName}`
+            : "Telegram: пользователь авторизован";
+
+    telegramLogin.textContent = "TELEGRAM ВОЙДЕН";
+    telegramLogin.disabled = true;
+
+    try {
+        sessionStorage.setItem(
+            "ar_gallery_telegram_user",
+            JSON.stringify(telegramUser)
+        );
+    } catch {}
+
+    return true;
+}
+
+if (telegramWebApp) {
+    telegramWebApp.ready();
+    telegramWebApp.expand();
+
+    if (typeof telegramWebApp.setHeaderColor === "function") {
+        telegramWebApp.setHeaderColor("#000000");
+    }
+
+    if (typeof telegramWebApp.setBackgroundColor === "function") {
+        telegramWebApp.setBackgroundColor("#000000");
+    }
+
+    if (typeof telegramWebApp.disableVerticalSwipes === "function") {
+        telegramWebApp.disableVerticalSwipes();
+    }
+
+    if (telegramWebApp.initDataUnsafe?.user) {
+        applyTelegramUser(telegramWebApp.initDataUnsafe.user);
+    } else {
+        telegramInfo.textContent =
+            "Telegram Web App открыт, пользователь не передан";
+    }
+} else {
+    telegramLogin.disabled = false;
+    telegramInfo.textContent =
+        "Откройте сайт из Telegram, чтобы использовать вход Telegram";
+
+    try {
+        const saved =
+            JSON.parse(
+                sessionStorage.getItem("ar_gallery_telegram_user") || "null"
+            );
+        if (saved) applyTelegramUser(saved);
+    } catch {}
+}
+
+telegramLogin.addEventListener("click", () => {
+    if (!telegramWebApp) {
+        telegramInfo.textContent =
+            "Вход через Telegram работает при открытии сайта внутри Telegram";
+        return;
+    }
+
+    if (telegramWebApp.initDataUnsafe?.user) {
+        applyTelegramUser(telegramWebApp.initDataUnsafe.user);
+        return;
+    }
+
+    telegramInfo.textContent =
+        "Telegram не передал данные пользователя. Перезапустите Web App.";
+});
 
 
 /* =============================================================
@@ -2686,7 +2837,8 @@ async function requestRoomFromPC(item) {
             },
             body: JSON.stringify({
                 room: folder,
-                wallet: wallet
+                wallet: wallet,
+                telegram: telegramUser || null
             }),
             signal: controller.signal
         });
