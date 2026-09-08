@@ -8316,7 +8316,7 @@ function loadRoomTexture(url, label = "texture") {
                     url: "embedded-data",
                     error: "Тайм-аут декодирования встроенной текстуры 12 секунд"
                 });
-            }, 60000);
+            }, 12000);
 
             roomTextureLoader.load(
                 url,
@@ -8355,7 +8355,7 @@ function loadRoomTexture(url, label = "texture") {
             return;
         }
 
-        /* Основной режим: бинарная загрузка PNG через Flask API. */
+        /* Старый HTTP-режим оставлен как резервный вариант. */
         let finishedHttp = false;
         const controller = new AbortController();
         const timeout = setTimeout(() => {
@@ -8366,10 +8366,10 @@ function loadRoomTexture(url, label = "texture") {
                     texture: null,
                     label,
                     url,
-                    error: "Тайм-аут HTTP-загрузки изображения 60 секунд"
+                    error: "Тайм-аут HTTP-загрузки изображения 12 секунд"
                 });
             }
-        }, 60000);
+        }, 12000);
 
         setRoomStatus(`Получение ${label}.png с PC...`, true);
 
@@ -8535,10 +8535,8 @@ async function buildRoom(item) {
     try {
         roomData = await requestRoomFromPC(item);
     } catch (postError) {
-        // POST обязателен: именно он фиксирует ROOM-запрос в GUI.
-        // GET не используем как тихий fallback, чтобы не потерять
-        // единый протокол загрузки комнаты.
-        throw postError;
+        console.warn("ROOM POST ERROR, пробуем GET:", postError);
+        roomData = await fetchRoomManifest(item);
     }
 
     const textures = resolveRoomTextures(roomData);
@@ -8663,7 +8661,7 @@ async function buildRoom(item) {
 
         setRoomStatus(
             `ROOM ${folder}: ${loadedCount}/6\n` +
-            `Получение ${label}.png с PC-сервера...`,
+            `Получение ${label}.png...`,
             true
         );
 
