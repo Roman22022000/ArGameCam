@@ -8063,221 +8063,213 @@ function findRoomFileByNames(files, names) {
 }
 
 function resolveRoomTextures(item) {
-    const folder =
-        item?.folder ||
-        item?.name ||
-        "";
+    const folder = String(item?.folder || item?.name || "").trim();
 
-    const files = getRoomManifestFiles(item);
-    const direct = item?.textures || {};
-
-    /*
-        Серверная схема ROOM:
-
-        01_BACKGROUND.png -> задняя стена
-        02_LEFT.png       -> левая стена
-        03_RIGHT.png      -> правая стена
-        04_FRONT.png      -> передняя стена
-        05_SKY.png        -> потолок
-        06_GROUND.png     -> пол
-    */
-
-    const result = {
-        back:
-            normalizeRoomFileValue(
-                folder,
-                direct.background ||
-                direct.back ||
-                direct.rear
-            ) ||
-            findRoomFileByNames(
-                files,
-                [
-                    "01_BACKGROUND",
-                    "01_BACKGROUND.png",
-                    "background",
-                    "back"
-                ]
-            ) ||
-            roomFileUrl(folder, "01_BACKGROUND.png"),
-
-        left:
-            normalizeRoomFileValue(
-                folder,
-                direct.left
-            ) ||
-            findRoomFileByNames(
-                files,
-                [
-                    "02_LEFT",
-                    "02_LEFT.png",
-                    "left"
-                ]
-            ) ||
-            roomFileUrl(folder, "02_LEFT.png"),
-
-        right:
-            normalizeRoomFileValue(
-                folder,
-                direct.right
-            ) ||
-            findRoomFileByNames(
-                files,
-                [
-                    "03_RIGHT",
-                    "03_RIGHT.png",
-                    "right"
-                ]
-            ) ||
-            roomFileUrl(folder, "03_RIGHT.png"),
-
-        front:
-            normalizeRoomFileValue(
-                folder,
-                direct.front ||
-                direct.forward
-            ) ||
-            findRoomFileByNames(
-                files,
-                [
-                    "04_FRONT",
-                    "04_FRONT.png",
-                    "front",
-                    "forward"
-                ]
-            ) ||
-            roomFileUrl(folder, "04_FRONT.png"),
-
-        ceiling:
-            normalizeRoomFileValue(
-                folder,
-                direct.sky ||
-                direct.ceiling ||
-                direct.top
-            ) ||
-            findRoomFileByNames(
-                files,
-                [
-                    "05_SKY",
-                    "05_SKY.png",
-                    "sky",
-                    "ceiling"
-                ]
-            ) ||
-            roomFileUrl(folder, "05_SKY.png"),
-
-        floor:
-            normalizeRoomFileValue(
-                folder,
-                direct.ground ||
-                direct.floor ||
-                direct.bottom
-            ) ||
-            findRoomFileByNames(
-                files,
-                [
-                    "06_GROUND",
-                    "06_GROUND.png",
-                    "ground",
-                    "floor"
-                ]
-            ) ||
-            roomFileUrl(folder, "06_GROUND.png")
-    };
+    if (!folder) {
+        return {
+            back: "",
+            left: "",
+            right: "",
+            front: "",
+            ceiling: "",
+            floor: ""
+        };
+    }
 
     /*
-        Поддержка старого формата API, где поля
-        находятся непосредственно в объекте комнаты.
+        ВАЖНО:
+        Имена файлов на PC фиксированы и соответствуют вашей папке:
+
+        Desktop/3d/3d/fon_room/diorama_1/
+            01_BACKGROUND.png -> BACK
+            02_LEFT.png       -> LEFT
+            03_RIGHT.png      -> RIGHT
+            04_FRONT.png      -> FRONT
+            05_SKY.png        -> CEILING
+            06_GROUND.png     -> FLOOR
+
+        Не пытаемся угадывать названия файлов.
+        Всегда строим URL напрямую через Flask API.
     */
-    const directFields = {
-        back: item?.background || item?.back || item?.rear,
-        left: item?.left,
-        right: item?.right,
-        front: item?.front || item?.forward,
-        ceiling: item?.sky || item?.ceiling || item?.top,
-        floor: item?.ground || item?.floor || item?.bottom
+    const files = {
+        back: "01_BACKGROUND.png",
+        left: "02_LEFT.png",
+        right: "03_RIGHT.png",
+        front: "04_FRONT.png",
+        ceiling: "05_SKY.png",
+        floor: "06_GROUND.png"
     };
 
-    Object.keys(directFields).forEach(key => {
-        const value = normalizeRoomFileValue(
-            folder,
-            directFields[key]
-        );
+    const result = {};
 
-        if (value) {
-            result[key] = value;
-        }
+    Object.entries(files).forEach(([surface, filename]) => {
+        result[surface] = roomFileUrl(folder, filename);
     });
+
+    /*
+        Если Flask вернул конкретные URL, используем их.
+        Но только если URL действительно задан сервером.
+    */
+    const direct = item?.textures;
+
+    if (direct && typeof direct === "object") {
+        const serverFields = {
+            back: direct.background || direct.back || direct.rear,
+            left: direct.left,
+            right: direct.right,
+            front: direct.front || direct.forward,
+            ceiling: direct.sky || direct.ceiling || direct.top,
+            floor: direct.ground || direct.floor || direct.bottom
+        };
+
+        Object.entries(serverFields).forEach(([surface, value]) => {
+            if (typeof value === "string" && value.trim()) {
+                result[surface] = normalizeRoomFileValue(folder, value);
+            } else if (value && typeof value === "object") {
+                const url =
+                    value.url ||
+                    value.file_url ||
+                    value.download_url ||
+                    "";
+
+                if (url) {
+                    result[surface] = normalizeRoomFileValue(folder, url);
+                }
+            }
+        });
+    }
 
     return result;
 }
 
 async function fetchRoomManifest(item) {
-    const folder =
-        item?.folder ||
-        item?.name ||
-        "";
+    const folder = String(item?.folder || item?.name || "").trim();
 
     if (!folder) {
-        return item;
+        throw new Error("У комнаты отсутствует folder/name");
     }
 
-    const url =
-        `${ROOMS_API}/${encodeURIComponent(folder)}`;
+    /*
+        Сразу показываем состояние запроса, чтобы интерфейс
+        никогда не оставался на старом тексте "Загрузка комнат...".
+    */
+    setRoomStatus(
+        `Запрос ROOM "${folder}" на PC-сервер...`,
+        true
+    );
+
+    const url = `${ROOMS_API}/${encodeURIComponent(folder)}`;
 
     const controller = new AbortController();
-
-    const timeout = setTimeout(() => {
-        controller.abort();
-    }, 10000);
+    const timeout = setTimeout(() => controller.abort(), 10000);
 
     try {
-        const response = await fetch(
-            url,
-            {
-                method: "GET",
-                cache: "no-store",
-                mode: "cors",
-                headers: {
-                    "Accept": "application/json"
-                },
-                signal: controller.signal
-            }
-        );
+        const response = await fetch(url, {
+            method: "GET",
+            mode: "cors",
+            cache: "no-store",
+            headers: {
+                "Accept": "application/json"
+            },
+            signal: controller.signal
+        });
 
         if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        const manifest = data?.room || data;
+
+        if (!manifest || typeof manifest !== "object") {
+            throw new Error("Сервер вернул пустой manifest комнаты");
+        }
+
+        return {
+            ...item,
+            ...manifest,
+            folder: manifest.folder || item.folder || folder,
+            name: manifest.name || item.name || folder
+        };
+
+    } catch (error) {
+        if (error?.name === "AbortError") {
             throw new Error(
-                `HTTP ${response.status} при запросе комнаты ${folder}`
+                `Тайм-аут запроса manifest комнаты: ${folder}`
             );
         }
 
-        const manifest = await response.json();
-
-        if (manifest && typeof manifest === "object") {
-            return {
-                ...item,
-                ...manifest,
-                folder:
-                    manifest.folder ||
-                    item.folder ||
-                    folder
-            };
-        }
-
-        return item;
-
-    } catch (error) {
-        console.warn(
-            "ROOM MANIFEST LOAD ERROR:",
-            url,
-            error
+        throw new Error(
+            `Не удалось получить ROOM ${folder}: ${error?.message || error}`
         );
 
-        /*
-            Если отдельный manifest недоступен,
-            продолжаем работу с объектом из /api/rooms.
-        */
-        return item;
+    } finally {
+        clearTimeout(timeout);
+    }
+}
+
+async function requestRoomFromPC(item) {
+    const folder = String(item?.folder || item?.name || "").trim();
+
+    if (!folder) {
+        throw new Error("Не указана папка комнаты");
+    }
+
+    const wallet =
+        typeof currentWallet !== "undefined" && currentWallet
+            ? String(currentWallet)
+            : "";
+
+    const url = `${ROOMS_API}/request`;
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+
+    try {
+        const response = await fetch(url, {
+            method: "POST",
+            mode: "cors",
+            cache: "no-store",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            },
+            body: JSON.stringify({
+                room: folder,
+                wallet: wallet
+            }),
+            signal: controller.signal
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (data?.success === false) {
+            throw new Error(data.error || "PC-сервер отклонил ROOM-запрос");
+        }
+
+        const manifest = data?.room;
+
+        if (!manifest || typeof manifest !== "object") {
+            throw new Error("PC-сервер не вернул manifest комнаты");
+        }
+
+        return {
+            ...item,
+            ...manifest,
+            folder: manifest.folder || item.folder || folder,
+            name: manifest.name || item.name || folder
+        };
+
+    } catch (error) {
+        if (error?.name === "AbortError") {
+            throw new Error("Тайм-аут ROOM-запроса к PC-серверу (10 секунд)");
+        }
+
+        throw error;
 
     } finally {
         clearTimeout(timeout);
@@ -8308,29 +8300,31 @@ function loadRoomTexture(url, label = "texture") {
 
         const timeout = setTimeout(() => {
             controller.abort();
-
             finish({
                 texture: null,
                 label,
                 url,
-                error: "Тайм-аут загрузки 12 секунд"
+                error: "Тайм-аут загрузки изображения 12 секунд"
             });
         }, 12000);
 
-        fetch(
-            url,
-            {
-                method: "GET",
-                mode: "cors",
-                cache: "no-store",
-                signal: controller.signal
-            }
-        )
+        setRoomStatus(
+            `Получение ${label}.png с PC...`,
+            true
+        );
+
+        fetch(url, {
+            method: "GET",
+            mode: "cors",
+            cache: "no-store",
+            headers: {
+                "Accept": "image/png,image/jpeg,image/webp,image/*,*/*;q=0.8"
+            },
+            signal: controller.signal
+        })
             .then(response => {
                 if (!response.ok) {
-                    throw new Error(
-                        `HTTP ${response.status}`
-                    );
+                    throw new Error(`HTTP ${response.status}`);
                 }
 
                 const contentType =
@@ -8341,7 +8335,7 @@ function loadRoomTexture(url, label = "texture") {
                     !contentType.includes("octet-stream")
                 ) {
                     console.warn(
-                        `ROOM ${label}: сервер вернул Content-Type ${contentType}`
+                        `ROOM ${label}: Content-Type = ${contentType}`
                     );
                 }
 
@@ -8350,35 +8344,23 @@ function loadRoomTexture(url, label = "texture") {
             .then(blob => {
                 if (finished) return;
 
-                const objectUrl =
-                    URL.createObjectURL(blob);
+                const objectUrl = URL.createObjectURL(blob);
 
                 roomTextureLoader.load(
                     objectUrl,
-
                     texture => {
                         clearTimeout(timeout);
                         URL.revokeObjectURL(objectUrl);
 
-                        texture.colorSpace =
-                            THREE.SRGBColorSpace;
-
-                        texture.wrapS =
-                            THREE.ClampToEdgeWrapping;
-
-                        texture.wrapT =
-                            THREE.ClampToEdgeWrapping;
-
-                        texture.anisotropy =
-                            roomRenderer
-                                ? Math.min(
-                                    roomRenderer
-                                        .capabilities
-                                        .getMaxAnisotropy(),
-                                    4
-                                )
-                                : 1;
-
+                        texture.colorSpace = THREE.SRGBColorSpace;
+                        texture.wrapS = THREE.ClampToEdgeWrapping;
+                        texture.wrapT = THREE.ClampToEdgeWrapping;
+                        texture.anisotropy = roomRenderer
+                            ? Math.min(
+                                roomRenderer.capabilities.getMaxAnisotropy(),
+                                4
+                            )
+                            : 1;
                         texture.needsUpdate = true;
 
                         finish({
@@ -8388,18 +8370,10 @@ function loadRoomTexture(url, label = "texture") {
                             error: null
                         });
                     },
-
                     undefined,
-
                     error => {
                         clearTimeout(timeout);
                         URL.revokeObjectURL(objectUrl);
-
-                        console.error(
-                            `ROOM TEXTURE LOAD ERROR: ${label}`,
-                            url,
-                            error
-                        );
 
                         finish({
                             texture: null,
@@ -8418,24 +8392,17 @@ function loadRoomTexture(url, label = "texture") {
                         texture: null,
                         label,
                         url,
-                        error: "Запрос отменён по тайм-ауту"
+                        error: "Запрос изображения отменён по тайм-ауту"
                     });
                     return;
                 }
-
-                console.error(
-                    `ROOM FILE REQUEST ERROR: ${label}`,
-                    url,
-                    error
-                );
 
                 finish({
                     texture: null,
                     label,
                     url,
-                    error:
-                        error?.message ||
-                        "Ошибка запроса файла. Проверьте CORS и Cloudflare Tunnel."
+                    error: error?.message ||
+                        "Ошибка CORS/Cloudflare/Flask при получении файла"
                 });
             });
     });
@@ -8449,45 +8416,21 @@ function createRoomSurface(
     texture,
     label
 ) {
-    const geometry =
-        new THREE.PlaneGeometry(
-            width,
-            height
-        );
+    const geometry = new THREE.PlaneGeometry(width, height);
 
-    const material =
-        new THREE.MeshStandardMaterial({
-            map: texture || null,
-            color: texture
-                ? 0xffffff
-                : 0x151515,
+    const material = new THREE.MeshBasicMaterial({
+        map: texture || null,
+        color: texture ? 0xffffff : 0x222222,
+        side: THREE.DoubleSide,
+        transparent: false,
+        depthWrite: true,
+        depthTest: true
+    });
 
-            /*
-                DoubleSide используется специально:
-                поверхности должны быть видимы изнутри
-                комнаты независимо от направления нормали.
-            */
-            side: THREE.DoubleSide,
-
-            roughness: 0.95,
-            metalness: 0
-        });
-
-    const mesh =
-        new THREE.Mesh(
-            geometry,
-            material
-        );
+    const mesh = new THREE.Mesh(geometry, material);
 
     mesh.position.copy(position);
-
-    mesh.rotation.set(
-        rotation.x,
-        rotation.y,
-        rotation.z
-    );
-
-    mesh.receiveShadow = false;
+    mesh.rotation.set(rotation.x, rotation.y, rotation.z);
 
     mesh.userData.roomSurface = true;
     mesh.userData.roomSurfaceName = label;
@@ -8501,10 +8444,7 @@ function clearRoomScene() {
     const removable = [];
 
     roomScene.traverse(object => {
-        if (
-            object.userData &&
-            object.userData.roomSurface
-        ) {
+        if (object.userData && object.userData.roomSurface) {
             removable.push(object);
         }
     });
@@ -8526,20 +8466,55 @@ function clearRoomScene() {
             material.dispose();
         }
     });
+
+    /* Удаляем только созданный ROOM-свет. */
+    const lights = [];
+
+    roomScene.traverse(object => {
+        if (object.userData && object.userData.roomLight) {
+            lights.push(object);
+        }
+    });
+
+    lights.forEach(light => roomScene.remove(light));
 }
 
 async function buildRoom(item) {
     clearRoomScene();
 
-    /*
-        Сначала получаем актуальный manifest
-        непосредственно с PC Flask API.
-    */
-    const roomData =
-        await fetchRoomManifest(item);
+    const folder = String(item?.folder || item?.name || "").trim();
 
-    const textures =
-        resolveRoomTextures(roomData);
+    if (!folder) {
+        throw new Error("У ROOM отсутствует имя папки");
+    }
+
+    /*
+        Сначала отправляем POST-запрос на PC-сервер.
+        Flask возвращает manifest выбранной комнаты.
+    */
+    setRoomStatus(
+        `Отправка запроса ROOM ${folder} на PC-сервер...`,
+        true
+    );
+
+    let roomData;
+
+    try {
+        roomData = await requestRoomFromPC(item);
+    } catch (requestError) {
+        console.warn(
+            "ROOM POST REQUEST ERROR. Переход на GET manifest:",
+            requestError
+        );
+
+        /*
+            GET является резервным способом.
+            Это важно, если Cloudflare/прокси не пропускает POST.
+        */
+        roomData = await fetchRoomManifest(item);
+    }
+
+    const textures = resolveRoomTextures(roomData);
 
     const textureEntries = [
         ["back", "01_BACKGROUND"],
@@ -8551,239 +8526,125 @@ async function buildRoom(item) {
     ];
 
     setRoomStatus(
-        "Запрос текстур комнаты с PC...",
+        `ROOM ${folder}: получение 6 текстур с PC-сервера...`,
         true
     );
 
-    const loaded =
-        await Promise.all(
-            textureEntries.map(
-                ([key, label]) =>
-                    loadRoomTexture(
-                        textures[key],
-                        label
-                    )
-            )
-        );
+    const loaded = await Promise.all(
+        textureEntries.map(([key, label]) =>
+            loadRoomTexture(textures[key], label)
+        )
+    );
 
     const textureMap = {};
 
     loaded.forEach(result => {
-        textureMap[result.label] =
-            result.texture;
+        textureMap[result.label] = result.texture;
     });
 
     /*
-        Создаём комнату 7 × 6 × 4 м.
-        X = 7 м
-        Z = 6 м
-        Y = 4 м
-    */
+        Физические размеры комнаты:
 
+        X = 7 метров
+        Z = 6 метров
+        Y = 4 метра
+
+        Камера находится внутри.
+    */
     const surfaces = [
-        /*
-            ЗАДНЯЯ СТЕНА
-            01_BACKGROUND.png
-        */
+        /* BACK — 01_BACKGROUND.png */
         createRoomSurface(
             ROOM_LENGTH,
             ROOM_HEIGHT,
-
             new THREE.Vector3(
                 0,
                 ROOM_HEIGHT / 2,
                 ROOM_WIDTH / 2
             ),
-
-            new THREE.Euler(
-                0,
-                Math.PI,
-                0
-            ),
-
+            new THREE.Euler(0, Math.PI, 0),
             textureMap["01_BACKGROUND"],
-
             "01_BACKGROUND"
         ),
 
-        /*
-            ЛЕВАЯ СТЕНА
-            02_LEFT.png
-        */
+        /* LEFT — 02_LEFT.png */
         createRoomSurface(
             ROOM_WIDTH,
             ROOM_HEIGHT,
-
             new THREE.Vector3(
                 -ROOM_LENGTH / 2,
                 ROOM_HEIGHT / 2,
                 0
             ),
-
-            new THREE.Euler(
-                0,
-                Math.PI / 2,
-                0
-            ),
-
+            new THREE.Euler(0, Math.PI / 2, 0),
             textureMap["02_LEFT"],
-
             "02_LEFT"
         ),
 
-        /*
-            ПРАВАЯ СТЕНА
-            03_RIGHT.png
-        */
+        /* RIGHT — 03_RIGHT.png */
         createRoomSurface(
             ROOM_WIDTH,
             ROOM_HEIGHT,
-
             new THREE.Vector3(
                 ROOM_LENGTH / 2,
                 ROOM_HEIGHT / 2,
                 0
             ),
-
-            new THREE.Euler(
-                0,
-                -Math.PI / 2,
-                0
-            ),
-
+            new THREE.Euler(0, -Math.PI / 2, 0),
             textureMap["03_RIGHT"],
-
             "03_RIGHT"
         ),
 
-        /*
-            ПЕРЕДНЯЯ СТЕНА
-            04_FRONT.png
-        */
+        /* FRONT — 04_FRONT.png */
         createRoomSurface(
             ROOM_LENGTH,
             ROOM_HEIGHT,
-
             new THREE.Vector3(
                 0,
                 ROOM_HEIGHT / 2,
                 -ROOM_WIDTH / 2
             ),
-
-            new THREE.Euler(
-                0,
-                0,
-                0
-            ),
-
+            new THREE.Euler(0, 0, 0),
             textureMap["04_FRONT"],
-
             "04_FRONT"
         ),
 
-        /*
-            ПОТОЛОК
-            05_SKY.png
-        */
+        /* CEILING — 05_SKY.png */
         createRoomSurface(
             ROOM_LENGTH,
             ROOM_WIDTH,
-
             new THREE.Vector3(
                 0,
                 ROOM_HEIGHT,
                 0
             ),
-
-            new THREE.Euler(
-                Math.PI / 2,
-                0,
-                0
-            ),
-
+            new THREE.Euler(Math.PI / 2, 0, 0),
             textureMap["05_SKY"],
-
             "05_SKY"
         ),
 
-        /*
-            ПОЛ
-            06_GROUND.png
-        */
+        /* FLOOR — 06_GROUND.png */
         createRoomSurface(
             ROOM_LENGTH,
             ROOM_WIDTH,
-
-            new THREE.Vector3(
-                0,
-                0,
-                0
-            ),
-
-            new THREE.Euler(
-                -Math.PI / 2,
-                0,
-                0
-            ),
-
+            new THREE.Vector3(0, 0, 0),
+            new THREE.Euler(-Math.PI / 2, 0, 0),
             textureMap["06_GROUND"],
-
             "06_GROUND"
         )
     ];
 
-    surfaces.forEach(surface => {
-        roomScene.add(surface);
-    });
+    surfaces.forEach(surface => roomScene.add(surface));
 
     /*
-        Свет внутри комнаты.
-        Даже при отсутствии одной текстуры
-        стены остаются видимыми.
+        Для текстурной комнаты используем MeshBasicMaterial,
+        поэтому изображение не зависит от освещения.
+        Свет оставляем для резервных/дополнительных объектов.
     */
-    const ambient =
-        new THREE.AmbientLight(
-            0xffffff,
-            2.2
-        );
-
+    const ambient = new THREE.AmbientLight(0xffffff, 1.0);
+    ambient.userData.roomLight = true;
     roomScene.add(ambient);
 
-    const light =
-        new THREE.PointLight(
-            0xffffff,
-            30,
-            18,
-            2
-        );
-
-    light.position.set(
-        0,
-        ROOM_HEIGHT - 0.25,
-        0
-    );
-
-    roomScene.add(light);
-
-    const fill =
-        new THREE.PointLight(
-            0xffffff,
-            10,
-            12,
-            2
-        );
-
-    fill.position.set(
-        0,
-        1.4,
-        0
-    );
-
-    roomScene.add(fill);
-
-    /*
-        Камера внутри комнаты.
-    */
+    /* Камера строго внутри комнаты. */
     roomCamera.position.set(
         0,
         ROOM_EYE_HEIGHT,
@@ -8798,40 +8659,33 @@ async function buildRoom(item) {
     roomVerticalButtonInput = 0;
 
     resetRoomMovePadVisual();
-
     clampRoomCamera();
     updateRoomCameraRotation();
+    resizeRoomViewer();
 
-    const errors = loaded.filter(
-        result => !result.texture
-    );
+    const errors = loaded.filter(result => !result.texture);
 
     if (errors.length) {
-        const errorText =
-            errors
-                .map(result =>
-                    `${result.label}: ${result.error || "ошибка"}\n${result.url}`
-                )
-                .join("\n\n");
+        const errorText = errors.map(result =>
+            `${result.label}.png: ${result.error || "ошибка"}\n${result.url}`
+        ).join("\n\n");
 
         setRoomStatus(
-            `Комната создана: 7 × 6 × 4 м.\n` +
-            `Загружено текстур: ${loaded.length - errors.length} / 6.\n\n` +
+            `ROOM ${folder} создан: 7 × 6 × 4 м.\n` +
+            `Получено текстур: ${loaded.length - errors.length} / 6.\n\n` +
             `Проблемные файлы:\n${errorText}`,
             true
         );
-
     } else {
         setRoomStatus(
-            "Комната загружена.\n" +
-            "6 / 6 текстур получены с PC-сервера.",
+            `ROOM ${folder} загружен.\n` +
+            `Размер: 7 × 6 × 4 м.\n` +
+            `Текстуры: 6 / 6 получены с PC-сервера.`,
             true
         );
 
         setTimeout(() => {
-            if (
-                roomViewerScreen.classList.contains("active")
-            ) {
+            if (roomViewerScreen.classList.contains("active")) {
                 setRoomStatus("", false);
             }
         }, 1800);
@@ -9433,15 +9287,27 @@ function openRoom(index) {
     currentRoom = item;
 
     const number = roomNumberValue(item, index);
+    const name = roomName(item, index);
+
     roomViewerTitle.textContent = `ROOM ${number}`;
 
     showScreen(roomViewerScreen);
     initRoomViewer();
+    resizeRoomViewer();
+
+    /* Сразу меняем статус — до первого сетевого запроса. */
+    setRoomStatus(
+        `Отправка запроса ROOM ${name} на PC-сервер...`,
+        true
+    );
 
     buildRoom(item).catch(error => {
         console.error("ROOM BUILD ERROR:", error);
+
         setRoomStatus(
-            `Не удалось открыть комнату.\n${error?.message || "Ошибка"}`,
+            `Не удалось загрузить ROOM ${name}.\n\n` +
+            `${error?.message || "Неизвестная ошибка"}\n\n` +
+            `API: ${ROOMS_API}`,
             true
         );
     });
