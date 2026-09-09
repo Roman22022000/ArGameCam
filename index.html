@@ -4128,6 +4128,17 @@ function stopRoomVertical(direction) {
     }
 }
 
+function isMobileDevice() {
+    const userAgent = navigator.userAgent || navigator.vendor || window.opera || "";
+
+    return /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile/i.test(
+        userAgent
+    ) || (
+        navigator.maxTouchPoints > 1 &&
+        /macintosh/i.test(userAgent)
+    );
+}
+
 function initRoomViewer() {
     if (roomRenderer) return;
 
