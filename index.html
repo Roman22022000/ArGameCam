@@ -8672,8 +8672,13 @@ async function loadRoomModel(modelInfo) {
        model.glb находится здесь:
          ROOM/3d_model/model.glb
 
-       а текстуры находятся здесь:
+       Внешние текстуры могут находиться либо рядом с GLB:
+         ROOM/3d_model/texture.png
+
+       либо в старой поддерживаемой папке:
          ROOM/3d_model/textures/*
+
+       Оба варианта обрабатываются одинаково.
 
        GLTFLoader после разбора GLB может передать сюда уже АБСОЛЮТНЫЙ
        URL вида:
