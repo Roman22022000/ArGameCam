@@ -1760,12 +1760,16 @@ async function checkCollectionNFT(
     walletAddress
 ) {
     /*
-       Ищем ЛЮБОЙ NFT кошелька, который принадлежит
-       именно REQUIRED_COLLECTION.
+       Ищем ЛЮБОЙ NFT владельца из REQUIRED_COLLECTION.
 
-       Сначала используем фильтр TonAPI collection.
-       Если фильтр недоступен, выполняем резервный поиск
-       по страницам NFT кошелька.
+       ВАЖНО:
+       - не загружаем все NFT кошелька;
+       - не запускаем длинный цикл по 100 страницам;
+       - используем серверный фильтр TonAPI collection;
+       - у запроса есть таймаут, поэтому экран не зависает
+         бесконечно на "Проверка NFT...";
+       - после получения ответа дополнительно проверяем
+         адрес коллекции у найденного NFT.
     */
 
     if (!walletAddress) {
@@ -1819,12 +1823,6 @@ async function checkCollectionNFT(
         return [];
     }
 
-    /*
-       ===============================================================
-       1. ПРЯМОЙ ПОИСК В НУЖНОЙ КОЛЛЕКЦИИ
-       ===============================================================
-    */
-
     const filteredUrl =
         "https://tonapi.io/v2/accounts/" +
         encodeURIComponent(walletAddress) +
@@ -1833,9 +1831,35 @@ async function checkCollectionNFT(
         "&limit=100";
 
     console.log(
+        "[NFT CHECK] Кошелёк:",
+        walletAddress
+    );
+
+    console.log(
         "[NFT CHECK] Ищем любой NFT коллекции:",
         REQUIRED_COLLECTION
     );
+
+    console.log(
+        "[NFT CHECK] URL:",
+        filteredUrl
+    );
+
+    /*
+       Таймаут 15 секунд.
+       Раньше обычный fetch мог ждать ответ бесконечно,
+       из-за чего интерфейс оставался на "Проверка NFT...".
+    */
+    const controller =
+        new AbortController();
+
+    const timeoutId =
+        setTimeout(
+            () => {
+                controller.abort();
+            },
+            15000
+        );
 
     try {
         const response =
@@ -1846,13 +1870,16 @@ async function checkCollectionNFT(
                     headers: {
                         "Accept":
                             "application/json"
-                    }
+                    },
+                    signal:
+                        controller.signal,
+                    cache: "no-store"
                 }
             );
 
         if (!response.ok) {
             throw new Error(
-                "TonAPI filtered NFT HTTP " +
+                "TonAPI HTTP " +
                 response.status
             );
         }
@@ -1864,12 +1891,13 @@ async function checkCollectionNFT(
             extractNFTItems(data);
 
         console.log(
-            "[NFT CHECK] Найдено в фильтре:",
+            "[NFT CHECK] TonAPI вернул NFT:",
             nftItems.length
         );
 
         /*
            Достаточно одного NFT.
+           Сам адрес NFT заранее неизвестен.
         */
         for (const nft of nftItems) {
             if (
@@ -1878,116 +1906,48 @@ async function checkCollectionNFT(
                 )
             ) {
                 console.log(
-                    "[NFT CHECK] НАЙДЕН НУЖНЫЙ NFT:",
+                    "[NFT CHECK] НАЙДЕН NFT НУЖНОЙ КОЛЛЕКЦИИ:",
+                    nft.address ||
+                    nft.nft_address ||
+                    nft.item_address ||
                     nft
                 );
 
                 return nft;
             }
         }
-
-        /*
-           Если фильтр вернул пустой список,
-           резервный запрос не нужен.
-        */
-        if (nftItems.length === 0) {
-            return null;
-        }
-
-    } catch (error) {
-        console.warn(
-            "[NFT CHECK] Фильтр collection не сработал:",
-            error
-        );
-    }
-
-    /*
-       ===============================================================
-       2. РЕЗЕРВНЫЙ ПОИСК ПО NFT КОШЕЛЬКА
-       ===============================================================
-
-       Не проверяем только первые 1000 NFT.
-       Идём страницами и прекращаем поиск сразу после
-       первого NFT из нужной коллекции.
-    */
-
-    const PAGE_SIZE = 100;
-    const MAX_PAGES = 100;
-
-    for (
-        let page = 0;
-        page < MAX_PAGES;
-        page++
-    ) {
-        const offset =
-            page * PAGE_SIZE;
-
-        const url =
-            "https://tonapi.io/v2/accounts/" +
-            encodeURIComponent(walletAddress) +
-            "/nfts?limit=" +
-            PAGE_SIZE +
-            "&offset=" +
-            offset;
-
-        const response =
-            await fetch(
-                url,
-                {
-                    method: "GET",
-                    headers: {
-                        "Accept":
-                            "application/json"
-                    }
-                }
-            );
-
-        if (!response.ok) {
-            throw new Error(
-                "TonAPI NFT HTTP " +
-                response.status
-            );
-        }
-
-        const data =
-            await response.json();
-
-        const nftItems =
-            extractNFTItems(data);
 
         console.log(
-            `[NFT CHECK] Страница ${page + 1}: ${nftItems.length} NFT`
+            "[NFT CHECK] NFT нужной коллекции у кошелька не найден."
         );
 
-        for (const nft of nftItems) {
-            if (
-                belongsToRequiredCollection(
-                    nft
-                )
-            ) {
-                console.log(
-                    "[NFT CHECK] НАЙДЕН НУЖНЫЙ NFT:",
-                    nft
-                );
+        return null;
 
-                return nft;
-            }
-        }
-
+    } catch (error) {
         if (
-            nftItems.length < PAGE_SIZE
+            error &&
+            error.name === "AbortError"
         ) {
-            break;
+            console.error(
+                "[NFT CHECK] Таймаут TonAPI: 15 секунд."
+            );
+
+            throw new Error(
+                "TonAPI не ответил за 15 секунд"
+            );
         }
+
+        console.error(
+            "[NFT CHECK] Ошибка запроса:",
+            error
+        );
+
+        throw error;
+
+    } finally {
+        clearTimeout(timeoutId);
     }
-
-    console.log(
-        "[NFT CHECK] NFT нужной коллекции не найден."
-    );
-
-    return null;
 }
-
 /* =============================================================
    WALLET
 ============================================================= */
