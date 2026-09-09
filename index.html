@@ -2929,6 +2929,7 @@ async function requestRoomFromPC(item) {
 
 function loadRoomTexture(url, label = "texture") {
     return new Promise(resolve => {
+
         if (!url) {
             resolve({
                 texture: null,
@@ -2940,6 +2941,7 @@ function loadRoomTexture(url, label = "texture") {
         }
 
         let finished = false;
+
         const finish = result => {
             if (finished) return;
             finished = true;
@@ -2947,157 +2949,260 @@ function loadRoomTexture(url, label = "texture") {
         };
 
         /*
-           Новая схема ROOM: Python-сервер передаёт PNG/JPG прямо
-           внутри manifest как data:image/...;base64,... .
-           Поэтому для таких URL НЕ делаем отдельный fetch к
-           /api/rooms/file/... . Это устраняет зависание Cloudflare
-           на бинарном endpoint.
+           НАДЁЖНАЯ ЗАГРУЗКА ТЕКСТУРЫ ROOM
+
+           Здесь намеренно НЕ используется TextureLoader.load(url).
+
+           Сначала браузер обычным GET получает бинарный PNG/JPG через
+           Flask API, затем изображение декодируется из Blob локально.
+           Поэтому после GET к /api/rooms/file/... Three.js больше
+           самостоятельно не делает второй сетевой запрос к этой картинке.
+
+           Это важно для ROOM, потому что:
+           1. URL текстуры может находиться на другом origin.
+           2. Cloudflare может по-разному обрабатывать бинарные запросы.
+           3. GLTFLoader не должен участвовать в загрузке этих шести
+              стеновых текстур.
+           4. Мы полностью отделяем получение PNG от загрузки GLB.
         */
-        const isEmbedded =
-            typeof url === "string" &&
-            url.startsWith("data:image/");
 
-        if (isEmbedded) {
-            setRoomStatus(`Декодирование ${label}.png...`, true);
-
-            const timeout = setTimeout(() => {
-                finish({
-                    texture: null,
-                    label,
-                    url: "embedded-data",
-                    error: "Тайм-аут декодирования встроенной текстуры 12 секунд"
-                });
-            }, 60000);
-
-            roomTextureLoader.load(
-                url,
-                texture => {
-                    clearTimeout(timeout);
-
-                    texture.colorSpace = THREE.SRGBColorSpace;
-                    texture.wrapS = THREE.ClampToEdgeWrapping;
-                    texture.wrapT = THREE.ClampToEdgeWrapping;
-                    texture.anisotropy = roomRenderer
-                        ? Math.min(
-                            roomRenderer.capabilities.getMaxAnisotropy(),
-                            4
-                        )
-                        : 1;
-                    texture.needsUpdate = true;
-
-                    finish({
-                        texture,
-                        label,
-                        url: "embedded-data",
-                        error: null
-                    });
-                },
-                undefined,
-                error => {
-                    clearTimeout(timeout);
-                    finish({
-                        texture: null,
-                        label,
-                        url: "embedded-data",
-                        error: "Three.js не смог декодировать встроенную текстуру"
-                    });
-                }
-            );
-            return;
-        }
-
-        /* Основной режим: бинарная загрузка PNG через Flask API. */
-        let finishedHttp = false;
         const controller = new AbortController();
+
         const timeout = setTimeout(() => {
             controller.abort();
-            if (!finishedHttp) {
-                finishedHttp = true;
-                finish({
-                    texture: null,
-                    label,
-                    url,
-                    error: "Тайм-аут HTTP-загрузки изображения 60 секунд"
-                });
-            }
+
+            finish({
+                texture: null,
+                label,
+                url,
+                error: "Тайм-аут HTTP-загрузки текстуры 60 секунд"
+            });
+
         }, 60000);
 
-        setRoomStatus(`Получение ${label}.png с PC...`, true);
+        setRoomStatus(
+            `Получение ${label}.png с PC-сервера...`,
+            true
+        );
 
-        fetch(url, {
+        /*
+           Cache-busting нужен только для ROOM-текстур.
+           Сервер получает обычный GET:
+             /api/rooms/file/<room>/<file>.png
+        */
+        const requestUrl =
+            url +
+            (url.includes("?") ? "&" : "?") +
+            "v=" +
+            Date.now();
+
+        fetch(requestUrl, {
             method: "GET",
             mode: "cors",
+            credentials: "omit",
             cache: "no-store",
             headers: {
-                "Accept": "image/png,image/jpeg,image/webp,image/*,*/*;q=0.8"
+                "Accept":
+                    "image/png,image/jpeg,image/webp,image/*,*/*;q=0.8"
             },
             signal: controller.signal
         })
             .then(response => {
+
                 if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
+                    throw new Error(
+                        `HTTP ${response.status}`
+                    );
                 }
+
+                const contentType =
+                    response.headers.get("content-type") || "";
+
+                if (
+                    contentType &&
+                    !contentType.toLowerCase().startsWith("image/")
+                ) {
+                    console.warn(
+                        "ROOM TEXTURE CONTENT-TYPE:",
+                        label,
+                        contentType
+                    );
+                }
+
                 return response.blob();
             })
-            .then(blob => {
-                if (finishedHttp) return;
-                const objectUrl = URL.createObjectURL(blob);
+            .then(async blob => {
 
-                roomTextureLoader.load(
-                    objectUrl,
-                    texture => {
-                        clearTimeout(timeout);
-                        finishedHttp = true;
-                        URL.revokeObjectURL(objectUrl);
+                if (finished) return;
 
-                        texture.colorSpace = THREE.SRGBColorSpace;
-                        texture.wrapS = THREE.ClampToEdgeWrapping;
-                        texture.wrapT = THREE.ClampToEdgeWrapping;
-                        texture.anisotropy = roomRenderer
+                if (!blob || blob.size <= 0) {
+                    throw new Error(
+                        "Сервер вернул пустой файл текстуры"
+                    );
+                }
+
+                /*
+                   Предпочтительный путь:
+                   Blob -> ImageBitmap -> THREE.Texture.
+
+                   В этом варианте TextureLoader вообще не выполняет
+                   сетевой загрузки после fetch().
+                */
+                if (
+                    typeof createImageBitmap ===
+                    "function"
+                ) {
+
+                    const bitmap =
+                        await createImageBitmap(blob);
+
+                    if (finished) {
+                        bitmap.close?.();
+                        return;
+                    }
+
+                    const texture =
+                        new THREE.Texture(bitmap);
+
+                    texture.colorSpace =
+                        THREE.SRGBColorSpace;
+
+                    texture.wrapS =
+                        THREE.ClampToEdgeWrapping;
+
+                    texture.wrapT =
+                        THREE.ClampToEdgeWrapping;
+
+                    texture.minFilter =
+                        THREE.LinearMipmapLinearFilter;
+
+                    texture.magFilter =
+                        THREE.LinearFilter;
+
+                    texture.anisotropy =
+                        roomRenderer
                             ? Math.min(
-                                roomRenderer.capabilities.getMaxAnisotropy(),
+                                roomRenderer
+                                    .capabilities
+                                    .getMaxAnisotropy(),
                                 4
                             )
                             : 1;
-                        texture.needsUpdate = true;
 
-                        finish({
-                            texture,
-                            label,
-                            url,
-                            error: null
-                        });
-                    },
-                    undefined,
-                    error => {
-                        clearTimeout(timeout);
-                        finishedHttp = true;
+                    texture.needsUpdate = true;
+
+                    clearTimeout(timeout);
+
+                    finish({
+                        texture,
+                        label,
+                        url,
+                        error: null
+                    });
+
+                    return;
+                }
+
+                /*
+                   Резервный путь для браузеров без createImageBitmap:
+                   Blob -> object URL -> HTMLImageElement -> THREE.Texture.
+
+                   Важно: здесь также нет повторного HTTP GET.
+                */
+                const objectUrl =
+                    URL.createObjectURL(blob);
+
+                const image =
+                    new Image();
+
+                image.decoding = "async";
+
+                image.onload = () => {
+
+                    if (finished) {
                         URL.revokeObjectURL(objectUrl);
-
-                        finish({
-                            texture: null,
-                            label,
-                            url,
-                            error: "Three.js не смог декодировать изображение"
-                        });
+                        return;
                     }
-                );
+
+                    const texture =
+                        new THREE.Texture(image);
+
+                    texture.colorSpace =
+                        THREE.SRGBColorSpace;
+
+                    texture.wrapS =
+                        THREE.ClampToEdgeWrapping;
+
+                    texture.wrapT =
+                        THREE.ClampToEdgeWrapping;
+
+                    texture.minFilter =
+                        THREE.LinearMipmapLinearFilter;
+
+                    texture.magFilter =
+                        THREE.LinearFilter;
+
+                    texture.anisotropy =
+                        roomRenderer
+                            ? Math.min(
+                                roomRenderer
+                                    .capabilities
+                                    .getMaxAnisotropy(),
+                                4
+                            )
+                            : 1;
+
+                    texture.needsUpdate = true;
+
+                    URL.revokeObjectURL(objectUrl);
+                    clearTimeout(timeout);
+
+                    finish({
+                        texture,
+                        label,
+                        url,
+                        error: null
+                    });
+                };
+
+                image.onerror = () => {
+
+                    URL.revokeObjectURL(objectUrl);
+                    clearTimeout(timeout);
+
+                    finish({
+                        texture: null,
+                        label,
+                        url,
+                        error:
+                            "Браузер не смог декодировать PNG/JPG"
+                    });
+                };
+
+                image.src = objectUrl;
+
             })
             .catch(error => {
+
                 clearTimeout(timeout);
-                finishedHttp = true;
 
                 finish({
                     texture: null,
                     label,
                     url,
-                    error: error?.message ||
-                        "Ошибка получения изображения через API"
+                    error:
+                        error?.name === "AbortError"
+                            ? "Тайм-аут HTTP-загрузки текстуры 60 секунд"
+                            : (
+                                error?.message ||
+                                "Ошибка получения изображения через API"
+                            )
                 });
+
             });
+
     });
 }
-
 function createRoomSurface(
     width,
     height,
@@ -3607,25 +3712,46 @@ async function buildRoom(item) {
        Используем его напрямую. Если старый сервер не прислал
        model, делаем отдельный запрос /model как резерв.
        ========================================================= */
-    const roomModelPromise = (async () => {
+    /*
+       Запрос 3D-модели НЕ запускаем одновременно с PNG.
+
+       Сначала полностью получаем шесть текстур.
+       Только после этого обращаемся к model endpoint.
+
+       Это не мешает серверу подготовить модель, если она уже готова,
+       но исключает одновременную загрузку GLB и шести изображений.
+       Благодаря этому возможные дополнительные ресурсы GLB не могут
+       блокировать получение текстур ROOM.
+    */
+    const getRoomModelData = async () => {
+
         const directModel = roomData?.model;
+
         if (directModel?.url) {
             return {
                 ...directModel,
                 success: true,
                 ready: true,
                 room: folder,
-                request_id: Number(roomData?.id || 0),
+                request_id:
+                    Number(roomData?.id || 0),
                 model_id: 0,
-                filename: directModel.filename || "room.glb",
+                filename:
+                    directModel.filename ||
+                    "room.glb",
                 extension: ".glb",
-                size: Number(directModel.size || 0),
+                size:
+                    Number(directModel.size || 0),
                 url: directModel.url,
                 source: "same_room_folder"
             };
         }
-        return await requestRoomModelFromPC(roomData, folder);
-    })();
+
+        return await requestRoomModelFromPC(
+            roomData,
+            folder
+        );
+    };
 
     /* =========================================================
        3. СНАЧАЛА СОЗДАЁМ ГЕОМЕТРИЮ КОМНАТЫ.
@@ -3790,44 +3916,110 @@ async function buildRoom(item) {
         surfaceByLabel[surface.userData.roomSurfaceName] = surface;
     });
 
-    const results = [];
+    /*
+       4. ПОЛУЧАЕМ ВСЕ 6 ТЕКСТУР ПАРАЛЛЕЛЬНО.
+
+       Раньше цикл ждал окончания первой текстуры, затем начинал
+       вторую, затем третью и т.д.
+
+       Теперь все шесть GET отправляются сразу. Это исключает ситуацию,
+       когда один зависший запрос блокирует остальные пять.
+    */
+
+    const textureEntries = [
+        ["back", "01_BACKGROUND"],
+        ["left", "02_LEFT"],
+        ["right", "03_RIGHT"],
+        ["front", "04_FRONT"],
+        ["ceiling", "05_SKY"],
+        ["floor", "06_GROUND"]
+    ];
+
+    const surfaceByLabel = {};
+
+    surfaces.forEach(surface => {
+        surfaceByLabel[
+            surface.userData.roomSurfaceName
+        ] = surface;
+    });
+
     let loadedCount = 0;
 
-    for (const [key, label] of textureEntries) {
-        const url = textures[key];
+    setRoomStatus(
+        `ROOM ${folder}: 0/6\n` +
+        `Запрос 6 текстур с PC-сервера...`,
+        true
+    );
 
-        setRoomStatus(
-            `ROOM ${folder}: ${loadedCount}/6\n` +
-            `Получение ${label}.png с PC-сервера...`,
-            true
-        );
+    const results = await Promise.all(
+        textureEntries.map(
+            async ([key, label]) => {
 
-        const result = await loadRoomTexture(url, label);
-        results.push(result);
+                const url = textures[key];
 
-        if (result.texture) {
-            loadedCount++;
-            textureMap[label] = result.texture;
+                if (!url) {
+                    return {
+                        texture: null,
+                        label,
+                        url: "",
+                        error:
+                            "Для поверхности не найден URL текстуры"
+                    };
+                }
 
-            const surface = surfaceByLabel[label];
-            if (surface && surface.material) {
-                surface.material.map = result.texture;
-                surface.material.color.set(0xffffff);
-                surface.material.needsUpdate = true;
+                const result =
+                    await loadRoomTexture(
+                        url,
+                        label
+                    );
+
+                if (result.texture) {
+
+                    loadedCount++;
+
+                    textureMap[label] =
+                        result.texture;
+
+                    const surface =
+                        surfaceByLabel[label];
+
+                    if (
+                        surface &&
+                        surface.material
+                    ) {
+
+                        surface.material.map =
+                            result.texture;
+
+                        surface.material.color
+                            .set(0xffffff);
+
+                        surface.material.needsUpdate =
+                            true;
+                    }
+
+                    setRoomStatus(
+                        `ROOM ${folder}: текстуры ` +
+                        `${loadedCount}/6`,
+                        true
+                    );
+                }
+
+                return result;
             }
-        }
+        )
+    );
 
-        setRoomStatus(
-            `ROOM ${folder}: текстуры ${loadedCount}/6`,
-            true
-        );
-    }
-
+    setRoomStatus(
+        `ROOM ${folder}: текстуры ` +
+        `${loadedCount}/6`,
+        true
+    );
     const errors = results.filter(result => !result.texture);
 
     // Получаем ответ на ранее отправленный запрос модели.
     try {
-        const modelData = await roomModelPromise;
+        const modelData = await getRoomModelData();
 
         if (modelData?.ready && modelData?.url) {
             await loadRoomModel(modelData);
