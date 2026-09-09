@@ -2871,12 +2871,60 @@ async function requestRoomFromPC(item) {
             ? String(currentWallet)
             : "";
 
+    /*
+        =========================================================
+        ЯВНО ПЕРЕДАЁМ PC/API-СЕРВЕРУ СПИСОК НУЖНЫХ ФАЙЛОВ ROOM.
+
+        Сервер получает:
+            room
+            wallet
+            files
+
+        files содержит реальные имена файлов в папке ROOM.
+        Это не отправка PNG из браузера на сервер.
+        Это запрос серверу: "отдай эти шесть файлов".
+        =========================================================
+    */
+    const textureFiles = [
+        "01_BACKGROUND.png",
+        "02_LEFT.png",
+        "03_RIGHT.png",
+        "04_FRONT.png",
+        "05_SKY.png",
+        "06_GROUND.png"
+    ];
+
     const url = `${ROOMS_API}/request`;
 
+    console.log(
+        "[ROOM REQUEST] POST:",
+        url
+    );
+
+    console.log(
+        "[ROOM REQUEST] folder:",
+        folder
+    );
+
+    console.log(
+        "[ROOM REQUEST] wallet:",
+        wallet || "(wallet не указан)"
+    );
+
+    console.log(
+        "[ROOM REQUEST] texture files:",
+        textureFiles
+    );
+
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000);
+
+    const timeout = setTimeout(
+        () => controller.abort(),
+        20000
+    );
 
     try {
+
         const response = await fetch(url, {
             method: "POST",
             mode: "cors",
@@ -2885,40 +2933,195 @@ async function requestRoomFromPC(item) {
                 "Content-Type": "application/json",
                 "Accept": "application/json"
             },
+
+            /*
+                Сохраняем прежние поля room/wallet
+                и дополнительно передаём список текстур.
+            */
             body: JSON.stringify({
                 room: folder,
-                wallet: wallet
+                wallet: wallet,
+                files: textureFiles,
+                texture_files: textureFiles
             }),
+
             signal: controller.signal
         });
 
+        console.log(
+            "[ROOM REQUEST] HTTP:",
+            response.status
+        );
+
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
+            throw new Error(
+                `ROOM REQUEST HTTP ${response.status}`
+            );
         }
 
         const data = await response.json();
 
+        console.log(
+            "[ROOM REQUEST] RESPONSE:",
+            data
+        );
+
         if (data?.success === false) {
-            throw new Error(data.error || "PC-сервер отклонил ROOM-запрос");
+            throw new Error(
+                data.error ||
+                "PC-сервер отклонил ROOM-запрос"
+            );
         }
 
-        const manifest = data?.room;
+        const manifest =
+            data?.room ||
+            data?.manifest ||
+            data;
 
-        if (!manifest || typeof manifest !== "object") {
-            throw new Error("PC-сервер не вернул manifest комнаты");
+        if (
+            !manifest ||
+            typeof manifest !== "object"
+        ) {
+            throw new Error(
+                "PC-сервер не вернул manifest комнаты"
+            );
         }
 
-        return {
+        /*
+            =====================================================
+            ВАЖНО:
+            Иногда POST /request отвечает только ID запроса,
+            а список файлов появляется через обычный GET ROOM.
+
+            Поэтому после POST дополнительно проверяем manifest.
+            =====================================================
+        */
+
+        let result = {
             ...item,
             ...manifest,
-            folder: manifest.folder || item.folder || folder,
-            name: manifest.name || item.name || folder
+            folder:
+                manifest.folder ||
+                item.folder ||
+                folder,
+            name:
+                manifest.name ||
+                item.name ||
+                folder
         };
 
-    } catch (error) {
-        if (error?.name === "AbortError") {
-            throw new Error("Тайм-аут ROOM-запроса к PC-серверу (10 секунд)");
+        const hasFiles =
+            Array.isArray(result.files) &&
+            result.files.length > 0;
+
+        const hasTextures =
+            result.textures &&
+            typeof result.textures === "object" &&
+            Object.keys(result.textures).length > 0;
+
+        const hasDirectModel =
+            result.model &&
+            typeof result.model === "object" &&
+            result.model.url;
+
+        if (
+            !hasFiles &&
+            !hasTextures &&
+            !hasDirectModel
+        ) {
+
+            console.log(
+                "[ROOM REQUEST] POST не содержит файлов. " +
+                "Запрашиваем полный manifest через GET."
+            );
+
+            try {
+
+                const manifestData =
+                    await fetchRoomManifest(result);
+
+                result = {
+                    ...result,
+                    ...manifestData,
+                    folder:
+                        manifestData.folder ||
+                        result.folder ||
+                        folder,
+                    name:
+                        manifestData.name ||
+                        result.name ||
+                        folder
+                };
+
+                console.log(
+                    "[ROOM REQUEST] GET manifest:",
+                    result
+                );
+
+            } catch (manifestError) {
+
+                console.warn(
+                    "[ROOM REQUEST] GET manifest не получен:",
+                    manifestError
+                );
+
+                /*
+                    Не отменяем ROOM полностью.
+                    Даже если GET manifest не сработал,
+                    resolveRoomTextures() ниже построит прямые
+                    /api/rooms/file/... URL.
+                */
+            }
         }
+
+        /*
+            =====================================================
+            ПОКАЗЫВАЕМ ТОЧНЫЕ URL ШЕСТИ ТЕКСТУР.
+            Это сразу видно в DevTools Console.
+            =====================================================
+        */
+
+        const resolvedTextures =
+            resolveRoomTextures(result);
+
+        console.log(
+            "[ROOM TEXTURES] resolved:",
+            resolvedTextures
+        );
+
+        Object.entries(resolvedTextures)
+            .forEach(([key, textureUrl]) => {
+
+                console.log(
+                    `[ROOM TEXTURE REQUEST] ${key}:`,
+                    textureUrl
+                );
+
+            });
+
+        /*
+            Сохраняем рассчитанные URL обратно
+            в manifest, чтобы buildRoom использовал
+            именно эти адреса.
+        */
+
+        result.room_texture_urls =
+            resolvedTextures;
+
+        return result;
+
+    } catch (error) {
+
+        if (error?.name === "AbortError") {
+            throw new Error(
+                "Тайм-аут ROOM-запроса к PC-серверу (20 секунд)"
+            );
+        }
+
+        console.error(
+            "[ROOM REQUEST ERROR]",
+            error
+        );
 
         throw error;
 
@@ -2929,7 +3132,6 @@ async function requestRoomFromPC(item) {
 
 function loadRoomTexture(url, label = "texture") {
     return new Promise(resolve => {
-
         if (!url) {
             resolve({
                 texture: null,
@@ -2941,7 +3143,6 @@ function loadRoomTexture(url, label = "texture") {
         }
 
         let finished = false;
-
         const finish = result => {
             if (finished) return;
             finished = true;
@@ -2949,151 +3150,119 @@ function loadRoomTexture(url, label = "texture") {
         };
 
         /*
-            =========================================================
-            ПОЛУЧЕНИЕ ТЕКСТУРЫ С СЕРВЕРА
-
-            ВАЖНО:
-            Здесь Three.js НЕ делает второй HTTP-запрос к PNG.
-
-            Схема:
-                1. fetch() получает реальные байты PNG/JPG с API.
-                2. response.blob() превращает ответ сервера в Blob.
-                3. createImageBitmap() декодирует Blob локально.
-                4. THREE.Texture получает уже готовое изображение.
-
-            Это позволяет отделить:
-                HTTP-загрузку
-            от:
-                декодирования изображения.
-
-            Также поддерживается data:image/...;base64,...
-            из manifest.
-            =========================================================
+           Новая схема ROOM: Python-сервер передаёт PNG/JPG прямо
+           внутри manifest как data:image/...;base64,... .
+           Поэтому для таких URL НЕ делаем отдельный fetch к
+           /api/rooms/file/... . Это устраняет зависание Cloudflare
+           на бинарном endpoint.
         */
+        const isEmbedded =
+            typeof url === "string" &&
+            url.startsWith("data:image/");
 
+        if (isEmbedded) {
+            setRoomStatus(`Декодирование ${label}.png...`, true);
+
+            const timeout = setTimeout(() => {
+                finish({
+                    texture: null,
+                    label,
+                    url: "embedded-data",
+                    error: "Тайм-аут декодирования встроенной текстуры 12 секунд"
+                });
+            }, 60000);
+
+            roomTextureLoader.load(
+                url,
+                texture => {
+                    clearTimeout(timeout);
+
+                    texture.colorSpace = THREE.SRGBColorSpace;
+                    texture.wrapS = THREE.ClampToEdgeWrapping;
+                    texture.wrapT = THREE.ClampToEdgeWrapping;
+                    texture.anisotropy = roomRenderer
+                        ? Math.min(
+                            roomRenderer.capabilities.getMaxAnisotropy(),
+                            4
+                        )
+                        : 1;
+                    texture.needsUpdate = true;
+
+                    finish({
+                        texture,
+                        label,
+                        url: "embedded-data",
+                        error: null
+                    });
+                },
+                undefined,
+                error => {
+                    clearTimeout(timeout);
+                    finish({
+                        texture: null,
+                        label,
+                        url: "embedded-data",
+                        error: "Three.js не смог декодировать встроенную текстуру"
+                    });
+                }
+            );
+            return;
+        }
+
+        /* Основной режим: бинарная загрузка PNG через Flask API. */
+        let finishedHttp = false;
         const controller = new AbortController();
-
         const timeout = setTimeout(() => {
             controller.abort();
-
-            finish({
-                texture: null,
-                label,
-                url,
-                error: "Тайм-аут получения текстуры с сервера: 60 секунд"
-            });
+            if (!finishedHttp) {
+                finishedHttp = true;
+                finish({
+                    texture: null,
+                    label,
+                    url,
+                    error: "Тайм-аут HTTP-загрузки изображения 60 секунд"
+                });
+            }
         }, 60000);
 
-        setRoomStatus(
-            `Получение ${label}.png с PC-сервера...`,
-            true
-        );
+        setRoomStatus(`Получение ${label}.png с PC...`, true);
 
-        /*
-            Для data:image/... fetch() также работает:
-            браузер превращает data URL в Blob без обращения
-            к внешнему серверу.
-        */
         fetch(url, {
             method: "GET",
             mode: "cors",
             cache: "no-store",
-            credentials: "omit",
             headers: {
-                "Accept":
-                    "image/png,image/jpeg,image/webp,image/avif,image/*,*/*;q=0.8"
+                "Accept": "image/png,image/jpeg,image/webp,image/*,*/*;q=0.8"
             },
             signal: controller.signal
         })
             .then(response => {
-
                 if (!response.ok) {
-                    throw new Error(
-                        `HTTP ${response.status} при получении ${label}.png`
-                    );
+                    throw new Error(`HTTP ${response.status}`);
                 }
-
-                const contentType =
-                    response.headers.get("content-type") || "";
-
-                console.log(
-                    `[ROOM TEXTURE] ${label}: HTTP ${response.status}, ` +
-                    `Content-Type: ${contentType || "не указан"}, ` +
-                    `URL: ${url}`
-                );
-
                 return response.blob();
             })
-            .then(async blob => {
+            .then(blob => {
+                if (finishedHttp) return;
+                const objectUrl = URL.createObjectURL(blob);
 
-                if (finished) return;
-
-                if (!blob || blob.size === 0) {
-                    throw new Error(
-                        `${label}.png: сервер вернул пустой файл`
-                    );
-                }
-
-                console.log(
-                    `[ROOM TEXTURE] ${label}: получено ${blob.size} байт, ` +
-                    `type=${blob.type || "unknown"}`
-                );
-
-                /*
-                    -------------------------------------------------
-                    Способ №1: createImageBitmap
-                    -------------------------------------------------
-                */
-                if (
-                    typeof createImageBitmap === "function"
-                ) {
-
-                    try {
-
-                        const bitmap =
-                            await createImageBitmap(blob);
-
-                        if (finished) {
-                            bitmap.close?.();
-                            return;
-                        }
-
-                        const texture =
-                            new THREE.Texture(bitmap);
-
-                        texture.colorSpace =
-                            THREE.SRGBColorSpace;
-
-                        texture.wrapS =
-                            THREE.ClampToEdgeWrapping;
-
-                        texture.wrapT =
-                            THREE.ClampToEdgeWrapping;
-
-                        texture.minFilter =
-                            THREE.LinearMipmapLinearFilter;
-
-                        texture.magFilter =
-                            THREE.LinearFilter;
-
-                        texture.anisotropy =
-                            roomRenderer
-                                ? Math.min(
-                                    roomRenderer
-                                        .capabilities
-                                        .getMaxAnisotropy(),
-                                    4
-                                )
-                                : 1;
-
-                        texture.needsUpdate = true;
-
+                roomTextureLoader.load(
+                    objectUrl,
+                    texture => {
                         clearTimeout(timeout);
+                        finishedHttp = true;
+                        URL.revokeObjectURL(objectUrl);
 
-                        console.log(
-                            `[ROOM TEXTURE] ${label}: ` +
-                            `успешно декодирована через createImageBitmap`
-                        );
+                        texture.colorSpace = THREE.SRGBColorSpace;
+                        texture.wrapS = THREE.ClampToEdgeWrapping;
+                        texture.wrapT = THREE.ClampToEdgeWrapping;
+                        texture.anisotropy = roomRenderer
+                            ? Math.min(
+                                roomRenderer.capabilities.getMaxAnisotropy(),
+                                4
+                            )
+                            : 1;
+                        texture.needsUpdate = true;
 
                         finish({
                             texture,
@@ -3101,155 +3270,32 @@ function loadRoomTexture(url, label = "texture") {
                             url,
                             error: null
                         });
-
-                        return;
-
-                    } catch (bitmapError) {
-
-                        console.warn(
-                            `[ROOM TEXTURE] ${label}: ` +
-                            `createImageBitmap не сработал. ` +
-                            `Переход на HTMLImageElement.`,
-                            bitmapError
-                        );
-                    }
-                }
-
-                /*
-                    -------------------------------------------------
-                    Способ №2: HTMLImageElement fallback
-                    -------------------------------------------------
-
-                    Blob URL создаётся из уже загруженных байтов.
-                    Поэтому <img> больше не обращается к PC-серверу.
-                */
-                const objectUrl =
-                    URL.createObjectURL(blob);
-
-                const image =
-                    new Image();
-
-                image.decoding = "async";
-                image.crossOrigin = "anonymous";
-
-                const imageTimeout =
-                    setTimeout(() => {
-
+                    },
+                    undefined,
+                    error => {
+                        clearTimeout(timeout);
+                        finishedHttp = true;
                         URL.revokeObjectURL(objectUrl);
 
                         finish({
                             texture: null,
                             label,
                             url,
-                            error:
-                                `Тайм-аут декодирования ${label}.png`
+                            error: "Three.js не смог декодировать изображение"
                         });
-
-                    }, 30000);
-
-                image.onload = () => {
-
-                    clearTimeout(imageTimeout);
-                    clearTimeout(timeout);
-
-                    if (finished) {
-                        URL.revokeObjectURL(objectUrl);
-                        return;
                     }
-
-                    const texture =
-                        new THREE.Texture(image);
-
-                    texture.colorSpace =
-                        THREE.SRGBColorSpace;
-
-                    texture.wrapS =
-                        THREE.ClampToEdgeWrapping;
-
-                    texture.wrapT =
-                        THREE.ClampToEdgeWrapping;
-
-                    texture.minFilter =
-                        THREE.LinearMipmapLinearFilter;
-
-                    texture.magFilter =
-                        THREE.LinearFilter;
-
-                    texture.anisotropy =
-                        roomRenderer
-                            ? Math.min(
-                                roomRenderer
-                                    .capabilities
-                                    .getMaxAnisotropy(),
-                                4
-                            )
-                            : 1;
-
-                    texture.needsUpdate = true;
-
-                    URL.revokeObjectURL(objectUrl);
-
-                    console.log(
-                        `[ROOM TEXTURE] ${label}: ` +
-                        `успешно декодирована через Image`
-                    );
-
-                    finish({
-                        texture,
-                        label,
-                        url,
-                        error: null
-                    });
-                };
-
-                image.onerror = () => {
-
-                    clearTimeout(imageTimeout);
-                    clearTimeout(timeout);
-
-                    URL.revokeObjectURL(objectUrl);
-
-                    finish({
-                        texture: null,
-                        label,
-                        url,
-                        error:
-                            `Байты ${label}.png получены, ` +
-                            `но браузер не смог декодировать изображение`
-                    });
-                };
-
-                image.src = objectUrl;
+                );
             })
             .catch(error => {
-
                 clearTimeout(timeout);
-
-                if (error?.name === "AbortError") {
-
-                    finish({
-                        texture: null,
-                        label,
-                        url,
-                        error:
-                            `Тайм-аут запроса ${label}.png к PC-серверу`
-                    });
-
-                    return;
-                }
-
-                console.error(
-                    `[ROOM TEXTURE] ${label} ERROR:`,
-                    error
-                );
+                finishedHttp = true;
 
                 finish({
                     texture: null,
                     label,
                     url,
-                    error:
-                        error?.message ||
-                        `Ошибка получения ${label}.png с сервера`
+                    error: error?.message ||
+                        "Ошибка получения изображения через API"
                 });
             });
     });
@@ -3756,7 +3802,21 @@ async function buildRoom(item) {
         throw postError;
     }
 
-    const textures = resolveRoomTextures(roomData);
+    const textures =
+        roomData?.room_texture_urls &&
+        typeof roomData.room_texture_urls === "object"
+            ? roomData.room_texture_urls
+            : resolveRoomTextures(roomData);
+
+    console.log(
+        "[ROOM BUILD] folder:",
+        folder
+    );
+
+    console.log(
+        "[ROOM BUILD] texture URLs:",
+        textures
+    );
 
     /* =========================================================
        2. СРАЗУ ПОЛУЧАЕМ 3D МОДЕЛЬ ИЗ ТОЙ ЖЕ ПАПКИ ROOM.
@@ -4694,14 +4754,35 @@ function openRoom(index) {
     roomViewerTitle.textContent = `ROOM ${number}`;
 
     showScreen(roomViewerScreen);
-    initRoomViewer();
-    resizeRoomViewer();
 
-    /* Сразу меняем статус — до первого сетевого запроса. */
+    /*
+        Статус устанавливаем ДО инициализации Three.js.
+        Если WebGL/renderer даст ошибку, пользователь всё равно
+        увидит реальную ошибку вместо вечного "Загрузка комнаты...".
+    */
     setRoomStatus(
         `Отправка запроса ROOM ${name} на PC-сервер...`,
         true
     );
+
+    try {
+        initRoomViewer();
+        resizeRoomViewer();
+    } catch (viewerError) {
+
+        console.error(
+            "[ROOM VIEWER INIT ERROR]",
+            viewerError
+        );
+
+        setRoomStatus(
+            `Ошибка инициализации ROOM viewer.\n\n` +
+            `${viewerError?.message || viewerError}`,
+            true
+        );
+
+        return;
+    }
 
     buildRoom(item).catch(error => {
         console.error("ROOM BUILD ERROR:", error);
