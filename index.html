@@ -1759,96 +1759,244 @@ const normalizedRequiredCollection =
 async function checkCollectionNFT(
     walletAddress
 ) {
+    /*
+       Ищем ЛЮБОЙ NFT кошелька, который принадлежит
+       именно REQUIRED_COLLECTION.
 
-    const url =
-        "https://tonapi.io/v2/accounts/" +
-        encodeURIComponent(
-            walletAddress
-        ) +
-        "/nfts?limit=1000";
+       Сначала используем фильтр TonAPI collection.
+       Если фильтр недоступен, выполняем резервный поиск
+       по страницам NFT кошелька.
+    */
 
-
-    const response =
-        await fetch(url, {
-
-            method: "GET",
-
-            headers: {
-                "Accept":
-                    "application/json"
-            }
-
-        });
-
-
-    if (!response.ok) {
-
-        throw new Error(
-            "TonAPI HTTP " +
-            response.status
-        );
-
+    if (!walletAddress) {
+        return null;
     }
 
+    const normalizedCollection =
+        normalizeTonAddress(REQUIRED_COLLECTION);
 
-    const data =
-        await response.json();
+    const normalizedRawCollection =
+        normalizeTonAddress(REQUIRED_COLLECTION_RAW);
 
-
-    const nftItems =
-        Array.isArray(
-            data.nft_items
-        )
-            ? data.nft_items
-            : [];
-
-
-    for (
-        const nft of nftItems
-    ) {
-
-        const collectionAddress =
-            nft.collection?.address ||
-            nft.collection_address ||
-            "";
-
-
-        if (!collectionAddress) {
-            continue;
+    function belongsToRequiredCollection(nft) {
+        if (!nft || typeof nft !== "object") {
+            return false;
         }
 
+        const candidates = [
+            nft.collection?.address,
+            nft.collection_address,
+            nft.collection?.raw_address,
+            nft.collection?.friendly_address
+        ].filter(Boolean);
 
-        const normalized =
-            normalizeTonAddress(
-                collectionAddress
+        return candidates.some(address => {
+            const normalized =
+                normalizeTonAddress(address);
+
+            return (
+                normalized === normalizedCollection ||
+                normalized === normalizedRawCollection
             );
+        });
+    }
 
+    function extractNFTItems(data) {
+        if (
+            data &&
+            Array.isArray(data.nft_items)
+        ) {
+            return data.nft_items;
+        }
 
         if (
-            normalized ===
-                normalizedRequiredCollection
-            ||
-            normalized ===
-                REQUIRED_COLLECTION_RAW
+            data &&
+            Array.isArray(data.items)
         ) {
-
-            return true;
-
+            return data.items;
         }
 
+        return [];
     }
 
+    /*
+       ===============================================================
+       1. ПРЯМОЙ ПОИСК В НУЖНОЙ КОЛЛЕКЦИИ
+       ===============================================================
+    */
 
-    return false;
+    const filteredUrl =
+        "https://tonapi.io/v2/accounts/" +
+        encodeURIComponent(walletAddress) +
+        "/nfts?collection=" +
+        encodeURIComponent(REQUIRED_COLLECTION) +
+        "&limit=100";
 
+    console.log(
+        "[NFT CHECK] Ищем любой NFT коллекции:",
+        REQUIRED_COLLECTION
+    );
+
+    try {
+        const response =
+            await fetch(
+                filteredUrl,
+                {
+                    method: "GET",
+                    headers: {
+                        "Accept":
+                            "application/json"
+                    }
+                }
+            );
+
+        if (!response.ok) {
+            throw new Error(
+                "TonAPI filtered NFT HTTP " +
+                response.status
+            );
+        }
+
+        const data =
+            await response.json();
+
+        const nftItems =
+            extractNFTItems(data);
+
+        console.log(
+            "[NFT CHECK] Найдено в фильтре:",
+            nftItems.length
+        );
+
+        /*
+           Достаточно одного NFT.
+        */
+        for (const nft of nftItems) {
+            if (
+                belongsToRequiredCollection(
+                    nft
+                )
+            ) {
+                console.log(
+                    "[NFT CHECK] НАЙДЕН НУЖНЫЙ NFT:",
+                    nft
+                );
+
+                return nft;
+            }
+        }
+
+        /*
+           Если фильтр вернул пустой список,
+           резервный запрос не нужен.
+        */
+        if (nftItems.length === 0) {
+            return null;
+        }
+
+    } catch (error) {
+        console.warn(
+            "[NFT CHECK] Фильтр collection не сработал:",
+            error
+        );
+    }
+
+    /*
+       ===============================================================
+       2. РЕЗЕРВНЫЙ ПОИСК ПО NFT КОШЕЛЬКА
+       ===============================================================
+
+       Не проверяем только первые 1000 NFT.
+       Идём страницами и прекращаем поиск сразу после
+       первого NFT из нужной коллекции.
+    */
+
+    const PAGE_SIZE = 100;
+    const MAX_PAGES = 100;
+
+    for (
+        let page = 0;
+        page < MAX_PAGES;
+        page++
+    ) {
+        const offset =
+            page * PAGE_SIZE;
+
+        const url =
+            "https://tonapi.io/v2/accounts/" +
+            encodeURIComponent(walletAddress) +
+            "/nfts?limit=" +
+            PAGE_SIZE +
+            "&offset=" +
+            offset;
+
+        const response =
+            await fetch(
+                url,
+                {
+                    method: "GET",
+                    headers: {
+                        "Accept":
+                            "application/json"
+                    }
+                }
+            );
+
+        if (!response.ok) {
+            throw new Error(
+                "TonAPI NFT HTTP " +
+                response.status
+            );
+        }
+
+        const data =
+            await response.json();
+
+        const nftItems =
+            extractNFTItems(data);
+
+        console.log(
+            `[NFT CHECK] Страница ${page + 1}: ${nftItems.length} NFT`
+        );
+
+        for (const nft of nftItems) {
+            if (
+                belongsToRequiredCollection(
+                    nft
+                )
+            ) {
+                console.log(
+                    "[NFT CHECK] НАЙДЕН НУЖНЫЙ NFT:",
+                    nft
+                );
+
+                return nft;
+            }
+        }
+
+        if (
+            nftItems.length < PAGE_SIZE
+        ) {
+            break;
+        }
+    }
+
+    console.log(
+        "[NFT CHECK] NFT нужной коллекции не найден."
+    );
+
+    return null;
 }
-
 
 /* =============================================================
    WALLET
 ============================================================= */
 
 let currentWallet =
+    null;
+
+/* Конкретный NFT, который подтвердил доступ. */
+let currentNFT =
     null;
 
 let accessGranted =
@@ -1893,6 +2041,9 @@ async function processWallet(
     if (!wallet) {
 
         currentWallet =
+            null;
+
+        currentNFT =
             null;
 
         accessGranted =
@@ -1965,13 +2116,13 @@ async function processWallet(
 
     try {
 
-        const hasNFT =
+        const foundNFT =
             await checkCollectionNFT(
                 currentWallet
             );
 
 
-        if (!hasNFT) {
+        if (!foundNFT) {
 
             accessGranted =
                 false;
@@ -2231,6 +2382,9 @@ disconnectWallet.addEventListener(
             await tonConnectUI.disconnect();
 
             currentWallet =
+                null;
+
+            currentNFT =
                 null;
 
             accessGranted =
