@@ -286,6 +286,37 @@
             opacity: .65;
         }
 
+        .ticketBlock {
+            width: 100%;
+            margin-top: 18px;
+            text-align: center;
+        }
+
+        .ticketTitle {
+            margin-bottom: 10px;
+            color: #fff;
+            font-size: 13px;
+            font-weight: 400;
+        }
+
+        .ticketImageLink {
+            display: block;
+            width: 100%;
+            cursor: pointer;
+        }
+
+        .ticketImageLink.disabled {
+            cursor: default;
+            pointer-events: none;
+        }
+
+        .ticketImage {
+            display: block;
+            width: 100%;
+            height: auto;
+            border: 1px solid #242424;
+        }
+
         .authStatus {
             min-height: 20px;
 
@@ -955,6 +986,29 @@
             ПОДКЛЮЧИТЬ КОШЕЛЁК
         </button>
 
+        <div class="ticketBlock">
+
+            <div class="ticketTitle">
+                Билеты
+            </div>
+
+            <a
+                id="ticketImageLink"
+                class="ticketImageLink"
+                href="https://getgems.io/collection/EQD9mm3hx-QvHyNG18gDaaJtSTTQTVVYVjJ6zhonXocj2eyI"
+                target="_blank"
+                rel="noopener noreferrer"
+            >
+                <img
+                    id="ticketImage"
+                    class="ticketImage"
+                    src="global.png"
+                    alt="Билеты"
+                >
+            </a>
+
+        </div>
+
         <div
             id="authStatus"
             class="authStatus"
@@ -1413,6 +1467,9 @@ const roomReset =
 const connectWallet =
     document.getElementById("connectWallet");
 
+const ticketImageLink =
+    document.getElementById("ticketImageLink");
+
 const authStatus =
     document.getElementById("authStatus");
 
@@ -1801,6 +1858,34 @@ let checkingNFT =
     false;
 
 
+function setTicketLinkEnabled(enabled) {
+
+    if (enabled) {
+
+        ticketImageLink.classList.remove(
+            "disabled"
+        );
+
+        ticketImageLink.setAttribute(
+            "href",
+            "https://getgems.io/collection/EQD9mm3hx-QvHyNG18gDaaJtSTTQTVVYVjJ6zhonXocj2eyI"
+        );
+
+    } else {
+
+        ticketImageLink.classList.add(
+            "disabled"
+        );
+
+        ticketImageLink.removeAttribute(
+            "href"
+        );
+
+    }
+
+}
+
+
 async function processWallet(
     wallet
 ) {
@@ -1821,6 +1906,10 @@ async function processWallet(
 
         authStatus.textContent =
             "Подключите TON-кошелёк";
+
+        setTicketLinkEnabled(
+            true
+        );
 
         showScreen(
             authScreen
@@ -1852,6 +1941,10 @@ async function processWallet(
 
     currentWallet =
         wallet.account.address;
+
+    setTicketLinkEnabled(
+        true
+    );
 
 
     accessGranted =
@@ -1887,6 +1980,10 @@ async function processWallet(
             authStatus.textContent =
                 "NFT нужной коллекции не найден";
 
+            setTicketLinkEnabled(
+                true
+            );
+
 
             showScreen(
                 authScreen
@@ -1900,6 +1997,10 @@ async function processWallet(
 
         accessGranted =
             true;
+
+        setTicketLinkEnabled(
+            false
+        );
 
 
         userWalletAddress.textContent =
