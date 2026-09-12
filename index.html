@@ -1406,7 +1406,7 @@ const GENERATION_API =
    файлы из указанных папок через /api/rooms/*.
 */
 const PC_SERVER_BASE =
-    window.location.origin; // /api/rooms -> Cloudflare Tunnel -> PC 127.0.0.1:5000
+    "https://pc-api.araicameragame.party"; // Cloudflare Tunnel -> PC 127.0.0.1:3467
 
 const PC_ROOMS_ROOT =
     String.raw`C:\Users\Romer\OneDrive\Рабочий стол\3d\3d\fon_room`;
@@ -1418,10 +1418,10 @@ const PC_TEXTURE_FOLDER =
     "03_ROOM_TEXTURE_GENERATION";
 
 const ROOMS_API =
-    "/api/rooms";
+    `${PC_SERVER_BASE}/api/rooms`;
 
 const PUBLIC_API_BASE =
-    window.location.origin;
+    PC_SERVER_BASE;
 
 
 const MODEL_BASE =
