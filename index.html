@@ -715,8 +715,56 @@
             transform: translateY(0);
         }
 
+        .roomItem {
+            position: relative;
+            overflow: hidden;
+            padding: 0;
+        }
+
+        .roomItem::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                to bottom,
+                rgba(0,0,0,.08),
+                rgba(0,0,0,.48)
+            );
+            pointer-events: none;
+        }
+
+        .roomIcon {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            opacity: .82;
+            filter: saturate(.9) contrast(1.03);
+            transition:
+                opacity .18s ease,
+                transform .28s ease;
+        }
+
+        .roomItem:hover .roomIcon {
+            opacity: .94;
+            transform: scale(1.025);
+        }
+
+        .roomItem > div,
+        .roomItem > small {
+            position: relative;
+            z-index: 2;
+        }
+
+        .roomItem > div {
+            text-shadow: 0 2px 8px #000;
+        }
+
         .roomItem small {
-            color: #666;
+            color: #ddd;
+            text-shadow: 0 2px 8px #000;
             font-size: 9px;
             letter-spacing: 1px;
             text-transform: uppercase;
@@ -5524,6 +5572,31 @@ async function loadRooms() {
             const button = document.createElement("button");
             button.type = "button";
             button.className = "roomItem";
+
+            const iconUrl = String(
+                item?.icon_url ||
+                item?.icon?.url ||
+                ""
+            ).trim();
+
+            if (iconUrl) {
+                const icon = document.createElement("img");
+                icon.className = "roomIcon";
+                icon.alt = "";
+                icon.loading = "lazy";
+                icon.decoding = "async";
+                icon.src = iconUrl;
+
+                icon.addEventListener(
+                    "error",
+                    () => {
+                        icon.remove();
+                    },
+                    { once: true }
+                );
+
+                button.appendChild(icon);
+            }
 
             const number = document.createElement("div");
             number.textContent = roomNumberValue(
