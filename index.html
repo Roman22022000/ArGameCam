@@ -2973,66 +2973,119 @@ async function fetchRoomManifest(item) {
     }
 }
 
-async function getRoomFromPC(item) {
-    const folder = String(
-        item?.folder || item?.name || ""
-    ).trim();
+async function requestRoomFromPC(item) {
+    const folder = String(item?.folder || item?.name || "").trim();
 
     if (!folder) {
         throw new Error("Не указана папка комнаты");
     }
 
-    const url =
-        `${ROOMS_API}/${encodeURIComponent(folder)}`;
+    const wallet =
+        typeof currentWallet !== "undefined" && currentWallet
+            ? String(currentWallet)
+            : "";
+
+    /*
+        =========================================================
+        ЯВНО ПЕРЕДАЁМ PC/API-СЕРВЕРУ СПИСОК НУЖНЫХ ФАЙЛОВ ROOM.
+
+        Сервер получает:
+            room
+            wallet
+            files
+
+        files содержит реальные имена файлов в папке ROOM.
+        Это не отправка PNG из браузера на сервер.
+        Это запрос серверу: "отдай эти шесть файлов".
+        =========================================================
+    */
+    const textureFiles = [
+        "01_BACKGROUND.png",
+        "02_LEFT.png",
+        "03_RIGHT.png",
+        "04_FRONT.png",
+        "05_SKY.png",
+        "06_GROUND.png"
+    ];
+
+    const url = `${ROOMS_API}/request`;
 
     console.log(
-        "[ROOM GET] GET:",
+        "[ROOM REQUEST] POST:",
         url
     );
 
-    const controller =
-        new AbortController();
+    console.log(
+        "[ROOM REQUEST] folder:",
+        folder
+    );
+
+    console.log(
+        "[ROOM REQUEST] wallet:",
+        wallet || "(wallet не указан)"
+    );
+
+    console.log(
+        "[ROOM REQUEST] texture files:",
+        textureFiles
+    );
+
+    const controller = new AbortController();
 
     const timeout = setTimeout(
         () => controller.abort(),
-        10000
+        20000
     );
 
     try {
-        const response =
-            await fetch(
-                url,
-                {
-                    method: "GET",
-                    mode: "cors",
-                    cache: "no-store",
-                    headers: {
-                        "Accept":
-                            "application/json"
-                    },
-                    signal:
-                        controller.signal
-                }
-            );
+
+        const response = await fetch(url, {
+            method: "POST",
+            mode: "cors",
+            cache: "no-store",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            },
+
+            /*
+                Сохраняем прежние поля room/wallet
+                и дополнительно передаём список текстур.
+            */
+            body: JSON.stringify({
+                room: folder,
+                wallet: wallet,
+                files: textureFiles,
+                texture_files: textureFiles
+            }),
+
+            signal: controller.signal
+        });
 
         console.log(
-            "[ROOM GET] HTTP:",
+            "[ROOM REQUEST] HTTP:",
             response.status
         );
 
         if (!response.ok) {
             throw new Error(
-                `ROOM GET HTTP ${response.status}`
+                `ROOM REQUEST HTTP ${response.status}`
             );
         }
 
-        const data =
-            await response.json();
+        const data = await response.json();
 
         console.log(
-            "[ROOM GET] RESPONSE:",
+            "[ROOM REQUEST] RESPONSE:",
             data
         );
+
+        if (data?.success === false) {
+            throw new Error(
+                data.error ||
+                "PC-сервер отклонил ROOM-запрос"
+            );
+        }
 
         const manifest =
             data?.room ||
@@ -3048,7 +3101,17 @@ async function getRoomFromPC(item) {
             );
         }
 
-        return {
+        /*
+            =====================================================
+            ВАЖНО:
+            Иногда POST /request отвечает только ID запроса,
+            а список файлов появляется через обычный GET ROOM.
+
+            Поэтому после POST дополнительно проверяем manifest.
+            =====================================================
+        */
+
+        let result = {
             ...item,
             ...manifest,
             folder:
@@ -3061,24 +3124,1217 @@ async function getRoomFromPC(item) {
                 folder
         };
 
-    } catch (error) {
+        const hasFiles =
+            Array.isArray(result.files) &&
+            result.files.length > 0;
+
+        const hasTextures =
+            result.textures &&
+            typeof result.textures === "object" &&
+            Object.keys(result.textures).length > 0;
+
+        const hasDirectModel =
+            result.model &&
+            typeof result.model === "object" &&
+            result.model.url;
 
         if (
-            error?.name === "AbortError"
+            !hasFiles &&
+            !hasTextures &&
+            !hasDirectModel
         ) {
+
+            console.log(
+                "[ROOM REQUEST] POST не содержит файлов. " +
+                "Запрашиваем полный manifest через GET."
+            );
+
+            try {
+
+                const manifestData =
+                    await fetchRoomManifest(result);
+
+                result = {
+                    ...result,
+                    ...manifestData,
+                    folder:
+                        manifestData.folder ||
+                        result.folder ||
+                        folder,
+                    name:
+                        manifestData.name ||
+                        result.name ||
+                        folder
+                };
+
+                console.log(
+                    "[ROOM REQUEST] GET manifest:",
+                    result
+                );
+
+            } catch (manifestError) {
+
+                console.warn(
+                    "[ROOM REQUEST] GET manifest не получен:",
+                    manifestError
+                );
+
+                /*
+                    Не отменяем ROOM полностью.
+                    Даже если GET manifest не сработал,
+                    resolveRoomTextures() ниже построит прямые
+                    /api/rooms/file/... URL.
+                */
+            }
+        }
+
+        /*
+            =====================================================
+            ПОКАЗЫВАЕМ ТОЧНЫЕ URL ШЕСТИ ТЕКСТУР.
+            Это сразу видно в DevTools Console.
+            =====================================================
+        */
+
+        const resolvedTextures =
+            resolveRoomTextures(result);
+
+        console.log(
+            "[ROOM TEXTURES] resolved:",
+            resolvedTextures
+        );
+
+        Object.entries(resolvedTextures)
+            .forEach(([key, textureUrl]) => {
+
+                console.log(
+                    `[ROOM TEXTURE REQUEST] ${key}:`,
+                    textureUrl
+                );
+
+            });
+
+        /*
+            Сохраняем рассчитанные URL обратно
+            в manifest, чтобы buildRoom использовал
+            именно эти адреса.
+        */
+
+        result.room_texture_urls =
+            resolvedTextures;
+
+        return result;
+
+    } catch (error) {
+
+        if (error?.name === "AbortError") {
             throw new Error(
-                `Тайм-аут запроса ROOM: ${folder}`
+                "Тайм-аут ROOM-запроса к PC-серверу (20 секунд)"
             );
         }
 
-        throw new Error(
-            `Не удалось получить ROOM ${folder}: ` +
-            `${error?.message || error}`
+        console.error(
+            "[ROOM REQUEST ERROR]",
+            error
         );
+
+        throw error;
 
     } finally {
         clearTimeout(timeout);
     }
+}
+
+function loadRoomTexture(url, label = "texture") {
+    return new Promise(resolve => {
+        if (!url) {
+            resolve({
+                texture: null,
+                label,
+                url: "",
+                error: "URL/данные текстуры не заданы"
+            });
+            return;
+        }
+
+        let finished = false;
+        const finish = result => {
+            if (finished) return;
+            finished = true;
+            resolve(result);
+        };
+
+        /*
+           Новая схема ROOM: Python-сервер передаёт PNG/JPG прямо
+           внутри manifest как data:image/...;base64,... .
+           Поэтому для таких URL НЕ делаем отдельный fetch к
+           /api/rooms/file/... . Это устраняет зависание Cloudflare
+           на бинарном endpoint.
+        */
+        const isEmbedded =
+            typeof url === "string" &&
+            url.startsWith("data:image/");
+
+        if (isEmbedded) {
+            setRoomStatus(`Декодирование ${label}.png...`, true);
+
+            const timeout = setTimeout(() => {
+                finish({
+                    texture: null,
+                    label,
+                    url: "embedded-data",
+                    error: "Тайм-аут декодирования встроенной текстуры 12 секунд"
+                });
+            }, 60000);
+
+            roomTextureLoader.load(
+                url,
+                texture => {
+                    clearTimeout(timeout);
+
+                    texture.colorSpace = THREE.SRGBColorSpace;
+                    texture.wrapS = THREE.ClampToEdgeWrapping;
+                    texture.wrapT = THREE.ClampToEdgeWrapping;
+                    texture.anisotropy = roomRenderer
+                        ? Math.min(
+                            roomRenderer.capabilities.getMaxAnisotropy(),
+                            4
+                        )
+                        : 1;
+                    texture.needsUpdate = true;
+
+                    finish({
+                        texture,
+                        label,
+                        url: "embedded-data",
+                        error: null
+                    });
+                },
+                undefined,
+                error => {
+                    clearTimeout(timeout);
+                    finish({
+                        texture: null,
+                        label,
+                        url: "embedded-data",
+                        error: "Three.js не смог декодировать встроенную текстуру"
+                    });
+                }
+            );
+            return;
+        }
+
+        /* Основной режим: бинарная загрузка PNG через Flask API. */
+        let finishedHttp = false;
+        const controller = new AbortController();
+        const timeout = setTimeout(() => {
+            controller.abort();
+            if (!finishedHttp) {
+                finishedHttp = true;
+                finish({
+                    texture: null,
+                    label,
+                    url,
+                    error: "Тайм-аут HTTP-загрузки изображения 60 секунд"
+                });
+            }
+        }, 60000);
+
+        setRoomStatus(`Получение ${label}.png с PC...`, true);
+
+        fetch(url, {
+            method: "GET",
+            mode: "cors",
+            cache: "no-store",
+            headers: {
+                "Accept": "image/png,image/jpeg,image/webp,image/*,*/*;q=0.8"
+            },
+            signal: controller.signal
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                return response.blob();
+            })
+            .then(blob => {
+                if (finishedHttp) return;
+                const objectUrl = URL.createObjectURL(blob);
+
+                roomTextureLoader.load(
+                    objectUrl,
+                    texture => {
+                        clearTimeout(timeout);
+                        finishedHttp = true;
+                        URL.revokeObjectURL(objectUrl);
+
+                        texture.colorSpace = THREE.SRGBColorSpace;
+                        texture.wrapS = THREE.ClampToEdgeWrapping;
+                        texture.wrapT = THREE.ClampToEdgeWrapping;
+                        texture.anisotropy = roomRenderer
+                            ? Math.min(
+                                roomRenderer.capabilities.getMaxAnisotropy(),
+                                4
+                            )
+                            : 1;
+                        texture.needsUpdate = true;
+
+                        finish({
+                            texture,
+                            label,
+                            url,
+                            error: null
+                        });
+                    },
+                    undefined,
+                    error => {
+                        clearTimeout(timeout);
+                        finishedHttp = true;
+                        URL.revokeObjectURL(objectUrl);
+
+                        finish({
+                            texture: null,
+                            label,
+                            url,
+                            error: "Three.js не смог декодировать изображение"
+                        });
+                    }
+                );
+            })
+            .catch(error => {
+                clearTimeout(timeout);
+                finishedHttp = true;
+
+                finish({
+                    texture: null,
+                    label,
+                    url,
+                    error: error?.message ||
+                        "Ошибка получения изображения через API"
+                });
+            });
+    });
+}
+
+function createRoomSurface(
+    width,
+    height,
+    position,
+    rotation,
+    texture,
+    label
+) {
+    const geometry = new THREE.PlaneGeometry(width, height);
+
+    const material = new THREE.MeshBasicMaterial({
+        map: texture || null,
+        color: texture ? 0xffffff : 0x222222,
+        side: THREE.DoubleSide,
+        transparent: false,
+        depthWrite: true,
+        depthTest: true
+    });
+
+    const mesh = new THREE.Mesh(geometry, material);
+
+    mesh.position.copy(position);
+    mesh.rotation.set(rotation.x, rotation.y, rotation.z);
+
+    mesh.userData.roomSurface = true;
+    mesh.userData.roomSurfaceName = label;
+
+    return mesh;
+}
+
+function clearRoomScene() {
+    if (!roomScene) return;
+
+    const removable = [];
+
+    roomScene.traverse(object => {
+        if (object.userData && object.userData.roomSurface) {
+            removable.push(object);
+        }
+    });
+
+    removable.forEach(object => {
+        roomScene.remove(object);
+
+        if (object.geometry) {
+            object.geometry.dispose();
+        }
+
+        if (object.material) {
+            const material = object.material;
+
+            if (material.map) {
+                material.map.dispose();
+            }
+
+            material.dispose();
+        }
+    });
+
+    /* Удаляем только созданный ROOM-свет. */
+    const lights = [];
+
+    roomScene.traverse(object => {
+        if (object.userData && object.userData.roomLight) {
+            lights.push(object);
+        }
+    });
+
+    lights.forEach(light => roomScene.remove(light));
+}
+
+let roomModel = null;
+let roomModelLoadToken = 0;
+let roomRequestId = null;
+
+function disposeRoomModel() {
+    if (!roomModel) return;
+
+    if (roomScene) {
+        roomScene.remove(roomModel);
+    }
+
+    roomModel.traverse(object => {
+        if (object.geometry) {
+            object.geometry.dispose();
+        }
+
+        if (object.material) {
+            const materials = Array.isArray(object.material)
+                ? object.material
+                : [object.material];
+
+            materials.forEach(material => {
+                if (!material) return;
+
+                const textureKeys = [
+                    "map", "normalMap", "roughnessMap", "metalnessMap",
+                    "emissiveMap", "aoMap", "alphaMap", "bumpMap",
+                    "displacementMap", "clearcoatMap", "clearcoatNormalMap",
+                    "clearcoatRoughnessMap", "iridescenceThicknessMap",
+                    "sheenColorMap", "sheenRoughnessMap", "specularColorMap",
+                    "specularIntensityMap", "transmissionMap", "thicknessMap"
+                ];
+
+                textureKeys.forEach(key => {
+                    if (material[key] && material[key].isTexture) {
+                        material[key].dispose();
+                    }
+                });
+
+                material.dispose();
+            });
+        }
+    });
+
+    roomModel = null;
+}
+
+function prepareRoomModel(loadedModel) {
+    const box = new THREE.Box3().setFromObject(loadedModel);
+    const size = box.getSize(new THREE.Vector3());
+
+    if (!Number.isFinite(size.x) || !Number.isFinite(size.y) ||
+        !Number.isFinite(size.z) || Math.max(size.x, size.y, size.z) <= 0) {
+        throw new Error("3D модель не содержит корректной геометрии");
+    }
+
+    /* Сначала нормализуем модель, затем ставим её по центру комнаты. */
+    const maxSize = Math.max(size.x, size.y, size.z);
+    const targetSize = 3.2;
+    loadedModel.scale.setScalar(targetSize / maxSize);
+    loadedModel.updateMatrixWorld(true);
+
+    const normalizedBox = new THREE.Box3().setFromObject(loadedModel);
+    const center = normalizedBox.getCenter(new THREE.Vector3());
+    const min = normalizedBox.min;
+
+    /* X/Z = центр комнаты, Y = пол комнаты. */
+    loadedModel.position.x -= center.x;
+    loadedModel.position.z -= center.z;
+    loadedModel.position.y -= min.y;
+    loadedModel.updateMatrixWorld(true);
+
+    loadedModel.traverse(object => {
+        if (!object.isMesh) return;
+        object.castShadow = false;
+        object.receiveShadow = false;
+        if (object.material) {
+            const materials = Array.isArray(object.material)
+                ? object.material
+                : [object.material];
+
+            materials.forEach(material => {
+                if (!material) return;
+
+                /* GLB должен получать свет сцены. */
+                if ("envMapIntensity" in material) {
+                    material.envMapIntensity = 0.7;
+                }
+
+                /*
+                   Если конкретный GLB использует MeshBasicMaterial,
+                   он игнорирует источники света. Переводим только такие
+                   материалы в MeshStandardMaterial, сохраняя основную
+                   текстуру и базовые параметры.
+                */
+                if (material.isMeshBasicMaterial) {
+                    const standard = new THREE.MeshStandardMaterial({
+                        map: material.map || null,
+                        color: material.color ? material.color.clone() : new THREE.Color(0xffffff),
+                        transparent: material.transparent,
+                        opacity: material.opacity,
+                        side: material.side,
+                        alphaTest: material.alphaTest,
+                        depthWrite: material.depthWrite,
+                        depthTest: material.depthTest,
+                        roughness: 0.85,
+                        metalness: 0.0
+                    });
+
+                    if (material.map) {
+                        standard.map = material.map;
+                    }
+
+                    object.material = Array.isArray(object.material)
+                        ? object.material.map(item => item === material ? standard : item)
+                        : standard;
+
+                    material.dispose();
+                    standard.needsUpdate = true;
+                } else {
+                    material.needsUpdate = true;
+                }
+            });
+        }
+    });
+
+    return loadedModel;
+}
+
+async function loadRoomModel(modelInfo) {
+    /*
+       ================================================================
+       ЕДИНАЯ ЗАГРУЗКА 3D-МОДЕЛИ ROOM + ЕЁ ТЕКСТУР
+       ================================================================
+
+       Серверная структура:
+
+           ROOM/<room>/3d_model/model.glb
+           ROOM/<room>/3d_model/<texture files>
+
+       Основной URL модели приходит от PC-сервера в modelInfo.url.
+
+       Если GLB содержит встроенные текстуры — GLTFLoader получает их
+       непосредственно из GLB.
+
+       Если GLB содержит внешние PNG/JPG/WebP — LoadingManager
+       перенаправляет каждый ресурс на:
+
+           /api/rooms/model-resource/<room>/<filename>
+
+       Это важно: endpoint model-file используется только для GLB,
+       а endpoint model-resource — для файлов, на которые ссылается GLB.
+
+       Таким образом модель и её текстуры загружаются как единый ROOM
+       package, независимо от того, встроены текстуры в GLB или лежат
+       рядом с model.glb.
+       ================================================================
+    */
+
+    const token = ++roomModelLoadToken;
+
+    const modelData =
+        modelInfo?.model &&
+        typeof modelInfo.model === "object"
+            ? modelInfo.model
+            : modelInfo || {};
+
+    const modelId = Number(
+        modelInfo?.model_id ||
+        modelData?.model_id ||
+        0
+    );
+
+    const roomName = String(
+        modelInfo?.room ||
+        modelData?.room ||
+        currentRoom?.folder ||
+        currentRoom?.name ||
+        ""
+    ).trim();
+
+    const encodedRoom = encodeURIComponent(roomName);
+
+    /*
+       ---------------------------------------------------------------
+       1. Определяем URL GLB
+       ---------------------------------------------------------------
+    */
+
+    let url = String(
+        modelInfo?.url ||
+        modelData?.url ||
+        ""
+    ).trim();
+
+    const filename = String(
+        modelInfo?.filename ||
+        modelData?.filename ||
+        "model.glb"
+    ).trim();
+
+    /*
+       Если сервер прислал только имя файла, строим правильный
+       endpoint model-file самостоятельно.
+    */
+    if (!url && roomName && filename) {
+        url =
+            `${PUBLIC_API_BASE}/api/rooms/model-file/` +
+            `${encodedRoom}/` +
+            filename
+                .split("/")
+                .filter(Boolean)
+                .map(part => encodeURIComponent(part))
+                .join("/");
+    }
+
+    /*
+       Резерв для старой схемы общего архива моделей.
+    */
+    if (!url && modelId > 0) {
+        url =
+            `${PUBLIC_API_BASE}/api/models/file/${modelId}`;
+    }
+
+    if (!url) {
+        throw new Error(
+            "Сервер не вернул URL 3D модели"
+        );
+    }
+
+    setRoomStatus(
+        `Получена 3D модель ${filename}.\n` +
+        `Загрузка модели и текстур...`,
+        true
+    );
+
+    /*
+       ---------------------------------------------------------------
+       2. LoadingManager
+       ---------------------------------------------------------------
+
+       URLModifier работает ДО фактического HTTP-запроса ресурса.
+       Поэтому мы можем исправить неправильные пути текстур,
+       записанные внутри GLB.
+    */
+    const manager = new THREE.LoadingManager();
+
+    manager.onStart = (itemUrl, itemsLoaded, itemsTotal) => {
+        console.log(
+            "[ROOM GLB] загрузка:",
+            itemUrl,
+            `${itemsLoaded}/${itemsTotal}`
+        );
+    };
+
+    manager.onProgress = (itemUrl, itemsLoaded, itemsTotal) => {
+        console.log(
+            "[ROOM RESOURCE]",
+            itemUrl,
+            `${itemsLoaded}/${itemsTotal}`
+        );
+    };
+
+    manager.onError = itemUrl => {
+        console.error(
+            "[ROOM RESOURCE ERROR]",
+            itemUrl
+        );
+    };
+
+    manager.setURLModifier(originalUrl => {
+        if (!originalUrl) {
+            return originalUrl;
+        }
+
+        /*
+           Встроенные data/blob ресурсы не трогаем.
+        */
+        if (
+            originalUrl.startsWith("data:") ||
+            originalUrl.startsWith("blob:")
+        ) {
+            return originalUrl;
+        }
+
+        const clean = String(originalUrl)
+            .split("?")[0];
+
+        let decoded = clean;
+
+        try {
+            decoded = decodeURIComponent(clean);
+        } catch {
+            // Оставляем исходную строку.
+        }
+
+        /*
+           ------------------------------------------------------------
+           Если сервер уже дал правильный model-resource URL,
+           ничего не меняем.
+           ------------------------------------------------------------
+        */
+        if (
+            decoded.includes(
+                "/api/rooms/model-resource/"
+            )
+        ) {
+            return originalUrl;
+        }
+
+        /*
+           ------------------------------------------------------------
+           ROOM-модель
+           ------------------------------------------------------------
+        */
+        if (roomName) {
+            let resourcePath = "";
+
+            const decodedModelMarker =
+                `/api/rooms/model-file/${roomName}/`;
+
+            const encodedModelMarker =
+                `/api/rooms/model-file/${encodedRoom}/`;
+
+            const decodedIndex =
+                decoded.indexOf(decodedModelMarker);
+
+            const encodedIndex =
+                clean.indexOf(encodedModelMarker);
+
+            /*
+               GLTFLoader может получить абсолютный URL модели
+               и построить от него URL текстуры.
+            */
+            if (decodedIndex >= 0) {
+                resourcePath =
+                    decoded.slice(
+                        decodedIndex +
+                        decodedModelMarker.length
+                    );
+            } else if (encodedIndex >= 0) {
+                try {
+                    resourcePath =
+                        decodeURIComponent(
+                            clean.slice(
+                                encodedIndex +
+                                encodedModelMarker.length
+                            )
+                        );
+                } catch {
+                    resourcePath =
+                        clean.slice(
+                            encodedIndex +
+                            encodedModelMarker.length
+                        );
+                }
+            }
+
+            /*
+               Если это относительный URI внутри GLB,
+               например:
+
+                   texture.png
+                   textures/albedo.png
+
+               берём его как путь ресурса.
+            */
+            if (!resourcePath) {
+                resourcePath =
+                    decoded
+                        .replace(/^.*\//, "");
+            }
+
+            resourcePath =
+                resourcePath
+                    .split("?")[0]
+                    .replace(/^\/+/, "");
+
+            /*
+               model.glb не должен запрашиваться как текстура.
+            */
+            if (
+                !resourcePath ||
+                resourcePath
+                    .toLowerCase()
+                    .endsWith("/model.glb")
+            ) {
+                return originalUrl;
+            }
+
+            const byPath =
+                modelData?.texture_urls_by_path || {};
+
+            const byName =
+                modelData?.texture_urls_by_name || {};
+
+            const normalizedPath =
+                resourcePath.toLowerCase();
+
+            const resourceName =
+                resourcePath
+                    .split("/")
+                    .pop()
+                    .toLowerCase();
+
+            /*
+               Приоритет №1:
+               точный URL, который прислал сервер.
+            */
+            if (byPath[normalizedPath]) {
+                return new URL(
+                    byPath[normalizedPath],
+                    PUBLIC_API_BASE
+                ).href;
+            }
+
+            /*
+               Приоритет №2:
+               URL по имени файла.
+            */
+            if (byName[resourceName]) {
+                return new URL(
+                    byName[resourceName],
+                    PUBLIC_API_BASE
+                ).href;
+            }
+
+            /*
+               Приоритет №3:
+               основной endpoint model-resource.
+            */
+            const resourceBase =
+                modelData?.resource_base_url ||
+                modelInfo?.resource_base_url ||
+                `${PUBLIC_API_BASE}/api/rooms/model-resource/${encodedRoom}/`;
+
+            const absoluteBase =
+                new URL(
+                    resourceBase,
+                    PUBLIC_API_BASE
+                ).href;
+
+            /*
+               Кодируем каждый сегмент отдельно.
+               Слеши между папками сохраняются.
+            */
+            const encodedResourcePath =
+                resourcePath
+                    .split("/")
+                    .filter(Boolean)
+                    .map(part =>
+                        encodeURIComponent(part)
+                    )
+                    .join("/");
+
+            const finalUrl =
+                absoluteBase.endsWith("/")
+                    ? absoluteBase + encodedResourcePath
+                    : absoluteBase + "/" + encodedResourcePath;
+
+            console.log(
+                "[ROOM TEXTURE RESOLVE]",
+                originalUrl,
+                "=>",
+                finalUrl
+            );
+
+            return finalUrl;
+        }
+
+        /*
+           ------------------------------------------------------------
+           Старая схема archive model
+           ------------------------------------------------------------
+        */
+        if (modelId > 0) {
+            if (
+                decoded.includes(
+                    `/api/models/resource/${modelId}/`
+                )
+            ) {
+                return originalUrl;
+            }
+
+            const resourceName =
+                decoded
+                    .split("/")
+                    .pop();
+
+            if (!resourceName) {
+                return originalUrl;
+            }
+
+            return (
+                `${PUBLIC_API_BASE}/api/models/resource/` +
+                `${modelId}/` +
+                encodeURIComponent(resourceName)
+            );
+        }
+
+        return originalUrl;
+    });
+
+    /*
+       ---------------------------------------------------------------
+       3. Создаём отдельный GLTFLoader именно для этой ROOM
+       ---------------------------------------------------------------
+    */
+    const roomLoader =
+        new GLTFLoader(manager);
+
+    /*
+       Если сервер передал resource_base_url,
+       задаём его GLTFLoader как базовый путь.
+       URLModifier всё равно имеет приоритет для проблемных URI.
+    */
+    const resourceBase =
+        modelData?.resource_base_url ||
+        modelInfo?.resource_base_url ||
+        (
+            roomName
+                ? `${PUBLIC_API_BASE}/api/rooms/model-resource/${encodedRoom}/`
+                : ""
+        );
+
+    if (resourceBase) {
+        roomLoader.setResourcePath(
+            new URL(
+                resourceBase,
+                PUBLIC_API_BASE
+            ).href
+        );
+    }
+
+    /*
+       Не используем URL напрямую с cache-busting в середине пути.
+       Параметр добавляем только к окончательному URL GLB.
+    */
+    const modelUrl =
+        url +
+        (
+            url.includes("?")
+                ? "&"
+                : "?"
+        ) +
+        "v=" +
+        Date.now();
+
+    console.log(
+        "[ROOM MODEL REQUEST]",
+        modelUrl
+    );
+
+    /*
+       ---------------------------------------------------------------
+       4. Загружаем GLB
+       ---------------------------------------------------------------
+    */
+    const gltf =
+        await new Promise((resolve, reject) => {
+
+            roomLoader.load(
+                modelUrl,
+
+                loaded => {
+                    console.log(
+                        "[ROOM MODEL LOADED]",
+                        loaded
+                    );
+
+                    resolve(loaded);
+                },
+
+                xhr => {
+                    if (
+                        xhr &&
+                        xhr.total > 0
+                    ) {
+                        const percent =
+                            Math.round(
+                                xhr.loaded /
+                                xhr.total *
+                                100
+                            );
+
+                        setRoomStatus(
+                            `Загрузка 3D модели: ${percent}%`,
+                            true
+                        );
+                    } else {
+                        setRoomStatus(
+                            "Загрузка 3D модели и текстур...",
+                            true
+                        );
+                    }
+                },
+
+                error => {
+                    console.error(
+                        "[ROOM MODEL LOAD ERROR]",
+                        error
+                    );
+
+                    reject(
+                        new Error(
+                            "Ошибка загрузки GLB: " +
+                            (
+                                error?.message ||
+                                error?.statusText ||
+                                error
+                            )
+                        )
+                    );
+                }
+            );
+        });
+
+    /*
+       Пользователь мог выйти из ROOM во время загрузки.
+       Старый результат не должен попадать в новую комнату.
+    */
+    if (
+        token !== roomModelLoadToken
+    ) {
+        return false;
+    }
+
+    /*
+       ---------------------------------------------------------------
+       5. Удаляем предыдущую модель
+       ---------------------------------------------------------------
+    */
+    disposeRoomModel();
+
+    /*
+       ---------------------------------------------------------------
+       6. Подготавливаем новую модель
+       ---------------------------------------------------------------
+    */
+    roomModel =
+        prepareRoomModel(
+            gltf.scene
+        );
+
+    roomModel.userData.roomModel = true;
+
+    /*
+       Сохраняем информацию о загруженных ресурсах.
+    */
+    roomModel.userData.room = roomName;
+    roomModel.userData.modelFilename = filename;
+    roomModel.userData.modelUrl = url;
+
+    /*
+       ---------------------------------------------------------------
+       7. Проверяем материалы и текстуры
+       ---------------------------------------------------------------
+    */
+    let meshCount = 0;
+    let texturedMeshCount = 0;
+    let materialCount = 0;
+
+    roomModel.traverse(object => {
+
+        if (!object.isMesh) {
+            return;
+        }
+
+        meshCount++;
+
+        const materials =
+            Array.isArray(object.material)
+                ? object.material
+                : [object.material];
+
+        materials.forEach(material => {
+
+            if (!material) {
+                return;
+            }
+
+            materialCount++;
+
+            if (
+                material.map &&
+                material.map.isTexture
+            ) {
+                texturedMeshCount++;
+
+                material.map.colorSpace =
+                    THREE.SRGBColorSpace;
+
+                material.map.needsUpdate = true;
+            }
+
+            if (
+                material.emissiveMap &&
+                material.emissiveMap.isTexture
+            ) {
+                material.emissiveMap.colorSpace =
+                    THREE.SRGBColorSpace;
+
+                material.emissiveMap.needsUpdate =
+                    true;
+            }
+
+            material.needsUpdate = true;
+        });
+    });
+
+    console.log(
+        "[ROOM MODEL MATERIALS]",
+        {
+            meshCount,
+            materialCount,
+            texturedMeshCount
+        }
+    );
+
+    /*
+       ---------------------------------------------------------------
+       8. Добавляем модель в сцену
+       ---------------------------------------------------------------
+    */
+    roomScene.add(roomModel);
+
+    /*
+       ---------------------------------------------------------------
+       9. Финальный статус
+       ---------------------------------------------------------------
+    */
+    setRoomStatus(
+        `ROOM готов.\n` +
+        `3D модель: ${filename}\n` +
+        `Объектов: ${meshCount}\n` +
+        `Материалов: ${materialCount}\n` +
+        `Текстурированных объектов: ${texturedMeshCount}`,
+        true
+    );
+
+    console.log(
+        "[ROOM MODEL COMPLETE]",
+        {
+            room: roomName,
+            filename,
+            url,
+            meshCount,
+            materialCount,
+            texturedMeshCount
+        }
+    );
+
+    setTimeout(() => {
+        if (
+            roomViewerScreen.classList.contains(
+                "active"
+            )
+        ) {
+            setRoomStatus(
+                "",
+                false
+            );
+        }
+    }, 3000);
+
+    return true;
+}
+
+async function requestRoomModelFromPC(roomData, folder) {
+    const requestId = Number(roomData?.id || 0);
+    if (!requestId) {
+        throw new Error("PC-сервер не вернул ID ROOM-запроса");
+    }
+
+    roomRequestId = requestId;
+    const endpoint = `${ROOMS_API}/${encodeURIComponent(folder)}/model?request_id=${requestId}`;
+
+    setRoomStatus(
+        `ROOM ${folder}: отправлен запрос 3D модели на PC-сервер...`,
+        true
+    );
+
+    const response = await fetch(endpoint, {
+        method: "GET",
+        mode: "cors",
+        cache: "no-store",
+        headers: { "Accept": "application/json" }
+    });
+
+    if (!response.ok) {
+        throw new Error(`ROOM MODEL HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+    if (data?.ready && data?.url) {
+        return data;
+    }
+
+    return null;
+}
+
+
+async function waitForRoomModel(roomData, folder) {
+    const requestId = Number(roomData?.id);
+    if (!requestId) {
+        setRoomStatus(
+            `ROOM ${folder}: текстуры загружены 6/6.\nОжидается запрос модели.`,
+            true
+        );
+        return;
+    }
+
+    roomRequestId = requestId;
+    const endpoint = `${ROOMS_API}/${encodeURIComponent(folder)}/model?request_id=${requestId}`;
+    const started = Date.now();
+    const maxWait = 10 * 60 * 1000;
+
+    setRoomStatus(
+        `ROOM ${folder}: текстуры 6/6.\nОжидание 3D модели от PC-сервера...`,
+        true
+    );
+
+    while (Date.now() - started < maxWait) {
+        try {
+            const response = await fetch(endpoint, {
+                method: "GET",
+                mode: "cors",
+                cache: "no-store",
+                headers: { "Accept": "application/json" }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data?.ready && data?.model_id && data?.url) {
+                    await loadRoomModel(data);
+                    return;
+                }
+            }
+        } catch (error) {
+            console.warn("ROOM MODEL POLL ERROR:", error);
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 2000));
+    }
+
+    setRoomStatus(
+        `ROOM ${folder}: текстуры 6/6.\n3D модель пока не отправлена с PC-сервера.`,
+        true
+    );
 }
 
 async function buildRoom(item) {
@@ -3097,9 +4353,12 @@ async function buildRoom(item) {
 
     let roomData;
     try {
-        roomData = await getRoomFromPC(item);
-    } catch (getError) {
-        throw getError;
+        roomData = await requestRoomFromPC(item);
+    } catch (postError) {
+        // POST обязателен: именно он фиксирует ROOM-запрос в GUI.
+        // GET не используем как тихий fallback, чтобы не потерять
+        // единый протокол загрузки комнаты.
+        throw postError;
     }
 
     const textures =
