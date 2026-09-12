@@ -916,182 +916,177 @@
             pointer-events: none;
         }
 
-        .roomControls {
-            position: absolute;
-            z-index: 30;
-            left: 0;
-            right: 0;
-            bottom: 16px;
-            height: 128px;
-            padding: 0 12px;
-            display: flex;
-            align-items: flex-end;
-            justify-content: space-between;
-            pointer-events: none;
-        }
+        /* =========================================================
+           ROOM VIEWER — МИНИМАЛЬНОЕ УПРАВЛЕНИЕ
+           На мобильном:
+             1 палец  = осмотр
+             2 пальца = перемещение по комнате
+           ========================================================= */
 
-        .roomMovePad,
-        .roomLookPad {
-            width: 112px;
-            height: 112px;
-            position: relative;
-            pointer-events: auto;
-            touch-action: none;
-            user-select: none;
-            -webkit-user-select: none;
-        }
-
-        .roomMovePad {
-            border: 1px solid rgba(255,255,255,.20);
-            border-radius: 50%;
-            background: rgba(8,8,8,.45);
-        }
-
-        .roomMovePad::before {
-            content: "";
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            width: 68px;
-            height: 68px;
-            transform: translate(-50%, -50%);
-            border: 1px solid rgba(255,255,255,.10);
-            border-radius: 50%;
-        }
-
-        .roomMoveKnob {
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            width: 46px;
-            height: 46px;
-            margin-left: -23px;
-            margin-top: -23px;
-            border-radius: 50%;
-            border: 1px solid rgba(255,255,255,.55);
-            background: rgba(255,255,255,.14);
-            transform: translate3d(0,0,0);
-        }
-
-        .roomLookPad {
-            width: min(42vw, 300px);
-            border: 1px solid rgba(255,255,255,.10);
-            border-radius: 12px;
-            background: rgba(8,8,8,.22);
-        }
-
-        .roomLookLabel {
-            position: absolute;
-            inset: 0;
+        .roomViewerMenuButton {
+            width: 40px;
+            height: 40px;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: rgba(255,255,255,.28);
-            font-size: 9px;
-            letter-spacing: 1px;
-            pointer-events: none;
+            background: rgba(8,8,8,.82);
+            color: #fff;
+            border: 1px solid #242424;
+            font-size: 21px;
+            line-height: 1;
+            z-index: 30;
+            pointer-events: auto;
         }
 
-        .roomVerticalControls {
+        .roomViewerMenuButton:hover {
+            background: #111;
+        }
+
+        .roomViewerMenuButton:active {
+            background: #181818;
+        }
+
+        .roomGalleryOverlay {
             position: absolute;
-            left: 50%;
-            bottom: 28px;
-            transform: translateX(-50%);
+            z-index: 50;
+            inset: 0;
+            display: none;
+            flex-direction: column;
+            background: rgba(0,0,0,.96);
+            overflow: hidden;
+        }
+
+        .roomGalleryOverlay.active {
+            display: flex;
+        }
+
+        .roomGalleryHeader {
+            flex: 0 0 58px;
+            display: flex;
+            align-items: center;
+            padding: 0 14px;
+            border-bottom: 1px solid #242424;
+            background: #000;
+        }
+
+        .roomGalleryTitle {
+            margin-left: 14px;
+            font-size: 13px;
+            font-weight: 400;
+            letter-spacing: .5px;
+        }
+
+        .roomGalleryClose {
+            width: 40px;
+            height: 40px;
+            background: #080808;
+            color: #fff;
+            border: 1px solid #242424;
+            font-size: 20px;
+        }
+
+        .roomGalleryList {
+            flex: 1 1 auto;
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 12px;
+            overflow-y: auto;
             display: flex;
             flex-direction: column;
-            gap: 6px;
-            pointer-events: auto;
+            gap: 10px;
+            scrollbar-width: thin;
         }
 
-        .roomVerticalButton,
-        .roomRollButton,
-        .roomResetButton {
-            width: 42px;
-            height: 42px;
-            min-width: 42px;
-            min-height: 42px;
+        .roomGalleryCard {
+            position: relative;
+            width: 100%;
+            min-height: 150px;
+            flex: 0 0 auto;
+            overflow: hidden;
             padding: 0;
-            margin: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(8,8,8,.78);
+            background: #080808;
+            border: 1px solid #292929;
             color: #fff;
-            border: 1px solid rgba(255,255,255,.30);
-            font-size: 18px;
-            font-family: Arial, Helvetica, sans-serif;
-            line-height: 1;
-            text-align: center;
-            touch-action: none;
-            user-select: none;
-            -webkit-user-select: none;
-            transition:
-                background .15s ease,
-                border-color .15s ease,
-                box-shadow .15s ease;
+            text-align: left;
             clip-path: polygon(
                 0 0,
-                calc(100% - 7px) 0,
-                100% 7px,
+                calc(100% - 12px) 0,
+                100% 12px,
                 100% 100%,
-                7px 100%,
-                0 calc(100% - 7px)
+                12px 100%,
+                0 calc(100% - 12px)
             );
         }
 
-        .roomVerticalButton:hover,
-        .roomRollButton:hover,
-        .roomResetButton:hover {
-            border-color: rgba(255,255,255,.65);
-            box-shadow: 0 0 12px rgba(255,255,255,.12);
-        }
-
-        .roomVerticalButton:active,
-        .roomRollButton:active,
-        .roomResetButton:active {
-            background: rgba(255,255,255,.18);
-            box-shadow: 0 0 14px rgba(255,255,255,.18);
-        }
-
-        .roomRollControls {
+        .roomGalleryCard img {
             position: absolute;
-            left: 50%;
-            top: 58px;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 6px;
-            pointer-events: auto;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: .78;
+            display: block;
         }
 
-        .roomRollButton {
-            width: 38px;
-            height: 34px;
-            min-width: 38px;
-            min-height: 34px;
-            font-size: 14px;
-        }
-
-        .roomAxisLabel {
+        .roomGalleryCard::after {
+            content: "";
             position: absolute;
-            left: 50%;
-            top: 30px;
-            transform: translateX(-50%);
-            color: rgba(255,255,255,.34);
-            font-size: 8px;
-            letter-spacing: .8px;
+            inset: 0;
+            background: linear-gradient(
+                to bottom,
+                rgba(0,0,0,.06),
+                rgba(0,0,0,.72)
+            );
             pointer-events: none;
-            white-space: nowrap;
         }
 
-        .roomResetButton {
+        .roomGalleryCardContent {
             position: absolute;
-            right: 12px;
-            top: -50px;
-            width: 40px;
-            height: 40px;
-            min-width: 40px;
-            min-height: 40px;
-            font-size: 18px;
+            z-index: 2;
+            left: 16px;
+            right: 16px;
+            bottom: 14px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .roomGalleryCardNumber {
+            font-size: 20px;
+            font-weight: 400;
+            text-shadow: 0 2px 8px #000;
+        }
+
+        .roomGalleryCardName {
+            color: #bbb;
+            font-size: 9px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            text-shadow: 0 2px 8px #000;
+        }
+
+        .roomGalleryEmpty,
+        .roomGalleryLoading {
+            min-height: 180px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #555;
+            font-size: 10px;
+            letter-spacing: 1.5px;
+        }
+
+        @media (max-width: 500px) {
+            .roomGalleryList {
+                padding: 8px;
+                gap: 8px;
+            }
+
+            .roomGalleryCard {
+                min-height: 130px;
+            }
         }
 
         @media (max-width: 500px) {
@@ -1307,10 +1302,11 @@
 
         <button
             id="roomViewerBack"
-            class="backButton"
+            class="roomViewerMenuButton"
             type="button"
+            aria-label="Открыть галерею комнат"
         >
-            ←
+            ☰
         </button>
 
         <div
@@ -1329,84 +1325,30 @@
         Загрузка комнаты...
     </div>
 
-    <div class="roomHint">
-        Телефон: левый круг — движение; правое поле — поворот/наклон; ↑↓ — подъём/спуск; ↶↷ — вращение.
-        ПК: WASD + мышь; R/F — подъём/спуск.
-    </div>
+    <div
+        id="roomGalleryOverlay"
+        class="roomGalleryOverlay"
+        aria-hidden="true"
+    >
+        <div class="roomGalleryHeader">
+            <button
+                id="roomGalleryClose"
+                class="roomGalleryClose"
+                type="button"
+                aria-label="Закрыть галерею"
+            >
+                ×
+            </button>
 
-    <div class="roomControls">
-
-        <div
-            id="roomMovePad"
-            class="roomMovePad"
-            aria-label="Движение"
-        >
-            <div id="roomMoveKnob" class="roomMoveKnob"></div>
+            <div class="roomGalleryTitle">
+                ГАЛЕРЕЯ КОМНАТ
+            </div>
         </div>
 
         <div
-            id="roomLookPad"
-            class="roomLookPad"
-            aria-label="Поворот и наклон камеры"
-        >
-            <div class="roomLookLabel">ПОВОРОТ / НАКЛОН</div>
-        </div>
-
-        <div class="roomVerticalControls">
-
-            <div class="roomAxisLabel">ВЫСОТА</div>
-
-            <button
-                id="roomMoveUp"
-                class="roomVerticalButton"
-                type="button"
-                aria-label="Поднять камеру"
-            >
-                ↑
-            </button>
-
-            <button
-                id="roomMoveDown"
-                class="roomVerticalButton"
-                type="button"
-                aria-label="Опустить камеру"
-            >
-                ↓
-            </button>
-
-        </div>
-
-        <div class="roomRollControls">
-
-            <button
-                id="roomRollLeft"
-                class="roomRollButton"
-                type="button"
-                aria-label="Вращение камеры влево"
-            >
-                ↶
-            </button>
-
-            <button
-                id="roomRollRight"
-                class="roomRollButton"
-                type="button"
-                aria-label="Вращение камеры вправо"
-            >
-                ↷
-            </button>
-
-        </div>
-
-        <button
-            id="roomReset"
-            class="roomResetButton"
-            type="button"
-            aria-label="Сбросить положение камеры"
-        >
-            ⟳
-        </button>
-
+            id="roomGalleryList"
+            class="roomGalleryList"
+        ></div>
     </div>
 
 </section>
@@ -1686,29 +1628,14 @@ const roomViewerTitle =
 const roomViewerStatus =
     document.getElementById("roomViewerStatus");
 
-const roomMovePad =
-    document.getElementById("roomMovePad");
+const roomGalleryOverlay =
+    document.getElementById("roomGalleryOverlay");
 
-const roomMoveKnob =
-    document.getElementById("roomMoveKnob");
+const roomGalleryClose =
+    document.getElementById("roomGalleryClose");
 
-const roomLookPad =
-    document.getElementById("roomLookPad");
-
-const roomMoveUp =
-    document.getElementById("roomMoveUp");
-
-const roomMoveDown =
-    document.getElementById("roomMoveDown");
-
-const roomRollLeft =
-    document.getElementById("roomRollLeft");
-
-const roomRollRight =
-    document.getElementById("roomRollRight");
-
-const roomReset =
-    document.getElementById("roomReset");
+const roomGalleryList =
+    document.getElementById("roomGalleryList");
 const connectWallet =
     document.getElementById("connectWallet");
 
@@ -2872,6 +2799,22 @@ let roomMoveX = 0;
 let roomMoveY = 0;
 let roomLookLastX = 0;
 let roomLookLastY = 0;
+let roomTwoFingerState = null;
+
+function createTwoFingerState() {
+    return getTwoFingerState();
+}
+
+function getTwoFingerState() {
+    if (roomTouchPointers.size < 2) return null;
+
+    const points = [...roomTouchPointers.values()].slice(0, 2);
+
+    return {
+        centerX: (points[0].x + points[1].x) / 2,
+        centerY: (points[0].y + points[1].y) / 2
+    };
+}
 
 const ROOM_LENGTH = 7;
 const ROOM_WIDTH = 6;
@@ -4812,7 +4755,6 @@ async function buildRoom(item) {
     roomVerticalInput = 0;
     roomVerticalButtonInput = 0;
 
-    resetRoomMovePadVisual();
     clampRoomCamera();
     updateRoomCameraRotation();
     resizeRoomViewer();
@@ -4908,60 +4850,6 @@ async function buildRoom(item) {
     }
 }
 
-function resetRoomMovePadVisual() {
-    if (!roomMoveKnob) return;
-
-    roomMoveKnob.style.transform =
-        "translate3d(0,0,0)";
-}
-
-function updateRoomMovePad(clientX, clientY) {
-    if (!roomMovePad) return;
-
-    const rect = roomMovePad.getBoundingClientRect();
-
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-
-    const max = Math.max(
-        18,
-        Math.min(rect.width, rect.height) * 0.32
-    );
-
-    let dx = clientX - centerX;
-    let dy = clientY - centerY;
-
-    const length = Math.hypot(dx, dy);
-
-    if (length > max) {
-        dx = dx / length * max;
-        dy = dy / length * max;
-    }
-
-    roomPadX = dx / max;
-    roomPadY = dy / max;
-
-    roomMoveKnob.style.transform =
-        `translate3d(${dx}px, ${dy}px, 0)`;
-}
-
-function releaseRoomMovePad() {
-    roomPadPointerId = null;
-    roomPadX = 0;
-    roomPadY = 0;
-    resetRoomMovePadVisual();
-}
-
-function startRoomVertical(direction) {
-    roomVerticalButtonInput = direction;
-}
-
-function stopRoomVertical(direction) {
-    if (roomVerticalButtonInput === direction) {
-        roomVerticalButtonInput = 0;
-    }
-}
-
 function isMobileDevice() {
     const userAgent = navigator.userAgent || navigator.vendor || window.opera || "";
 
@@ -5012,6 +4900,19 @@ function initRoomViewer() {
 
     roomClock = new THREE.Clock();
 
+    /*
+        Мобильное управление без экранных джойстиков:
+
+        1 палец:
+            движение пальца = осмотр комнаты
+
+        2 пальца:
+            движение обоих пальцев = перемещение камеры
+            по X/Z относительно направления взгляда.
+
+        Это позволяет управлять ROOM непосредственно
+        поверх изображения и не закрывать экран лишними кнопками.
+    */
     roomRenderer.domElement.addEventListener("pointerdown", event => {
         if (event.pointerType === "mouse") {
             roomMouseDown = true;
@@ -5026,19 +4927,16 @@ function initRoomViewer() {
             y: event.clientY
         });
 
-        const half = window.innerWidth / 2;
+        roomRenderer.domElement.setPointerCapture?.(event.pointerId);
 
-        if (event.clientX < half && roomMovePointerId === null) {
-            roomMovePointerId = event.pointerId;
-            roomMoveX = event.clientX;
-            roomMoveY = event.clientY;
-        } else if (roomLookPointerId === null) {
+        if (roomTouchPointers.size === 1) {
             roomLookPointerId = event.pointerId;
             roomLookLastX = event.clientX;
             roomLookLastY = event.clientY;
+        } else if (roomTouchPointers.size === 2) {
+            roomLookPointerId = null;
+            roomTwoFingerState = createTwoFingerState();
         }
-
-        roomRenderer.domElement.setPointerCapture?.(event.pointerId);
     });
 
     roomRenderer.domElement.addEventListener("pointermove", event => {
@@ -5053,6 +4951,7 @@ function initRoomViewer() {
 
             roomYaw -= dx * ROOM_LOOK_SPEED;
             roomPitch -= dy * ROOM_LOOK_SPEED;
+
             roomPitch = THREE.MathUtils.clamp(
                 roomPitch,
                 -Math.PI / 2 + 0.05,
@@ -5070,20 +4969,49 @@ function initRoomViewer() {
             y: event.clientY
         });
 
-        if (event.pointerId === roomMovePointerId) {
-            const dx = event.clientX - roomMoveX;
-            const dy = event.clientY - roomMoveY;
-            const limit = 65;
-            const length = Math.hypot(dx, dy) || 1;
+        if (roomTouchPointers.size >= 2) {
+            const state = getTwoFingerState();
 
-            roomMoveX = event.clientX;
-            roomMoveY = event.clientY;
+            if (!state) return;
 
-            roomMovePointerX = THREE.MathUtils.clamp(dx / limit, -1, 1);
-            roomMovePointerY = THREE.MathUtils.clamp(dy / limit, -1, 1);
+            if (!roomTwoFingerState) {
+                roomTwoFingerState = state;
+                return;
+            }
+
+            const dx = state.centerX - roomTwoFingerState.centerX;
+            const dy = state.centerY - roomTwoFingerState.centerY;
+
+            const moveScale = ROOM_SPEED * 0.012;
+
+            const forwardX = Math.sin(roomYaw);
+            const forwardZ = Math.cos(roomYaw);
+
+            const rightX = Math.cos(roomYaw);
+            const rightZ = -Math.sin(roomYaw);
+
+            /*
+                Свайп вверх  = вперёд
+                Свайп вниз  = назад
+                Свайп влево = влево
+                Свайп вправо = вправо
+            */
+            roomCamera.position.x +=
+                (rightX * dx + forwardX * -dy) * moveScale;
+
+            roomCamera.position.z +=
+                (rightZ * dx + forwardZ * -dy) * moveScale;
+
+            clampRoomCamera();
+
+            roomTwoFingerState = state;
+            return;
         }
 
-        if (event.pointerId === roomLookPointerId) {
+        if (
+            roomTouchPointers.size === 1 &&
+            event.pointerId === roomLookPointerId
+        ) {
             const dx = event.clientX - roomLookLastX;
             const dy = event.clientY - roomLookLastY;
 
@@ -5092,6 +5020,7 @@ function initRoomViewer() {
 
             roomYaw -= dx * ROOM_LOOK_SPEED;
             roomPitch -= dy * ROOM_LOOK_SPEED;
+
             roomPitch = THREE.MathUtils.clamp(
                 roomPitch,
                 -Math.PI / 2 + 0.05,
@@ -5110,21 +5039,34 @@ function initRoomViewer() {
 
         roomTouchPointers.delete(event.pointerId);
 
-        if (event.pointerId === roomMovePointerId) {
-            roomMovePointerId = null;
-            roomMoveX = 0;
-            roomMoveY = 0;
-        }
+        if (roomTouchPointers.size === 1) {
+            const remaining = [...roomTouchPointers.entries()][0];
 
-        if (event.pointerId === roomLookPointerId) {
+            roomLookPointerId = remaining[0];
+            roomLookLastX = remaining[1].x;
+            roomLookLastY = remaining[1].y;
+            roomTwoFingerState = null;
+        } else {
             roomLookPointerId = null;
+            roomTwoFingerState = null;
         }
     });
 
     roomRenderer.domElement.addEventListener("pointercancel", event => {
         roomTouchPointers.delete(event.pointerId);
-        if (event.pointerId === roomMovePointerId) roomMovePointerId = null;
-        if (event.pointerId === roomLookPointerId) roomLookPointerId = null;
+
+        if (roomTouchPointers.size < 2) {
+            roomTwoFingerState = null;
+        }
+
+        if (roomTouchPointers.size === 1) {
+            const remaining = [...roomTouchPointers.entries()][0];
+            roomLookPointerId = remaining[0];
+            roomLookLastX = remaining[1].x;
+            roomLookLastY = remaining[1].y;
+        } else {
+            roomLookPointerId = null;
+        }
     });
 
     window.addEventListener("keydown", event => {
@@ -5140,220 +5082,9 @@ function initRoomViewer() {
     window.addEventListener("blur", () => {
         roomKeyboard.clear();
         roomMouseDown = false;
-        releaseRoomMovePad();
         roomVerticalInput = 0;
         roomVerticalButtonInput = 0;
     });
-
-    /*
-        МОБИЛЬНОЕ УПРАВЛЕНИЕ ROOM
-
-        Левый круг:
-            вверх    = вперёд
-            вниз     = назад
-            влево    = влево
-            вправо   = вправо
-    */
-    roomMovePad.addEventListener("pointerdown", event => {
-        event.preventDefault();
-
-        if (roomPadPointerId !== null) return;
-
-        roomPadPointerId = event.pointerId;
-
-        roomMovePad.setPointerCapture?.(
-            event.pointerId
-        );
-
-        updateRoomMovePad(
-            event.clientX,
-            event.clientY
-        );
-    });
-
-    roomMovePad.addEventListener("pointermove", event => {
-        if (event.pointerId !== roomPadPointerId) return;
-
-        event.preventDefault();
-
-        updateRoomMovePad(
-            event.clientX,
-            event.clientY
-        );
-    });
-
-    roomMovePad.addEventListener("pointerup", event => {
-        if (event.pointerId !== roomPadPointerId) return;
-        releaseRoomMovePad();
-    });
-
-    roomMovePad.addEventListener("pointercancel", event => {
-        if (event.pointerId !== roomPadPointerId) return;
-        releaseRoomMovePad();
-    });
-
-    /*
-        Правое поле:
-            горизонталь = поворот влево/вправо
-            вертикаль   = наклон вверх/вниз
-    */
-    roomLookPad.addEventListener("pointerdown", event => {
-        event.preventDefault();
-
-        if (roomLookPointerId !== null) return;
-
-        roomLookPointerId = event.pointerId;
-        roomLookLastX = event.clientX;
-        roomLookLastY = event.clientY;
-
-        roomLookPad.setPointerCapture?.(
-            event.pointerId
-        );
-    });
-
-    roomLookPad.addEventListener("pointermove", event => {
-        if (event.pointerId !== roomLookPointerId) return;
-
-        event.preventDefault();
-
-        const dx = event.clientX - roomLookLastX;
-        const dy = event.clientY - roomLookLastY;
-
-        roomLookLastX = event.clientX;
-        roomLookLastY = event.clientY;
-
-        roomYaw -= dx * ROOM_LOOK_SPEED;
-        roomPitch -= dy * ROOM_LOOK_SPEED;
-
-        roomPitch = THREE.MathUtils.clamp(
-            roomPitch,
-            -Math.PI / 2 + 0.05,
-            Math.PI / 2 - 0.05
-        );
-
-        updateRoomCameraRotation();
-    });
-
-    const releaseRoomLook = event => {
-        if (event.pointerId === roomLookPointerId) {
-            roomLookPointerId = null;
-        }
-    };
-
-    roomLookPad.addEventListener(
-        "pointerup",
-        releaseRoomLook
-    );
-
-    roomLookPad.addEventListener(
-        "pointercancel",
-        releaseRoomLook
-    );
-
-    /*
-        ↑ / ↓ — подъём и спуск.
-        Кнопка работает и на touch, и мышью.
-    */
-    roomMoveUp.addEventListener(
-        "pointerdown",
-        event => {
-            event.preventDefault();
-            startRoomVertical(1);
-            roomMoveUp.setPointerCapture?.(
-                event.pointerId
-            );
-        }
-    );
-
-    roomMoveUp.addEventListener(
-        "pointerup",
-        event => {
-            event.preventDefault();
-            stopRoomVertical(1);
-        }
-    );
-
-    roomMoveUp.addEventListener(
-        "pointercancel",
-        () => stopRoomVertical(1)
-    );
-
-    roomMoveDown.addEventListener(
-        "pointerdown",
-        event => {
-            event.preventDefault();
-            startRoomVertical(-1);
-            roomMoveDown.setPointerCapture?.(
-                event.pointerId
-            );
-        }
-    );
-
-    roomMoveDown.addEventListener(
-        "pointerup",
-        event => {
-            event.preventDefault();
-            stopRoomVertical(-1);
-        }
-    );
-
-    roomMoveDown.addEventListener(
-        "pointercancel",
-        () => stopRoomVertical(-1)
-    );
-
-    /*
-        ↶ / ↷ — roll, то есть вращение изображения
-        вокруг оси взгляда.
-    */
-    roomRollLeft.addEventListener(
-        "click",
-        () => {
-            roomRoll += 0.12;
-            roomRoll = THREE.MathUtils.clamp(
-                roomRoll,
-                -Math.PI / 3,
-                Math.PI / 3
-            );
-            updateRoomCameraRotation();
-        }
-    );
-
-    roomRollRight.addEventListener(
-        "click",
-        () => {
-            roomRoll -= 0.12;
-            roomRoll = THREE.MathUtils.clamp(
-                roomRoll,
-                -Math.PI / 3,
-                Math.PI / 3
-            );
-            updateRoomCameraRotation();
-        }
-    );
-
-    roomReset.addEventListener(
-        "click",
-        () => {
-            if (!roomCamera) return;
-
-            roomYaw = Math.PI;
-            roomPitch = 0;
-            roomRoll = 0;
-            roomVerticalInput = 0;
-            roomVerticalButtonInput = 0;
-
-            roomCamera.position.set(
-                0,
-                ROOM_EYE_HEIGHT,
-                1.0
-            );
-
-            releaseRoomMovePad();
-            clampRoomCamera();
-            updateRoomCameraRotation();
-        }
-    );
 
     resizeRoomViewer();
     roomAnimationFrame = requestAnimationFrame(roomRenderLoop);
@@ -5438,16 +5169,6 @@ function updateRoomMovement(dt) {
             ? keyboardVertical
             : roomVerticalButtonInput;
 
-    if (roomMovePointerId !== null) {
-        strafe += roomMovePointerX;
-        forward -= roomMovePointerY;
-    }
-
-    if (roomPadPointerId !== null) {
-        strafe += roomPadX;
-        forward -= roomPadY;
-    }
-
     const length = Math.hypot(strafe, forward);
     if (length > 1) {
         strafe /= length;
@@ -5504,6 +5225,108 @@ function resizeRoomViewer() {
     roomCamera.aspect = width / height;
     roomCamera.updateProjectionMatrix();
     roomRenderer.setSize(width, height, false);
+}
+
+function getRoomGalleryImage(item) {
+    const folder = String(
+        item?.folder ||
+        item?.name ||
+        ""
+    ).trim();
+
+    const directIcon = String(
+        item?.icon_url ||
+        item?.icon?.url ||
+        ""
+    ).trim();
+
+    if (directIcon) return directIcon;
+
+    if (!folder) return "";
+
+    return roomFileUrl(
+        folder,
+        "01_BACKGROUND.png"
+    );
+}
+
+function openRoomGallery() {
+    if (!roomGalleryOverlay || !roomGalleryList) return;
+
+    roomGalleryOverlay.classList.add("active");
+    roomGalleryOverlay.setAttribute("aria-hidden", "false");
+
+    renderRoomGallery();
+}
+
+function closeRoomGallery() {
+    if (!roomGalleryOverlay) return;
+
+    roomGalleryOverlay.classList.remove("active");
+    roomGalleryOverlay.setAttribute("aria-hidden", "true");
+}
+
+function renderRoomGallery() {
+    if (!roomGalleryList) return;
+
+    if (!rooms.length) {
+        roomGalleryList.innerHTML = `
+            <div class="roomGalleryEmpty">
+                ROOM EMPTY
+            </div>
+        `;
+        return;
+    }
+
+    roomGalleryList.innerHTML = "";
+
+    rooms.forEach((item, index) => {
+        const card = document.createElement("button");
+        card.type = "button";
+        card.className = "roomGalleryCard";
+
+        const imageUrl = getRoomGalleryImage(item);
+
+        if (imageUrl) {
+            const image = document.createElement("img");
+            image.src = imageUrl;
+            image.alt = "";
+            image.loading = "lazy";
+            image.decoding = "async";
+
+            image.addEventListener(
+                "error",
+                () => image.remove(),
+                { once: true }
+            );
+
+            card.appendChild(image);
+        }
+
+        const content = document.createElement("div");
+        content.className = "roomGalleryCardContent";
+
+        const number = document.createElement("div");
+        number.className = "roomGalleryCardNumber";
+        number.textContent =
+            `ROOM ${roomNumberValue(item, index)}`;
+
+        const name = document.createElement("div");
+        name.className = "roomGalleryCardName";
+        name.textContent =
+            roomName(item, index);
+
+        content.appendChild(number);
+        content.appendChild(name);
+        card.appendChild(content);
+
+        card.addEventListener("click", () => {
+            closeRoomGallery();
+            openRoom(index);
+        });
+
+        roomGalleryList.appendChild(card);
+    });
 }
 
 async function loadRooms() {
@@ -5648,6 +5471,8 @@ async function loadRooms() {
             roomGrid.appendChild(card);
         });
 
+        renderRoomGallery();
+
     } catch (error) {
         console.error(
             "ROOM LIST ERROR:",
@@ -5735,12 +5560,18 @@ roomBack.addEventListener("click", () => {
 });
 
 roomViewerBack.addEventListener("click", () => {
-    currentRoom = null;
-    ++roomModelLoadToken;
-    roomRequestId = null;
-    disposeRoomModel();
-    clearRoomScene();
-    showScreen(roomScreen);
+    if (!requireAccess()) return;
+    openRoomGallery();
+});
+
+roomGalleryClose.addEventListener("click", () => {
+    closeRoomGallery();
+});
+
+window.addEventListener("keydown", event => {
+    if (event.code === "Escape") {
+        closeRoomGallery();
+    }
 });
 
 window.addEventListener(
