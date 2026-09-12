@@ -1406,7 +1406,7 @@ const GENERATION_API =
    файлы из указанных папок через /api/rooms/*.
 */
 const PC_SERVER_BASE =
-    "https://pc-api.araicameragame.party"; // Cloudflare Tunnel -> PC 127.0.0.1:5000
+    window.location.origin; // /api/rooms -> Cloudflare Tunnel -> PC 127.0.0.1:5000
 
 const PC_ROOMS_ROOT =
     String.raw`C:\Users\Romer\OneDrive\Рабочий стол\3d\3d\fon_room`;
@@ -1418,10 +1418,10 @@ const PC_TEXTURE_FOLDER =
     "03_ROOM_TEXTURE_GENERATION";
 
 const ROOMS_API =
-    `${PC_SERVER_BASE}/api/rooms`;
+    "/api/rooms";
 
 const PUBLIC_API_BASE =
-    PC_SERVER_BASE;
+    window.location.origin;
 
 
 const MODEL_BASE =
@@ -2704,8 +2704,16 @@ function roomName(item, index) {
 function roomFileUrl(folder, filename) {
     if (!filename) return "";
 
-    if (String(filename).startsWith("http")) {
+    if (
+        String(filename).startsWith("http://") ||
+        String(filename).startsWith("https://") ||
+        String(filename).startsWith("data:")
+    ) {
         return String(filename);
+    }
+
+    if (String(filename).startsWith("/api/rooms/")) {
+        return new URL(String(filename), window.location.origin).href;
     }
 
     const cleanFolder = String(folder || "")
@@ -2776,6 +2784,13 @@ function normalizeRoomFileValue(folder, value) {
         valueString.startsWith("data:")
     ) {
         return valueString;
+    }
+
+    if (valueString.startsWith("/api/rooms/")) {
+        return new URL(
+            valueString,
+            window.location.origin
+        ).href;
     }
 
     return roomFileUrl(folder, valueString);
@@ -2961,7 +2976,6 @@ async function fetchRoomManifest(item) {
     try {
         const response = await fetch(url, {
             method: "GET",
-            mode: "cors",
             cache: "no-store",
             headers: {
                 "Accept": "application/json"
@@ -3076,7 +3090,6 @@ async function requestRoomFromPC(item) {
 
         const response = await fetch(url, {
             method: "POST",
-            mode: "cors",
             cache: "no-store",
             headers: {
                 "Content-Type": "application/json",
@@ -3099,14 +3112,7 @@ async function requestRoomFromPC(item) {
                    03_ROOM_TEXTURE_GENERATION -> 6 PNG
                 */
                 model_folder: PC_MODEL_FOLDER,
-                texture_folder: PC_TEXTURE_FOLDER,
-
-                /*
-                   Полный путь передаём как служебный параметр
-                   только для PC-сервера. Сервер должен использовать
-                   его как свой локальный путь к корню fon_room.
-                */
-                room_root: PC_ROOMS_ROOT
+                texture_folder: PC_TEXTURE_FOLDER
             }),
 
             signal: controller.signal
@@ -3393,7 +3399,6 @@ function loadRoomTexture(url, label = "texture") {
 
         fetch(url, {
             method: "GET",
-            mode: "cors",
             cache: "no-store",
             headers: {
                 "Accept": "image/png,image/jpeg,image/webp,image/*,*/*;q=0.8"
@@ -4368,14 +4373,13 @@ async function waitForRoomModel(roomData, folder) {
         try {
             const response = await fetch(endpoint, {
                 method: "GET",
-                mode: "cors",
-                cache: "no-store",
+                    cache: "no-store",
                 headers: { "Accept": "application/json" }
             });
 
             if (response.ok) {
                 const data = await response.json();
-                if (data?.ready && data?.model_id && data?.url) {
+                if (data?.ready && data?.url) {
                     await loadRoomModel(data);
                     return;
                 }
@@ -5295,15 +5299,17 @@ async function loadRooms() {
     const timeout = setTimeout(() => controller.abort(), 12000);
 
     try {
-        const response = await fetch(ROOMS_API, {
-            method: "GET",
-            mode: "cors",
-            cache: "no-store",
-            headers: {
-                "Accept": "application/json"
-            },
-            signal: controller.signal
-        });
+        const response = await fetch(
+            `${ROOMS_API}?t=${Date.now()}`,
+            {
+                method: "GET",
+                cache: "no-store",
+                headers: {
+                    "Accept": "application/json"
+                },
+                signal: controller.signal
+            }
+        );
 
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}`);
