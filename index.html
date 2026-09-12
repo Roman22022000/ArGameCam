@@ -1389,15 +1389,43 @@ const REQUIRED_COLLECTION_RAW =
 const GENERATION_API =
     "https://api.araicameragame.party/api/generation";
 
+/*
+   PC-СЕРВЕР ROOM.
+
+   Папка ROOM:
+   C:\Users\Romer\OneDrive\Рабочий стол\3d\3d\fon_room
+
+   3D-модель:
+   C:\Users\Romer\OneDrive\Рабочий стол\3d\3d\fon_room\diorama_7\02_3D_OBJECT_GENERATION
+
+   Текстуры:
+   C:\Users\Romer\OneDrive\Рабочий стол\3d\3d\fon_room\diorama_7\03_ROOM_TEXTURE_GENERATION
+
+   Браузер не читает эти Windows-папки напрямую.
+   Он обращается к Flask PC-серверу, который должен отдавать
+   файлы из указанных папок через /api/rooms/*.
+*/
+const PC_SERVER_BASE =
+    "http://127.0.0.1:5000";
+
+const PC_ROOMS_ROOT =
+    String.raw`C:\Users\Romer\OneDrive\Рабочий стол\3d\3d\fon_room`;
+
+const PC_MODEL_FOLDER =
+    "02_3D_OBJECT_GENERATION";
+
+const PC_TEXTURE_FOLDER =
+    "03_ROOM_TEXTURE_GENERATION";
+
 const ROOMS_API =
-    "https://api.araicameragame.party/api/rooms";
+    `${PC_SERVER_BASE}/api/rooms`;
 
 const PUBLIC_API_BASE =
-    "https://api.araicameragame.party";
+    PC_SERVER_BASE;
 
 
 const MODEL_BASE =
-    "https://raw.githubusercontent.com/Roman22022000/ArGameCam/main/models/";
+    "";
 
 
 /* =============================================================
@@ -2686,10 +2714,12 @@ function roomFileUrl(folder, filename) {
     const cleanFile = String(filename)
         .replace(/^\/+/, "");
 
-    return `${ROOMS_API}/file/${encodeURIComponent(cleanFolder)}/${cleanFile
-        .split("/")
-        .map(part => encodeURIComponent(part))
-        .join("/")}`;
+    return `${ROOMS_API}/file/${encodeURIComponent(cleanFolder)}/` +
+        `${encodeURIComponent(PC_TEXTURE_FOLDER)}/` +
+        `${cleanFile
+            .split("/")
+            .map(part => encodeURIComponent(part))
+            .join("/")}`;
 }
 
 function getRoomFiles(item) {
@@ -2845,7 +2875,7 @@ function resolveRoomTextures(item) {
         ВАЖНО:
         Имена файлов на PC фиксированы и соответствуют вашей папке:
 
-        Desktop/3d/3d/fon_room/diorama_1/
+        Desktop/3d/3d/fon_room/<room>/03_ROOM_TEXTURE_GENERATION/
             01_BACKGROUND.png -> BACK
             02_LEFT.png       -> LEFT
             03_RIGHT.png      -> RIGHT
@@ -2854,7 +2884,7 @@ function resolveRoomTextures(item) {
             06_GROUND.png     -> FLOOR
 
         Не пытаемся угадывать названия файлов.
-        Всегда строим URL напрямую через Flask API.
+        Всегда строим URL напрямую через PC Flask API.
     */
     const files = {
         back: "01_BACKGROUND.png",
@@ -2994,9 +3024,14 @@ async function requestRoomFromPC(item) {
             wallet
             files
 
-        files содержит реальные имена файлов в папке ROOM.
+        files содержит реальные имена файлов из:
+        <room>/03_ROOM_TEXTURE_GENERATION/
+
+        model_folder указывает:
+        <room>/02_3D_OBJECT_GENERATION/
+
         Это не отправка PNG из браузера на сервер.
-        Это запрос серверу: "отдай эти шесть файлов".
+        Это запрос PC-серверу: отдай файлы из этих папок.
         =========================================================
     */
     const textureFiles = [
@@ -3056,7 +3091,22 @@ async function requestRoomFromPC(item) {
                 room: folder,
                 wallet: wallet,
                 files: textureFiles,
-                texture_files: textureFiles
+                texture_files: textureFiles,
+
+                /*
+                   Источники на PC-сервере:
+                   02_3D_OBJECT_GENERATION -> model.glb
+                   03_ROOM_TEXTURE_GENERATION -> 6 PNG
+                */
+                model_folder: PC_MODEL_FOLDER,
+                texture_folder: PC_TEXTURE_FOLDER,
+
+                /*
+                   Полный путь передаём как служебный параметр
+                   только для PC-сервера. Сервер должен использовать
+                   его как свой локальный путь к корню fon_room.
+                */
+                room_root: PC_ROOMS_ROOT
             }),
 
             signal: controller.signal
@@ -3692,9 +3742,15 @@ async function loadRoomModel(modelInfo) {
        endpoint model-file самостоятельно.
     */
     if (!url && roomName && filename) {
+        /*
+           model-file на PC-сервере берёт модель из:
+           <room>/02_3D_OBJECT_GENERATION/<filename>
+        */
         url =
             `${PUBLIC_API_BASE}/api/rooms/model-file/` +
             `${encodedRoom}/` +
+            encodeURIComponent(PC_MODEL_FOLDER) +
+            "/" +
             filename
                 .split("/")
                 .filter(Boolean)
@@ -3920,7 +3976,7 @@ async function loadRoomModel(modelInfo) {
             const resourceBase =
                 modelData?.resource_base_url ||
                 modelInfo?.resource_base_url ||
-                `${PUBLIC_API_BASE}/api/rooms/model-resource/${encodedRoom}/`;
+                `${PUBLIC_API_BASE}/api/rooms/model-resource/${encodedRoom}/${encodeURIComponent(PC_MODEL_FOLDER)}/`;
 
             const absoluteBase =
                 new URL(
