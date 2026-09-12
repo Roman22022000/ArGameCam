@@ -633,6 +633,53 @@
            MOBILE
         ========================================================= */
 
+
+        .roomViewerLoader {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 34px;
+            height: 34px;
+            margin-left: -17px;
+            margin-top: -17px;
+            border: 2px solid rgba(255,255,255,.18);
+            border-top-color: rgba(255,255,255,.95);
+            border-radius: 50%;
+            animation: roomViewerLoaderSpin .75s linear infinite;
+            z-index: 40;
+            pointer-events: none;
+        }
+
+        .roomViewerLoader.hidden {
+            display: none;
+        }
+
+        @keyframes roomViewerLoaderSpin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* PC: mouse drag = look, keyboard = movement. */
+        @media (hover: hover) and (pointer: fine) {
+            #roomCanvas canvas {
+                cursor: grab;
+            }
+
+            #roomCanvas canvas:active {
+                cursor: grabbing;
+            }
+        }
+
+        /* Touch: one finger = look, two fingers = movement. */
+        @media (hover: none) and (pointer: coarse) {
+            #roomCanvas canvas {
+                touch-action: none;
+                -webkit-user-select: none;
+                user-select: none;
+            }
+        }
+
         @media (max-width: 500px) {
 
             .authTitle,
@@ -985,6 +1032,29 @@
             font-size: 20px;
         }
 
+        .roomMenuActions {
+            display: flex;
+            gap: 8px;
+            padding: 10px 12px;
+            border-bottom: 1px solid #242424;
+            background: #000;
+        }
+
+        .roomMenuAction {
+            min-height: 38px;
+            padding: 0 14px;
+            background: #080808;
+            color: #fff;
+            border: 1px solid #292929;
+            font-size: 9px;
+            letter-spacing: 1px;
+        }
+
+        .roomMenuAction:hover,
+        .roomMenuAction:active {
+            background: #151515;
+        }
+
         .roomGalleryList {
             flex: 1 1 auto;
             width: 100%;
@@ -1326,6 +1396,12 @@
     </div>
 
     <div
+        id="roomViewerLoader"
+        class="roomViewerLoader hidden"
+        aria-hidden="true"
+    ></div>
+
+    <div
         id="roomGalleryOverlay"
         class="roomGalleryOverlay"
         aria-hidden="true"
@@ -1335,14 +1411,32 @@
                 id="roomGalleryClose"
                 class="roomGalleryClose"
                 type="button"
-                aria-label="Закрыть галерею"
+                aria-label="Закрыть меню"
             >
                 ×
             </button>
 
             <div class="roomGalleryTitle">
-                ГАЛЕРЕЯ КОМНАТ
+                МЕНЮ
             </div>
+        </div>
+
+        <div class="roomMenuActions">
+            <button
+                id="roomMainMenuButton"
+                class="roomMenuAction"
+                type="button"
+            >
+                ГЛАВНОЕ МЕНЮ
+            </button>
+
+            <button
+                id="roomGalleryButton"
+                class="roomMenuAction"
+                type="button"
+            >
+                ГАЛЕРЕЯ КОМНАТ
+            </button>
         </div>
 
         <div
@@ -1634,8 +1728,17 @@ const roomGalleryOverlay =
 const roomGalleryClose =
     document.getElementById("roomGalleryClose");
 
+const roomMainMenuButton =
+    document.getElementById("roomMainMenuButton");
+
+const roomGalleryButton =
+    document.getElementById("roomGalleryButton");
+
 const roomGalleryList =
     document.getElementById("roomGalleryList");
+
+const roomViewerLoader =
+    document.getElementById("roomViewerLoader");
 const connectWallet =
     document.getElementById("connectWallet");
 
@@ -2830,8 +2933,23 @@ const roomTextureLoader =
 roomTextureLoader.setCrossOrigin("anonymous");
 
 function setRoomStatus(text, visible = true) {
-    roomViewerStatus.textContent = text || "";
-    roomViewerStatus.style.display = visible ? "block" : "none";
+    /*
+        Текстовые статусы ROOM больше не показываются.
+        Любой активный статус отображается одним анимированным
+        индикатором. После завершения передаётся visible=false.
+    */
+    if (roomViewerStatus) {
+        roomViewerStatus.textContent = "";
+        roomViewerStatus.style.display = "none";
+    }
+
+    if (roomViewerLoader) {
+        roomViewerLoader.classList.toggle("hidden", !visible);
+        roomViewerLoader.setAttribute(
+            "aria-hidden",
+            visible ? "false" : "true"
+        );
+    }
 }
 
 function roomNumberValue(item, index) {
@@ -4837,17 +4955,14 @@ async function buildRoom(item) {
     }
 
     if (errors.length) {
-        const errorText = errors.map(result =>
-            `${result.label}.png\n${result.error || "ошибка"}`
-        ).join("\n\n");
-
-        setRoomStatus(
-            `ROOM ${folder}: 3D модель загружена.\n` +
-            `Текстуры: ${loadedCount}/6.\n\n` +
-            `Ошибки текстур:\n${errorText}`,
-            true
-        );
+        /*
+            Ошибки всё равно не выводим текстом в ROOM.
+            Индикатор завершает работу после попытки загрузки
+            всех ресурсов.
+        */
     }
+
+    setRoomStatus("", false);
 }
 
 function isMobileDevice() {
@@ -5256,6 +5371,7 @@ function openRoomGallery() {
     roomGalleryOverlay.classList.add("active");
     roomGalleryOverlay.setAttribute("aria-hidden", "false");
 
+    roomGalleryList.style.display = "flex";
     renderRoomGallery();
 }
 
@@ -5538,11 +5654,10 @@ function openRoom(index) {
     buildRoom(item).catch(error => {
         console.error("ROOM BUILD ERROR:", error);
 
-        setRoomStatus(
-            `Не удалось загрузить ROOM ${name}.\n\n` +
-            `${error?.message || "Неизвестная ошибка"}\n\n` +
-            `API: ${ROOMS_API}`,
-            true
+        setRoomStatus("", false);
+        console.error(
+            "ROOM LOAD FAILED:",
+            error
         );
     });
 }
@@ -5556,6 +5671,7 @@ document
     });
 
 roomBack.addEventListener("click", () => {
+    setRoomStatus("", false);
     showScreen(homeScreen);
 });
 
@@ -5566,6 +5682,25 @@ roomViewerBack.addEventListener("click", () => {
 
 roomGalleryClose.addEventListener("click", () => {
     closeRoomGallery();
+});
+
+roomMainMenuButton.addEventListener("click", () => {
+    closeRoomGallery();
+
+    currentRoom = null;
+    ++roomModelLoadToken;
+    roomRequestId = null;
+
+    disposeRoomModel();
+    clearRoomScene();
+
+    setRoomStatus("", false);
+    showScreen(homeScreen);
+});
+
+roomGalleryButton.addEventListener("click", () => {
+    renderRoomGallery();
+    roomGalleryList.style.display = "flex";
 });
 
 window.addEventListener("keydown", event => {
