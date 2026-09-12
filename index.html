@@ -3754,8 +3754,6 @@ async function loadRoomModel(modelInfo) {
         url =
             `${PUBLIC_API_BASE}/api/rooms/model-file/` +
             `${encodedRoom}/` +
-            encodeURIComponent(PC_MODEL_FOLDER) +
-            "/" +
             filename
                 .split("/")
                 .filter(Boolean)
@@ -3981,7 +3979,7 @@ async function loadRoomModel(modelInfo) {
             const resourceBase =
                 modelData?.resource_base_url ||
                 modelInfo?.resource_base_url ||
-                `${PUBLIC_API_BASE}/api/rooms/model-resource/${encodedRoom}/${encodeURIComponent(PC_MODEL_FOLDER)}/`;
+                `${PUBLIC_API_BASE}/api/rooms/model-resource/${encodedRoom}/`;
 
             const absoluteBase =
                 new URL(
