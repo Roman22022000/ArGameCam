@@ -653,13 +653,6 @@
             text-transform: uppercase;
         }
 
-        #myceliumPickedColor {
-            color: #00bfff;
-            font-size: 10px;
-            margin: 2px 0 8px;
-            word-break: break-all;
-        }
-
         #myceliumCards {
             display: flex;
             flex-direction: column;
@@ -796,7 +789,6 @@
             .myceliumPanel > button,
             .myceliumPanel > input,
             .myceliumPanel > .myceliumLabel,
-            .myceliumPanel > #myceliumPickedColor,
             .myceliumPanel > .myceliumStatus {
                 width: calc(50% - 3px);
                 margin: 0;
@@ -1800,13 +1792,6 @@
                 </div>
 
                 <input
-                    type="file"
-                    id="myceliumFileInput"
-                    accept=".json,application/json"
-                    multiple
-                >
-
-                <input
                     type="color"
                     id="myceliumColorInput"
                     value="#00bfff"
@@ -1820,26 +1805,6 @@
                 <button id="myceliumPickerMode" type="button">
                     ПИПЕТКА
                 </button>
-
-                <button id="myceliumGenerateButton" type="button">
-                    ГЕНЕРАЦИЯ КАРТОЧКИ
-                </button>
-
-                <button id="myceliumDrawButton" type="button">
-                    РИСОВАТЬ КАРТОЧКУ
-                </button>
-
-                <button id="myceliumFinishButton" type="button">
-                    СОХРАНИТЬ РИСУНОК
-                </button>
-
-                <button id="myceliumClearButton" type="button">
-                    ОЧИСТИТЬ РИСУНОК
-                </button>
-
-                <div id="myceliumPickedColor">
-                    цвет: #00bfff
-                </div>
 
                 <div id="myceliumStatus" class="myceliumStatus"></div>
 
@@ -1859,7 +1824,6 @@
 
                 <div class="myceliumBoardHint">
                     Карточки перетаскиваются на доску. Пипетка берёт цвет с доски.
-                    Режим рисования создаёт новую карточку.
                 </div>
             </div>
 
@@ -3051,8 +3015,6 @@ disconnectWallet.addEventListener(
    MYCELIUM GENERATION BOARD
 ============================================================= */
 
-const myceliumFileInput =
-    document.getElementById("myceliumFileInput");
 
 const myceliumCards =
     document.getElementById("myceliumCards");
@@ -3069,8 +3031,6 @@ const myceliumBoardCtx =
 const myceliumColorInput =
     document.getElementById("myceliumColorInput");
 
-const myceliumPickedColor =
-    document.getElementById("myceliumPickedColor");
 
 const myceliumStatus =
     document.getElementById("myceliumStatus");
@@ -3088,18 +3048,11 @@ let myceliumDragData = null;
 let myceliumGhost = null;
 let myceliumMode = "normal";
 
-let myceliumDrawingCard = null;
-let myceliumDrawingOrigin = null;
-let myceliumDrawingPointerId = null;
 
 function setMyceliumStatus(text = "") {
     myceliumStatus.textContent = text;
 }
 
-function updateMyceliumColorLabel() {
-    myceliumPickedColor.textContent =
-        "цвет: " + myceliumColorInput.value;
-}
 
 function getMyceliumCardSize() {
     return GRID * myceliumCell;
@@ -3172,66 +3125,6 @@ window.addEventListener(
     { passive: true }
 );
 
-myceliumColorInput.addEventListener(
-    "input",
-    updateMyceliumColorLabel
-);
-
-myceliumFileInput.addEventListener(
-    "change",
-    event => {
-        const files =
-            Array.from(event.target.files || []);
-
-        if (!files.length) return;
-
-        let loaded = 0;
-        let failed = 0;
-
-        files.forEach(file => {
-            const reader =
-                new FileReader();
-
-            reader.onload = e => {
-                try {
-                    const json =
-                        JSON.parse(e.target.result);
-
-                    loadMyceliumJson(json);
-                    loaded++;
-                } catch (error) {
-                    console.error(
-                        "MYCELIUM JSON ERROR:",
-                        error
-                    );
-                    failed++;
-                }
-
-                if (loaded + failed === files.length) {
-                    setMyceliumStatus(
-                        failed
-                            ? `Загружено JSON: ${loaded}, ошибок: ${failed}`
-                            : `Загружено JSON: ${loaded}`
-                    );
-                }
-            };
-
-            reader.onerror = () => {
-                failed++;
-
-                if (loaded + failed === files.length) {
-                    setMyceliumStatus(
-                        `Загружено JSON: ${loaded}, ошибок: ${failed}`
-                    );
-                }
-            };
-
-            reader.readAsText(file);
-        });
-
-        event.target.value = "";
-    }
-);
 
 document
     .getElementById("myceliumMoveMode")
@@ -3247,44 +3140,9 @@ document
         setMyceliumStatus("Режим: пипетка");
     });
 
-document
-    .getElementById("myceliumGenerateButton")
-    .addEventListener("click", () => {
-        const color =
-            myceliumColorInput.value;
 
-        const field =
-            generateMyceliumCard(
-                color,
-                900
-            );
 
-        createMyceliumLibraryCard(
-            field
-        );
 
-        setMyceliumStatus(
-            `Карточка сгенерирована: ${field.points.length} точек`
-        );
-    });
-
-document
-    .getElementById("myceliumDrawButton")
-    .addEventListener("click", () => {
-        startMyceliumDrawCard();
-    });
-
-document
-    .getElementById("myceliumFinishButton")
-    .addEventListener("click", () => {
-        finishMyceliumDrawCard();
-    });
-
-document
-    .getElementById("myceliumClearButton")
-    .addEventListener("click", () => {
-        clearMyceliumDrawCard();
-    });
 
 function setMyceliumPointerEvents() {
     myceliumBoardWrap.addEventListener(
@@ -3300,105 +3158,19 @@ function setMyceliumPointerEvents() {
                 return;
             }
 
-            if (myceliumMode === "draw") {
-                event.preventDefault();
-
-                if (myceliumDrawingPointerId !== null) {
-                    return;
-                }
-
-                myceliumDrawingPointerId =
-                    event.pointerId;
-
-                myceliumBoardWrap.setPointerCapture?.(
-                    event.pointerId
-                );
-
-                drawMyceliumPointOnBoard(
-                    event
-                );
-            }
         }
     );
 
     myceliumBoardWrap.addEventListener(
         "pointermove",
         event => {
-            if (
-                myceliumMode === "draw" &&
-                myceliumDrawingPointerId === event.pointerId
-            ) {
-                event.preventDefault();
-                drawMyceliumPointOnBoard(event);
-            }
         }
     );
 
-    const release = event => {
-        if (
-            myceliumDrawingPointerId ===
-            event.pointerId
-        ) {
-            myceliumDrawingPointerId =
-                null;
-
-            if (
-                myceliumMode === "draw"
-            ) {
-                setMyceliumStatus(
-                    "Рисование: нажмите «Сохранить рисунок»"
-                );
-            }
-        }
-    };
-
-    myceliumBoardWrap.addEventListener(
-        "pointerup",
-        release
-    );
-
-    myceliumBoardWrap.addEventListener(
-        "pointercancel",
-        release
-    );
 }
 
 setMyceliumPointerEvents();
 
-function loadMyceliumJson(json) {
-    if (!json || typeof json !== "object") {
-        return;
-    }
-
-    if (json.mycelium_1) {
-        createMyceliumLibraryCard(
-            json.mycelium_1
-        );
-    }
-
-    if (json.mycelium_2) {
-        createMyceliumLibraryCard(
-            json.mycelium_2
-        );
-    }
-
-    if (json.mycelium_mix) {
-        createMyceliumLibraryCard(
-            json.mycelium_mix
-        );
-    }
-
-    /*
-       Поддерживаем также одиночную карточку
-       формата mycelium_card.
-    */
-    if (
-        json.type === "mycelium_card" &&
-        (json.points || json.lines)
-    ) {
-        createMyceliumLibraryCard(json);
-    }
-}
 
 function createMyceliumLibraryCard(
     fieldData
@@ -3943,7 +3715,6 @@ function pickMyceliumColor(event) {
     myceliumColorInput.value =
         color;
 
-    updateMyceliumColorLabel();
 
     myceliumMode =
         "normal";
@@ -3953,258 +3724,6 @@ function pickMyceliumColor(event) {
     );
 }
 
-function generateMyceliumCard(
-    color,
-    steps
-) {
-    const cells = new Set();
-    const lines = [];
-
-    const startX =
-        Math.floor(
-            GRID / 2
-        );
-
-    const startY =
-        Math.floor(
-            GRID / 2
-        );
-
-    cells.add(
-        startX + "," +
-        startY
-    );
-
-    const branches = [];
-    const START_BRANCHES = 10;
-
-    for (
-        let i = 0;
-        i < START_BRANCHES;
-        i++
-    ) {
-        let angle =
-            i *
-            (
-                2 *
-                Math.PI /
-                START_BRANCHES
-            );
-
-        angle +=
-            myceliumRand(
-                -0.15,
-                0.15
-            );
-
-        branches.push({
-            x: startX,
-            y: startY,
-            angle,
-            energy: 100
-        });
-    }
-
-    for (
-        let step = 0;
-        step < steps;
-        step++
-    ) {
-        if (!branches.length) {
-            break;
-        }
-
-        const bi =
-            Math.floor(
-                Math.random() *
-                branches.length
-            );
-
-        const branch =
-            branches[bi];
-
-        const possible = [];
-
-        for (
-            let dx = -1;
-            dx <= 1;
-            dx++
-        ) {
-            for (
-                let dy = -1;
-                dy <= 1;
-                dy++
-            ) {
-                if (
-                    dx === 0 &&
-                    dy === 0
-                ) {
-                    continue;
-                }
-
-                const nx =
-                    branch.x + dx;
-
-                const ny =
-                    branch.y + dy;
-
-                if (
-                    nx < 0 ||
-                    nx >= GRID ||
-                    ny < 0 ||
-                    ny >= GRID
-                ) {
-                    continue;
-                }
-
-                if (
-                    cells.has(
-                        nx + "," + ny
-                    )
-                ) {
-                    continue;
-                }
-
-                const score =
-                    myceliumDirectionScore(
-                        branch.x,
-                        branch.y,
-                        nx,
-                        ny,
-                        branch.angle
-                    );
-
-                possible.push({
-                    score,
-                    nx,
-                    ny
-                });
-            }
-        }
-
-        if (!possible.length) {
-            branches.splice(
-                bi,
-                1
-            );
-            continue;
-        }
-
-        possible.sort(
-            (a, b) =>
-                b.score -
-                a.score
-        );
-
-        const next =
-            possible[0];
-
-        cells.add(
-            next.nx + "," +
-            next.ny
-        );
-
-        lines.push({
-            number:
-                lines.length + 1,
-            color,
-            x1: branch.x,
-            y1: branch.y,
-            x2: next.nx,
-            y2: next.ny,
-            energy: branch.energy
-        });
-
-        branch.x =
-            next.nx;
-
-        branch.y =
-            next.ny;
-
-        branch.angle +=
-            myceliumRand(
-                -0.55,
-                0.55
-            );
-
-        branch.energy -=
-            myceliumRand(
-                1.5,
-                4.5
-            );
-
-        if (
-            branch.energy <= 0
-        ) {
-            branches.splice(
-                bi,
-                1
-            );
-            continue;
-        }
-
-        if (
-            Math.random() < 0.08 &&
-            branch.energy > 25
-        ) {
-            branches.push({
-                x: branch.x,
-                y: branch.y,
-                angle:
-                    branch.angle +
-                    (
-                        Math.random() < 0.5
-                            ? -1
-                            : 1
-                    ) *
-                    myceliumRand(
-                        0.6,
-                        1.4
-                    ),
-                energy:
-                    branch.energy *
-                    myceliumRand(
-                        0.45,
-                        0.7
-                    )
-            });
-        }
-    }
-
-    const points = [];
-    let number = 1;
-
-    for (
-        const key of cells
-    ) {
-        const parts =
-            key.split(",");
-
-        points.push({
-            number:
-                number++,
-            color,
-            x:
-                Number(parts[0]),
-            y:
-                Number(parts[1])
-        });
-    }
-
-    return {
-        type:
-            "mycelium_card",
-
-        grid: {
-            width: GRID,
-            height: GRID
-        },
-
-        color,
-        points,
-        lines
-    };
-}
 
 function myceliumDirectionScore(
     x,
@@ -4258,212 +3777,9 @@ function myceliumDirectionScore(
     );
 }
 
-function startMyceliumDrawCard() {
-    myceliumMode =
-        "draw";
 
-    myceliumDrawingCard = {
-        type:
-            "mycelium_card",
 
-        grid: {
-            width: GRID,
-            height: GRID
-        },
 
-        color:
-            myceliumColorInput.value,
-
-        points: [],
-        lines: []
-    };
-
-    myceliumDrawingOrigin =
-        null;
-
-    setMyceliumStatus(
-        "Режим рисования включён"
-    );
-}
-
-function drawMyceliumPointOnBoard(
-    event
-) {
-    if (
-        !myceliumDrawingCard
-    ) {
-        return;
-    }
-
-    const position =
-        getMyceliumPointerPosition(
-            event
-        );
-
-    const gx =
-        Math.floor(
-            (
-                position.x -
-                myceliumOffsetX
-            ) /
-            myceliumCell
-        );
-
-    const gy =
-        Math.floor(
-            (
-                position.y -
-                myceliumOffsetY
-            ) /
-            myceliumCell
-        );
-
-    if (
-        gx < 0 ||
-        gx >= GRID ||
-        gy < 0 ||
-        gy >= GRID
-    ) {
-        return;
-    }
-
-    if (
-        !myceliumDrawingOrigin
-    ) {
-        myceliumDrawingOrigin = {
-            x:
-                gx *
-                myceliumCell,
-
-            y:
-                gy *
-                myceliumCell
-        };
-    }
-
-    const baseGX =
-        Math.round(
-            myceliumDrawingOrigin.x /
-            myceliumCell
-        );
-
-    const baseGY =
-        Math.round(
-            myceliumDrawingOrigin.y /
-            myceliumCell
-        );
-
-    const localX =
-        gx - baseGX;
-
-    const localY =
-        gy - baseGY;
-
-    if (
-        localX < 0 ||
-        localX >= GRID ||
-        localY < 0 ||
-        localY >= GRID
-    ) {
-        return;
-    }
-
-    /*
-       Не добавляем одну и ту же клетку
-       несколько раз при движении пальца/мыши.
-    */
-    const exists =
-        myceliumDrawingCard.points.some(
-            point =>
-                point.x === localX &&
-                point.y === localY
-        );
-
-    if (exists) {
-        return;
-    }
-
-    const color =
-        myceliumColorInput.value;
-
-    const newPoint = {
-        number:
-            myceliumDrawingCard.points.length + 1,
-
-        color,
-
-        x: localX,
-        y: localY
-    };
-
-    if (
-        myceliumDrawingCard.points.length > 0
-    ) {
-        const prev =
-            myceliumDrawingCard.points[
-                myceliumDrawingCard.points.length - 1
-            ];
-
-        myceliumDrawingCard.lines.push({
-            number:
-                myceliumDrawingCard.lines.length + 1,
-
-            color,
-
-            x1: prev.x,
-            y1: prev.y,
-            x2: localX,
-            y2: localY,
-            energy: 70
-        });
-    }
-
-    myceliumDrawingCard.points.push(
-        newPoint
-    );
-
-    redrawMyceliumBoard();
-}
-
-function finishMyceliumDrawCard() {
-    if (
-        !myceliumDrawingCard ||
-        !myceliumDrawingCard.points.length
-    ) {
-        setMyceliumStatus(
-            "Нет точек для сохранения"
-        );
-        return;
-    }
-
-    createMyceliumLibraryCard(
-        myceliumDrawingCard
-    );
-
-    myceliumDrawingCard = null;
-    myceliumDrawingOrigin = null;
-    myceliumDrawingPointerId = null;
-    myceliumMode = "normal";
-
-    redrawMyceliumBoard();
-
-    setMyceliumStatus(
-        "Рисунок сохранён в библиотеку"
-    );
-}
-
-function clearMyceliumDrawCard() {
-    myceliumDrawingCard = null;
-    myceliumDrawingOrigin = null;
-    myceliumDrawingPointerId = null;
-    myceliumMode = "normal";
-
-    redrawMyceliumBoard();
-
-    setMyceliumStatus(
-        "Текущий рисунок очищен"
-    );
-}
 
 function drawMyceliumSmallPreview(
     canvas,
@@ -4720,7 +4036,6 @@ function myceliumRand(
 
 /* Первичная отрисовка после создания DOM. */
 requestAnimationFrame(() => {
-    updateMyceliumColorLabel();
     resizeMyceliumBoard();
 });
 
