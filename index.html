@@ -524,6 +524,333 @@
         }
 
 
+
+        /* =========================================================
+           MYCELIUM GENERATION BOARD
+        ========================================================= */
+
+        #generationScreen {
+            align-items: stretch;
+            justify-content: flex-start;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .generationWorkspace {
+            width: 100%;
+            height: 100%;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            padding: 14px 18px 18px;
+        }
+
+        .generationTop {
+            width: 100%;
+            flex: 0 0 auto;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-height: 48px;
+        }
+
+        .generationTop .backButton {
+            flex: 0 0 40px;
+        }
+
+        .generationTopTitle {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 14px;
+            font-weight: 400;
+            pointer-events: none;
+        }
+
+        .generationCodePanel {
+            width: min(100%, 760px);
+            margin: 10px auto 12px;
+            display: grid;
+            grid-template-columns: minmax(180px, 1fr) 150px auto;
+            gap: 8px;
+            align-items: center;
+            flex: 0 0 auto;
+        }
+
+        .generationCodePanel .codeInput {
+            height: 46px;
+            font-size: 20px;
+        }
+
+        .generationCodePanel .sendButton {
+            margin-top: 0;
+            height: 46px;
+        }
+
+        .generationBoard {
+            width: 100%;
+            flex: 1 1 auto;
+            min-height: 0;
+            display: flex;
+            overflow: hidden;
+            border: 1px solid #202020;
+            background: #050505;
+        }
+
+        .myceliumPanel {
+            width: 168px;
+            flex: 0 0 168px;
+            background: #0a0a0a;
+            border-right: 1px solid #242424;
+            padding: 8px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+        }
+
+        .myceliumPanel button,
+        .myceliumPanel input {
+            width: 100%;
+            margin-bottom: 6px;
+            font-size: 11px;
+        }
+
+        .myceliumPanel button {
+            min-height: 34px;
+            background: #111;
+            color: #00bfff;
+            border: 1px solid #00bfff;
+            padding: 6px;
+            cursor: pointer;
+        }
+
+        .myceliumPanel button:hover {
+            background: #181818;
+        }
+
+        .myceliumPanel button:active {
+            background: #222;
+        }
+
+        .myceliumPanel input[type="color"] {
+            height: 34px;
+            padding: 0;
+        }
+
+        .myceliumPanel input[type="number"] {
+            height: 34px;
+            padding: 0 8px;
+            background: #050505;
+            color: #fff;
+            border: 1px solid #292929;
+            outline: none;
+        }
+
+        .myceliumLabel {
+            margin: 4px 0 6px;
+            color: #666;
+            font-size: 9px;
+            letter-spacing: .7px;
+            text-transform: uppercase;
+        }
+
+        #myceliumPickedColor {
+            color: #00bfff;
+            font-size: 10px;
+            margin: 2px 0 8px;
+            word-break: break-all;
+        }
+
+        #myceliumCards {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .myceliumLibraryCard {
+            width: 100px;
+            height: 100px;
+            flex: 0 0 auto;
+            background: #050505;
+            border: 1px solid #333;
+            cursor: grab;
+            touch-action: none;
+        }
+
+        .myceliumLibraryCard:active {
+            cursor: grabbing;
+        }
+
+        .myceliumLibraryCard canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .myceliumBoardWrap {
+            flex: 1 1 auto;
+            min-width: 0;
+            min-height: 0;
+            position: relative;
+            overflow: hidden;
+            touch-action: none;
+            background-color: #050505;
+            background-image:
+                linear-gradient(#111 1px, transparent 1px),
+                linear-gradient(90deg, #111 1px, transparent 1px),
+                linear-gradient(#171717 1px, transparent 1px),
+                linear-gradient(90deg, #171717 1px, transparent 1px);
+            background-size:
+                9px 9px,
+                9px 9px,
+                45px 45px,
+                45px 45px;
+        }
+
+        #myceliumBoardCanvas {
+            position: absolute;
+            left: 0;
+            top: 0;
+            display: block;
+            touch-action: none;
+        }
+
+        .myceliumBoardHint {
+            position: absolute;
+            left: 50%;
+            bottom: 8px;
+            transform: translateX(-50%);
+            max-width: calc(100% - 16px);
+            padding: 6px 9px;
+            background: rgba(0,0,0,.65);
+            border: 1px solid #222;
+            color: #666;
+            font-size: 9px;
+            text-align: center;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .myceliumStatus {
+            min-height: 15px;
+            color: #666;
+            font-size: 9px;
+            line-height: 1.3;
+            margin-top: 5px;
+        }
+
+        .myceliumGhost {
+            position: fixed;
+            width: var(--mycelium-card-size, 250px);
+            height: var(--mycelium-card-size, 250px);
+            pointer-events: none;
+            opacity: .72;
+            z-index: 9999;
+        }
+
+        .myceliumGhost canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        @media (max-width: 760px) {
+            .generationWorkspace {
+                padding: calc(8px + env(safe-area-inset-top)) 8px calc(8px + env(safe-area-inset-bottom));
+            }
+
+            .generationCodePanel {
+                grid-template-columns: 1fr 110px;
+                margin: 6px auto 8px;
+            }
+
+            .generationCodePanel .sendButton {
+                grid-column: 2;
+                grid-row: 1;
+            }
+
+            .generationCodePanel .codeInput {
+                grid-column: 1;
+                grid-row: 1;
+            }
+
+            .generationBoard {
+                flex-direction: column;
+            }
+
+            .myceliumPanel {
+                width: 100%;
+                flex: 0 0 auto;
+                height: auto;
+                max-height: 31vh;
+                border-right: 0;
+                border-bottom: 1px solid #242424;
+                display: flex;
+                flex-wrap: wrap;
+                align-content: flex-start;
+                gap: 5px;
+                padding: 6px;
+                overflow-y: auto;
+            }
+
+            .myceliumPanel > button,
+            .myceliumPanel > input,
+            .myceliumPanel > .myceliumLabel,
+            .myceliumPanel > #myceliumPickedColor,
+            .myceliumPanel > .myceliumStatus {
+                width: calc(50% - 3px);
+                margin: 0;
+            }
+
+            .myceliumPanel > .myceliumLabel {
+                width: 100%;
+                margin-top: 2px;
+            }
+
+            .myceliumPanel > #myceliumCards {
+                width: 100%;
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: flex-start;
+                align-items: center;
+                gap: 7px;
+                padding-top: 2px;
+            }
+
+            .myceliumLibraryCard {
+                width: 76px;
+                height: 76px;
+            }
+
+            .myceliumBoardWrap {
+                min-height: 0;
+            }
+
+            .myceliumBoardHint {
+                bottom: 5px;
+                font-size: 8px;
+            }
+        }
+
+        @media (max-width: 430px) {
+            .generationTopTitle {
+                font-size: 12px;
+            }
+
+            .generationCodePanel {
+                grid-template-columns: 1fr 96px;
+            }
+
+            .generationCodePanel .codeInput {
+                font-size: 18px;
+                letter-spacing: 5px;
+            }
+
+            .myceliumPanel {
+                max-height: 35vh;
+            }
+        }
+
         /* =========================================================
            USER
         ========================================================= */
@@ -632,53 +959,6 @@
         /* =========================================================
            MOBILE
         ========================================================= */
-
-
-        .roomViewerLoader {
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            width: 34px;
-            height: 34px;
-            margin-left: -17px;
-            margin-top: -17px;
-            border: 2px solid rgba(255,255,255,.18);
-            border-top-color: rgba(255,255,255,.95);
-            border-radius: 50%;
-            animation: roomViewerLoaderSpin .75s linear infinite;
-            z-index: 40;
-            pointer-events: none;
-        }
-
-        .roomViewerLoader.hidden {
-            display: none;
-        }
-
-        @keyframes roomViewerLoaderSpin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        /* PC: mouse drag = look, keyboard = movement. */
-        @media (hover: hover) and (pointer: fine) {
-            #roomCanvas canvas {
-                cursor: grab;
-            }
-
-            #roomCanvas canvas:active {
-                cursor: grabbing;
-            }
-        }
-
-        /* Touch: one finger = look, two fingers = movement. */
-        @media (hover: none) and (pointer: coarse) {
-            #roomCanvas canvas {
-                touch-action: none;
-                -webkit-user-select: none;
-                user-select: none;
-            }
-        }
 
         @media (max-width: 500px) {
 
@@ -963,200 +1243,182 @@
             pointer-events: none;
         }
 
-        /* =========================================================
-           ROOM VIEWER — МИНИМАЛЬНОЕ УПРАВЛЕНИЕ
-           На мобильном:
-             1 палец  = осмотр
-             2 пальца = перемещение по комнате
-           ========================================================= */
-
-        .roomViewerMenuButton {
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(8,8,8,.82);
-            color: #fff;
-            border: 1px solid #242424;
-            font-size: 21px;
-            line-height: 1;
+        .roomControls {
+            position: absolute;
             z-index: 30;
-            pointer-events: auto;
-        }
-
-        .roomViewerMenuButton:hover {
-            background: #111;
-        }
-
-        .roomViewerMenuButton:active {
-            background: #181818;
-        }
-
-        .roomGalleryOverlay {
-            position: absolute;
-            z-index: 50;
-            inset: 0;
-            display: none;
-            flex-direction: column;
-            background: rgba(0,0,0,.96);
-            overflow: hidden;
-        }
-
-        .roomGalleryOverlay.active {
-            display: flex;
-        }
-
-        .roomGalleryHeader {
-            flex: 0 0 58px;
-            display: flex;
-            align-items: center;
-            padding: 0 14px;
-            border-bottom: 1px solid #242424;
-            background: #000;
-        }
-
-        .roomGalleryTitle {
-            margin-left: 14px;
-            font-size: 13px;
-            font-weight: 400;
-            letter-spacing: .5px;
-        }
-
-        .roomGalleryClose {
-            width: 40px;
-            height: 40px;
-            background: #080808;
-            color: #fff;
-            border: 1px solid #242424;
-            font-size: 20px;
-        }
-
-        .roomMenuActions {
-            display: flex;
-            gap: 8px;
-            padding: 10px 12px;
-            border-bottom: 1px solid #242424;
-            background: #000;
-        }
-
-        .roomMenuAction {
-            min-height: 38px;
-            padding: 0 14px;
-            background: #080808;
-            color: #fff;
-            border: 1px solid #292929;
-            font-size: 9px;
-            letter-spacing: 1px;
-        }
-
-        .roomMenuAction:hover,
-        .roomMenuAction:active {
-            background: #151515;
-        }
-
-        .roomGalleryList {
-            flex: 1 1 auto;
-            width: 100%;
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 12px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            scrollbar-width: thin;
-        }
-
-        .roomGalleryCard {
-            position: relative;
-            width: 100%;
-            min-height: 150px;
-            flex: 0 0 auto;
-            overflow: hidden;
-            padding: 0;
-            background: #080808;
-            border: 1px solid #292929;
-            color: #fff;
-            text-align: left;
-            clip-path: polygon(
-                0 0,
-                calc(100% - 12px) 0,
-                100% 12px,
-                100% 100%,
-                12px 100%,
-                0 calc(100% - 12px)
-            );
-        }
-
-        .roomGalleryCard img {
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            opacity: .78;
-            display: block;
-        }
-
-        .roomGalleryCard::after {
-            content: "";
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(
-                to bottom,
-                rgba(0,0,0,.06),
-                rgba(0,0,0,.72)
-            );
-            pointer-events: none;
-        }
-
-        .roomGalleryCardContent {
-            position: absolute;
-            z-index: 2;
-            left: 16px;
-            right: 16px;
-            bottom: 14px;
+            left: 0;
+            right: 0;
+            bottom: 16px;
+            height: 128px;
+            padding: 0 12px;
             display: flex;
             align-items: flex-end;
             justify-content: space-between;
-            gap: 12px;
+            pointer-events: none;
         }
 
-        .roomGalleryCardNumber {
-            font-size: 20px;
-            font-weight: 400;
-            text-shadow: 0 2px 8px #000;
+        .roomMovePad,
+        .roomLookPad {
+            width: 112px;
+            height: 112px;
+            position: relative;
+            pointer-events: auto;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
         }
 
-        .roomGalleryCardName {
-            color: #bbb;
-            font-size: 9px;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            text-shadow: 0 2px 8px #000;
+        .roomMovePad {
+            border: 1px solid rgba(255,255,255,.20);
+            border-radius: 50%;
+            background: rgba(8,8,8,.45);
         }
 
-        .roomGalleryEmpty,
-        .roomGalleryLoading {
-            min-height: 180px;
+        .roomMovePad::before {
+            content: "";
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 68px;
+            height: 68px;
+            transform: translate(-50%, -50%);
+            border: 1px solid rgba(255,255,255,.10);
+            border-radius: 50%;
+        }
+
+        .roomMoveKnob {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 46px;
+            height: 46px;
+            margin-left: -23px;
+            margin-top: -23px;
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,.55);
+            background: rgba(255,255,255,.14);
+            transform: translate3d(0,0,0);
+        }
+
+        .roomLookPad {
+            width: min(42vw, 300px);
+            border: 1px solid rgba(255,255,255,.10);
+            border-radius: 12px;
+            background: rgba(8,8,8,.22);
+        }
+
+        .roomLookLabel {
+            position: absolute;
+            inset: 0;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #555;
-            font-size: 10px;
-            letter-spacing: 1.5px;
+            color: rgba(255,255,255,.28);
+            font-size: 9px;
+            letter-spacing: 1px;
+            pointer-events: none;
         }
 
-        @media (max-width: 500px) {
-            .roomGalleryList {
-                padding: 8px;
-                gap: 8px;
-            }
+        .roomVerticalControls {
+            position: absolute;
+            left: 50%;
+            bottom: 28px;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            pointer-events: auto;
+        }
 
-            .roomGalleryCard {
-                min-height: 130px;
-            }
+        .roomVerticalButton,
+        .roomRollButton,
+        .roomResetButton {
+            width: 42px;
+            height: 42px;
+            min-width: 42px;
+            min-height: 42px;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(8,8,8,.78);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,.30);
+            font-size: 18px;
+            font-family: Arial, Helvetica, sans-serif;
+            line-height: 1;
+            text-align: center;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+            transition:
+                background .15s ease,
+                border-color .15s ease,
+                box-shadow .15s ease;
+            clip-path: polygon(
+                0 0,
+                calc(100% - 7px) 0,
+                100% 7px,
+                100% 100%,
+                7px 100%,
+                0 calc(100% - 7px)
+            );
+        }
+
+        .roomVerticalButton:hover,
+        .roomRollButton:hover,
+        .roomResetButton:hover {
+            border-color: rgba(255,255,255,.65);
+            box-shadow: 0 0 12px rgba(255,255,255,.12);
+        }
+
+        .roomVerticalButton:active,
+        .roomRollButton:active,
+        .roomResetButton:active {
+            background: rgba(255,255,255,.18);
+            box-shadow: 0 0 14px rgba(255,255,255,.18);
+        }
+
+        .roomRollControls {
+            position: absolute;
+            left: 50%;
+            top: 58px;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 6px;
+            pointer-events: auto;
+        }
+
+        .roomRollButton {
+            width: 38px;
+            height: 34px;
+            min-width: 38px;
+            min-height: 34px;
+            font-size: 14px;
+        }
+
+        .roomAxisLabel {
+            position: absolute;
+            left: 50%;
+            top: 30px;
+            transform: translateX(-50%);
+            color: rgba(255,255,255,.34);
+            font-size: 8px;
+            letter-spacing: .8px;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        .roomResetButton {
+            position: absolute;
+            right: 12px;
+            top: -50px;
+            width: 40px;
+            height: 40px;
+            min-width: 40px;
+            min-height: 40px;
+            font-size: 18px;
         }
 
         @media (max-width: 500px) {
@@ -1372,11 +1634,10 @@
 
         <button
             id="roomViewerBack"
-            class="roomViewerMenuButton"
+            class="backButton"
             type="button"
-            aria-label="Открыть галерею комнат"
         >
-            ☰
+            ←
         </button>
 
         <div
@@ -1395,54 +1656,84 @@
         Загрузка комнаты...
     </div>
 
-    <div
-        id="roomViewerLoader"
-        class="roomViewerLoader hidden"
-        aria-hidden="true"
-    ></div>
+    <div class="roomHint">
+        Телефон: левый круг — движение; правое поле — поворот/наклон; ↑↓ — подъём/спуск; ↶↷ — вращение.
+        ПК: WASD + мышь; R/F — подъём/спуск.
+    </div>
 
-    <div
-        id="roomGalleryOverlay"
-        class="roomGalleryOverlay"
-        aria-hidden="true"
-    >
-        <div class="roomGalleryHeader">
-            <button
-                id="roomGalleryClose"
-                class="roomGalleryClose"
-                type="button"
-                aria-label="Закрыть меню"
-            >
-                ×
-            </button>
+    <div class="roomControls">
 
-            <div class="roomGalleryTitle">
-                МЕНЮ
-            </div>
-        </div>
-
-        <div class="roomMenuActions">
-            <button
-                id="roomMainMenuButton"
-                class="roomMenuAction"
-                type="button"
-            >
-                ГЛАВНОЕ МЕНЮ
-            </button>
-
-            <button
-                id="roomGalleryButton"
-                class="roomMenuAction"
-                type="button"
-            >
-                ГАЛЕРЕЯ КОМНАТ
-            </button>
+        <div
+            id="roomMovePad"
+            class="roomMovePad"
+            aria-label="Движение"
+        >
+            <div id="roomMoveKnob" class="roomMoveKnob"></div>
         </div>
 
         <div
-            id="roomGalleryList"
-            class="roomGalleryList"
-        ></div>
+            id="roomLookPad"
+            class="roomLookPad"
+            aria-label="Поворот и наклон камеры"
+        >
+            <div class="roomLookLabel">ПОВОРОТ / НАКЛОН</div>
+        </div>
+
+        <div class="roomVerticalControls">
+
+            <div class="roomAxisLabel">ВЫСОТА</div>
+
+            <button
+                id="roomMoveUp"
+                class="roomVerticalButton"
+                type="button"
+                aria-label="Поднять камеру"
+            >
+                ↑
+            </button>
+
+            <button
+                id="roomMoveDown"
+                class="roomVerticalButton"
+                type="button"
+                aria-label="Опустить камеру"
+            >
+                ↓
+            </button>
+
+        </div>
+
+        <div class="roomRollControls">
+
+            <button
+                id="roomRollLeft"
+                class="roomRollButton"
+                type="button"
+                aria-label="Вращение камеры влево"
+            >
+                ↶
+            </button>
+
+            <button
+                id="roomRollRight"
+                class="roomRollButton"
+                type="button"
+                aria-label="Вращение камеры вправо"
+            >
+                ↷
+            </button>
+
+        </div>
+
+        <button
+            id="roomReset"
+            class="roomResetButton"
+            type="button"
+            aria-label="Сбросить положение камеры"
+        >
+            ⟳
+        </button>
+
     </div>
 
 </section>
@@ -1457,35 +1748,122 @@
     class="screen"
 >
 
-    <div class="generation">
+    <div class="generationWorkspace">
 
-        <div class="generationTitle">
-            ГЕНЕРАЦИЯ
+        <div class="generationTop">
+            <button
+                id="generationBack"
+                class="backButton"
+                type="button"
+                aria-label="Назад"
+            >←</button>
+
+            <div class="generationTopTitle">
+                ГЕНЕРАЦИЯ
+            </div>
         </div>
 
-        <input
-            id="generationCode"
-            class="codeInput"
-            type="text"
-            inputmode="numeric"
-            autocomplete="off"
-            maxlength="5"
-            placeholder="00000"
-        >
+        <div class="generationCodePanel">
 
-        <button
-            id="generationSubmit"
-            class="sendButton"
-            type="button"
-            disabled
-        >
-            ОТПРАВИТЬ
-        </button>
+            <input
+                id="generationCode"
+                class="codeInput"
+                type="text"
+                inputmode="numeric"
+                autocomplete="off"
+                maxlength="5"
+                placeholder="00000"
+            >
 
-        <div
-            id="generationStatus"
-            class="generationStatus"
-        ></div>
+            <button
+                id="generationSubmit"
+                class="sendButton"
+                type="button"
+                disabled
+            >
+                ОТПРАВИТЬ
+            </button>
+
+            <div
+                id="generationStatus"
+                class="generationStatus"
+            ></div>
+
+        </div>
+
+        <div class="generationBoard">
+
+            <aside class="myceliumPanel">
+
+                <div class="myceliumLabel">
+                    ИНСТРУМЕНТЫ
+                </div>
+
+                <input
+                    type="file"
+                    id="myceliumFileInput"
+                    accept=".json,application/json"
+                    multiple
+                >
+
+                <input
+                    type="color"
+                    id="myceliumColorInput"
+                    value="#00bfff"
+                    aria-label="Цвет мицелия"
+                >
+
+                <button id="myceliumMoveMode" type="button">
+                    РЕЖИМ: ДВИГАТЬ
+                </button>
+
+                <button id="myceliumPickerMode" type="button">
+                    ПИПЕТКА
+                </button>
+
+                <button id="myceliumGenerateButton" type="button">
+                    ГЕНЕРАЦИЯ КАРТОЧКИ
+                </button>
+
+                <button id="myceliumDrawButton" type="button">
+                    РИСОВАТЬ КАРТОЧКУ
+                </button>
+
+                <button id="myceliumFinishButton" type="button">
+                    СОХРАНИТЬ РИСУНОК
+                </button>
+
+                <button id="myceliumClearButton" type="button">
+                    ОЧИСТИТЬ РИСУНОК
+                </button>
+
+                <div id="myceliumPickedColor">
+                    цвет: #00bfff
+                </div>
+
+                <div id="myceliumStatus" class="myceliumStatus"></div>
+
+                <div class="myceliumLabel">
+                    БИБЛИОТЕКА
+                </div>
+
+                <div id="myceliumCards"></div>
+
+            </aside>
+
+            <div
+                class="myceliumBoardWrap"
+                id="myceliumBoardWrap"
+            >
+                <canvas id="myceliumBoardCanvas"></canvas>
+
+                <div class="myceliumBoardHint">
+                    Карточки перетаскиваются на доску. Пипетка берёт цвет с доски.
+                    Режим рисования создаёт новую карточку.
+                </div>
+            </div>
+
+        </div>
 
     </div>
 
@@ -1722,23 +2100,29 @@ const roomViewerTitle =
 const roomViewerStatus =
     document.getElementById("roomViewerStatus");
 
-const roomGalleryOverlay =
-    document.getElementById("roomGalleryOverlay");
+const roomMovePad =
+    document.getElementById("roomMovePad");
 
-const roomGalleryClose =
-    document.getElementById("roomGalleryClose");
+const roomMoveKnob =
+    document.getElementById("roomMoveKnob");
 
-const roomMainMenuButton =
-    document.getElementById("roomMainMenuButton");
+const roomLookPad =
+    document.getElementById("roomLookPad");
 
-const roomGalleryButton =
-    document.getElementById("roomGalleryButton");
+const roomMoveUp =
+    document.getElementById("roomMoveUp");
 
-const roomGalleryList =
-    document.getElementById("roomGalleryList");
+const roomMoveDown =
+    document.getElementById("roomMoveDown");
 
-const roomViewerLoader =
-    document.getElementById("roomViewerLoader");
+const roomRollLeft =
+    document.getElementById("roomRollLeft");
+
+const roomRollRight =
+    document.getElementById("roomRollRight");
+
+const roomReset =
+    document.getElementById("roomReset");
 const connectWallet =
     document.getElementById("connectWallet");
 
@@ -1764,6 +2148,9 @@ const generationSubmit =
 
 const generationStatus =
     document.getElementById("generationStatus");
+
+const generationBack =
+    document.getElementById("generationBack");
 
 
 const loading =
@@ -2659,6 +3046,1685 @@ disconnectWallet.addEventListener(
 );
 
 
+
+/* =============================================================
+   MYCELIUM GENERATION BOARD
+============================================================= */
+
+const myceliumFileInput =
+    document.getElementById("myceliumFileInput");
+
+const myceliumCards =
+    document.getElementById("myceliumCards");
+
+const myceliumBoardWrap =
+    document.getElementById("myceliumBoardWrap");
+
+const myceliumBoardCanvas =
+    document.getElementById("myceliumBoardCanvas");
+
+const myceliumBoardCtx =
+    myceliumBoardCanvas.getContext("2d");
+
+const myceliumColorInput =
+    document.getElementById("myceliumColorInput");
+
+const myceliumPickedColor =
+    document.getElementById("myceliumPickedColor");
+
+const myceliumStatus =
+    document.getElementById("myceliumStatus");
+
+const GRID = 50;
+const BASE_CELL = 9;
+const BG = "#050505";
+
+let myceliumCell = BASE_CELL;
+let myceliumOffsetX = 0;
+let myceliumOffsetY = 0;
+
+let myceliumBoardCards = [];
+let myceliumDragData = null;
+let myceliumGhost = null;
+let myceliumMode = "normal";
+
+let myceliumDrawingCard = null;
+let myceliumDrawingOrigin = null;
+let myceliumDrawingPointerId = null;
+
+function setMyceliumStatus(text = "") {
+    myceliumStatus.textContent = text;
+}
+
+function updateMyceliumColorLabel() {
+    myceliumPickedColor.textContent =
+        "цвет: " + myceliumColorInput.value;
+}
+
+function getMyceliumCardSize() {
+    return GRID * myceliumCell;
+}
+
+function getMyceliumPointerPosition(event) {
+    const rect =
+        myceliumBoardWrap.getBoundingClientRect();
+
+    return {
+        x: event.clientX - rect.left,
+        y: event.clientY - rect.top
+    };
+}
+
+function resizeMyceliumBoard() {
+    if (!myceliumBoardWrap) return;
+
+    const width = Math.max(
+        1,
+        myceliumBoardWrap.clientWidth
+    );
+
+    const height = Math.max(
+        1,
+        myceliumBoardWrap.clientHeight
+    );
+
+    /*
+       На desktop сохраняем исходные 9 px на клетку.
+       На небольшом экране уменьшаем клетку так, чтобы
+       вся карточка 50x50 помещалась в доступную область.
+    */
+    const available =
+        Math.min(width, height);
+
+    myceliumCell =
+        Math.max(
+            3,
+            Math.min(
+                BASE_CELL,
+                Math.floor(available / GRID)
+            )
+        );
+
+    myceliumBoardCanvas.width = width;
+    myceliumBoardCanvas.height = height;
+
+    const cardSize =
+        getMyceliumCardSize();
+
+    myceliumOffsetX =
+        Math.max(
+            0,
+            Math.floor((width - cardSize) / 2)
+        );
+
+    myceliumOffsetY =
+        Math.max(
+            0,
+            Math.floor((height - cardSize) / 2)
+        );
+
+    redrawMyceliumBoard();
+}
+
+window.addEventListener(
+    "resize",
+    resizeMyceliumBoard,
+    { passive: true }
+);
+
+myceliumColorInput.addEventListener(
+    "input",
+    updateMyceliumColorLabel
+);
+
+myceliumFileInput.addEventListener(
+    "change",
+    event => {
+        const files =
+            Array.from(event.target.files || []);
+
+        if (!files.length) return;
+
+        let loaded = 0;
+        let failed = 0;
+
+        files.forEach(file => {
+            const reader =
+                new FileReader();
+
+            reader.onload = e => {
+                try {
+                    const json =
+                        JSON.parse(e.target.result);
+
+                    loadMyceliumJson(json);
+                    loaded++;
+                } catch (error) {
+                    console.error(
+                        "MYCELIUM JSON ERROR:",
+                        error
+                    );
+                    failed++;
+                }
+
+                if (loaded + failed === files.length) {
+                    setMyceliumStatus(
+                        failed
+                            ? `Загружено JSON: ${loaded}, ошибок: ${failed}`
+                            : `Загружено JSON: ${loaded}`
+                    );
+                }
+            };
+
+            reader.onerror = () => {
+                failed++;
+
+                if (loaded + failed === files.length) {
+                    setMyceliumStatus(
+                        `Загружено JSON: ${loaded}, ошибок: ${failed}`
+                    );
+                }
+            };
+
+            reader.readAsText(file);
+        });
+
+        event.target.value = "";
+    }
+);
+
+document
+    .getElementById("myceliumMoveMode")
+    .addEventListener("click", () => {
+        myceliumMode = "normal";
+        setMyceliumStatus("Режим: двигать");
+    });
+
+document
+    .getElementById("myceliumPickerMode")
+    .addEventListener("click", () => {
+        myceliumMode = "picker";
+        setMyceliumStatus("Режим: пипетка");
+    });
+
+document
+    .getElementById("myceliumGenerateButton")
+    .addEventListener("click", () => {
+        const color =
+            myceliumColorInput.value;
+
+        const field =
+            generateMyceliumCard(
+                color,
+                900
+            );
+
+        createMyceliumLibraryCard(
+            field
+        );
+
+        setMyceliumStatus(
+            `Карточка сгенерирована: ${field.points.length} точек`
+        );
+    });
+
+document
+    .getElementById("myceliumDrawButton")
+    .addEventListener("click", () => {
+        startMyceliumDrawCard();
+    });
+
+document
+    .getElementById("myceliumFinishButton")
+    .addEventListener("click", () => {
+        finishMyceliumDrawCard();
+    });
+
+document
+    .getElementById("myceliumClearButton")
+    .addEventListener("click", () => {
+        clearMyceliumDrawCard();
+    });
+
+function setMyceliumPointerEvents() {
+    myceliumBoardWrap.addEventListener(
+        "pointerdown",
+        event => {
+            if (event.pointerType === "mouse" && event.button !== 0) {
+                return;
+            }
+
+            if (myceliumMode === "picker") {
+                event.preventDefault();
+                pickMyceliumColor(event);
+                return;
+            }
+
+            if (myceliumMode === "draw") {
+                event.preventDefault();
+
+                if (myceliumDrawingPointerId !== null) {
+                    return;
+                }
+
+                myceliumDrawingPointerId =
+                    event.pointerId;
+
+                myceliumBoardWrap.setPointerCapture?.(
+                    event.pointerId
+                );
+
+                drawMyceliumPointOnBoard(
+                    event
+                );
+            }
+        }
+    );
+
+    myceliumBoardWrap.addEventListener(
+        "pointermove",
+        event => {
+            if (
+                myceliumMode === "draw" &&
+                myceliumDrawingPointerId === event.pointerId
+            ) {
+                event.preventDefault();
+                drawMyceliumPointOnBoard(event);
+            }
+        }
+    );
+
+    const release = event => {
+        if (
+            myceliumDrawingPointerId ===
+            event.pointerId
+        ) {
+            myceliumDrawingPointerId =
+                null;
+
+            if (
+                myceliumMode === "draw"
+            ) {
+                setMyceliumStatus(
+                    "Рисование: нажмите «Сохранить рисунок»"
+                );
+            }
+        }
+    };
+
+    myceliumBoardWrap.addEventListener(
+        "pointerup",
+        release
+    );
+
+    myceliumBoardWrap.addEventListener(
+        "pointercancel",
+        release
+    );
+}
+
+setMyceliumPointerEvents();
+
+function loadMyceliumJson(json) {
+    if (!json || typeof json !== "object") {
+        return;
+    }
+
+    if (json.mycelium_1) {
+        createMyceliumLibraryCard(
+            json.mycelium_1
+        );
+    }
+
+    if (json.mycelium_2) {
+        createMyceliumLibraryCard(
+            json.mycelium_2
+        );
+    }
+
+    if (json.mycelium_mix) {
+        createMyceliumLibraryCard(
+            json.mycelium_mix
+        );
+    }
+
+    /*
+       Поддерживаем также одиночную карточку
+       формата mycelium_card.
+    */
+    if (
+        json.type === "mycelium_card" &&
+        (json.points || json.lines)
+    ) {
+        createMyceliumLibraryCard(json);
+    }
+}
+
+function createMyceliumLibraryCard(
+    fieldData
+) {
+    if (!fieldData) return;
+
+    const card =
+        document.createElement("div");
+
+    card.className =
+        "myceliumLibraryCard";
+
+    const canvas =
+        document.createElement("canvas");
+
+    canvas.width = 100;
+    canvas.height = 100;
+
+    card.appendChild(canvas);
+    myceliumCards.appendChild(card);
+
+    drawMyceliumSmallPreview(
+        canvas,
+        fieldData
+    );
+
+    card.addEventListener(
+        "pointerdown",
+        event => {
+            if (
+                myceliumMode !== "normal"
+            ) {
+                return;
+            }
+
+            startMyceliumDrag(
+                event,
+                fieldData
+            );
+        }
+    );
+}
+
+function startMyceliumDrag(
+    event,
+    fieldData
+) {
+    myceliumDragData =
+        fieldData;
+
+    const cardSize =
+        getMyceliumCardSize();
+
+    myceliumGhost =
+        document.createElement("div");
+
+    myceliumGhost.className =
+        "myceliumGhost";
+
+    myceliumGhost.style.width =
+        `${cardSize}px`;
+
+    myceliumGhost.style.height =
+        `${cardSize}px`;
+
+    const canvas =
+        document.createElement("canvas");
+
+    canvas.width =
+        cardSize;
+
+    canvas.height =
+        cardSize;
+
+    myceliumGhost.appendChild(canvas);
+    document.body.appendChild(
+        myceliumGhost
+    );
+
+    drawMyceliumToCanvas(
+        canvas,
+        fieldData,
+        0,
+        0,
+        myceliumCell,
+        false
+    );
+
+    moveMyceliumGhost(
+        event.clientX,
+        event.clientY
+    );
+
+    document.addEventListener(
+        "pointermove",
+        myceliumDragMove
+    );
+
+    document.addEventListener(
+        "pointerup",
+        myceliumDragEnd,
+        { once: true }
+    );
+
+    document.addEventListener(
+        "pointercancel",
+        myceliumDragEnd,
+        { once: true }
+    );
+
+    event.preventDefault();
+    event.stopPropagation();
+}
+
+function myceliumDragMove(event) {
+    if (!myceliumGhost) return;
+
+    moveMyceliumGhost(
+        event.clientX,
+        event.clientY
+    );
+}
+
+function moveMyceliumGhost(
+    clientX,
+    clientY
+) {
+    if (!myceliumGhost) return;
+
+    const cardSize =
+        getMyceliumCardSize();
+
+    myceliumGhost.style.left =
+        `${clientX - cardSize / 2}px`;
+
+    myceliumGhost.style.top =
+        `${clientY - cardSize / 2}px`;
+}
+
+function myceliumDragEnd(event) {
+    document.removeEventListener(
+        "pointermove",
+        myceliumDragMove
+    );
+
+    const rect =
+        myceliumBoardWrap.getBoundingClientRect();
+
+    const inside =
+        event.clientX >= rect.left &&
+        event.clientX <= rect.right &&
+        event.clientY >= rect.top &&
+        event.clientY <= rect.bottom;
+
+    if (
+        inside &&
+        myceliumDragData
+    ) {
+        const localX =
+            event.clientX -
+            rect.left -
+            myceliumOffsetX;
+
+        const localY =
+            event.clientY -
+            rect.top -
+            myceliumOffsetY;
+
+        const cardSize =
+            getMyceliumCardSize();
+
+        const boardX =
+            localX -
+            cardSize / 2;
+
+        const boardY =
+            localY -
+            cardSize / 2;
+
+        const snappedX =
+            Math.round(
+                boardX / myceliumCell
+            ) *
+            myceliumCell;
+
+        const snappedY =
+            Math.round(
+                boardY / myceliumCell
+            ) *
+            myceliumCell;
+
+        myceliumBoardCards.push({
+            x: snappedX,
+            y: snappedY,
+            data: myceliumDragData
+        });
+
+        redrawMyceliumBoard();
+
+        setMyceliumStatus(
+            "Карточка помещена на доску"
+        );
+    }
+
+    if (myceliumGhost) {
+        myceliumGhost.remove();
+    }
+
+    myceliumGhost = null;
+    myceliumDragData = null;
+}
+
+function redrawMyceliumBoard() {
+    if (!myceliumBoardCanvas) return;
+
+    myceliumBoardCtx.clearRect(
+        0,
+        0,
+        myceliumBoardCanvas.width,
+        myceliumBoardCanvas.height
+    );
+
+    const cellMap = new Map();
+    const lineMap = [];
+
+    for (
+        const card of myceliumBoardCards
+    ) {
+        addMyceliumCardToMaps(
+            card,
+            cellMap,
+            lineMap
+        );
+    }
+
+    if (
+        myceliumDrawingCard &&
+        myceliumDrawingOrigin
+    ) {
+        addMyceliumCardToMaps(
+            {
+                x: myceliumDrawingOrigin.x,
+                y: myceliumDrawingOrigin.y,
+                data: myceliumDrawingCard
+            },
+            cellMap,
+            lineMap
+        );
+    }
+
+    for (
+        const line of lineMap
+    ) {
+        let color =
+            line.color;
+
+        const key1 =
+            line.x1 + "," +
+            line.y1;
+
+        const key2 =
+            line.x2 + "," +
+            line.y2;
+
+        if (
+            cellMap.has(key1) &&
+            cellMap.get(key1).colors.length > 1
+        ) {
+            color =
+                mixMyceliumColors(
+                    cellMap.get(key1).colors
+                );
+        }
+
+        if (
+            cellMap.has(key2) &&
+            cellMap.get(key2).colors.length > 1
+        ) {
+            color =
+                mixMyceliumColors(
+                    cellMap.get(key2).colors
+                );
+        }
+
+        drawMyceliumBoardLine(
+            line.x1,
+            line.y1,
+            line.x2,
+            line.y2,
+            color,
+            line.energy
+        );
+    }
+
+    for (
+        const item of cellMap.values()
+    ) {
+        const color =
+            mixMyceliumColors(
+                item.colors
+            );
+
+        drawMyceliumBoardPoint(
+            item.x,
+            item.y,
+            color
+        );
+    }
+}
+
+function addMyceliumCardToMaps(
+    card,
+    cellMap,
+    lineMap
+) {
+    const baseGX =
+        Math.round(
+            card.x /
+            myceliumCell
+        );
+
+    const baseGY =
+        Math.round(
+            card.y /
+            myceliumCell
+        );
+
+    const data =
+        card.data;
+
+    if (Array.isArray(data?.points)) {
+        for (
+            const p of data.points
+        ) {
+            const gx =
+                baseGX +
+                Number(p.x || 0);
+
+            const gy =
+                baseGY +
+                Number(p.y || 0);
+
+            const key =
+                gx + "," + gy;
+
+            if (
+                !cellMap.has(key)
+            ) {
+                cellMap.set(
+                    key,
+                    {
+                        x: gx,
+                        y: gy,
+                        colors: []
+                    }
+                );
+            }
+
+            cellMap
+                .get(key)
+                .colors
+                .push(
+                    p.color ||
+                    data.color ||
+                    "#00bfff"
+                );
+        }
+    }
+
+    if (Array.isArray(data?.lines)) {
+        for (
+            const line of data.lines
+        ) {
+            lineMap.push({
+                x1:
+                    baseGX +
+                    Number(line.x1 || 0),
+
+                y1:
+                    baseGY +
+                    Number(line.y1 || 0),
+
+                x2:
+                    baseGX +
+                    Number(line.x2 || 0),
+
+                y2:
+                    baseGY +
+                    Number(line.y2 || 0),
+
+                color:
+                    line.color ||
+                    data.color ||
+                    "#00bfff",
+
+                energy:
+                    Number(line.energy) ||
+                    40
+            });
+        }
+    }
+}
+
+function drawMyceliumBoardLine(
+    x1,
+    y1,
+    x2,
+    y2,
+    color,
+    energy
+) {
+    const cx1 =
+        myceliumOffsetX +
+        x1 * myceliumCell +
+        myceliumCell / 2;
+
+    const cy1 =
+        myceliumOffsetY +
+        y1 * myceliumCell +
+        myceliumCell / 2;
+
+    const cx2 =
+        myceliumOffsetX +
+        x2 * myceliumCell +
+        myceliumCell / 2;
+
+    const cy2 =
+        myceliumOffsetY +
+        y2 * myceliumCell +
+        myceliumCell / 2;
+
+    myceliumBoardCtx.strokeStyle =
+        color;
+
+    myceliumBoardCtx.lineWidth =
+        Math.max(
+            1,
+            Math.floor(
+                (Number(energy) || 40) /
+                18 *
+                Math.max(
+                    0.7,
+                    myceliumCell / BASE_CELL
+                )
+            )
+        );
+
+    myceliumBoardCtx.lineCap =
+        "round";
+
+    myceliumBoardCtx.beginPath();
+    myceliumBoardCtx.moveTo(
+        cx1,
+        cy1
+    );
+    myceliumBoardCtx.lineTo(
+        cx2,
+        cy2
+    );
+    myceliumBoardCtx.stroke();
+}
+
+function drawMyceliumBoardPoint(
+    x,
+    y,
+    color
+) {
+    const cx =
+        myceliumOffsetX +
+        x * myceliumCell +
+        myceliumCell / 2;
+
+    const cy =
+        myceliumOffsetY +
+        y * myceliumCell +
+        myceliumCell / 2;
+
+    myceliumBoardCtx.fillStyle =
+        color;
+
+    myceliumBoardCtx.beginPath();
+
+    myceliumBoardCtx.arc(
+        cx,
+        cy,
+        Math.max(
+            1.4,
+            2.3 *
+            (myceliumCell / BASE_CELL)
+        ),
+        0,
+        Math.PI * 2
+    );
+
+    myceliumBoardCtx.fill();
+}
+
+function pickMyceliumColor(event) {
+    const rect =
+        myceliumBoardCanvas.getBoundingClientRect();
+
+    const x =
+        Math.floor(
+            event.clientX -
+            rect.left
+        );
+
+    const y =
+        Math.floor(
+            event.clientY -
+            rect.top
+        );
+
+    if (
+        x < 0 ||
+        y < 0 ||
+        x >= myceliumBoardCanvas.width ||
+        y >= myceliumBoardCanvas.height
+    ) {
+        return;
+    }
+
+    const pixel =
+        myceliumBoardCtx.getImageData(
+            x,
+            y,
+            1,
+            1
+        ).data;
+
+    const color =
+        rgbToMyceliumHex(
+            pixel[0],
+            pixel[1],
+            pixel[2]
+        );
+
+    if (!/^#[0-9a-f]{6}$/i.test(color)) {
+        return;
+    }
+
+    myceliumColorInput.value =
+        color;
+
+    updateMyceliumColorLabel();
+
+    myceliumMode =
+        "normal";
+
+    setMyceliumStatus(
+        "Цвет выбран с доски"
+    );
+}
+
+function generateMyceliumCard(
+    color,
+    steps
+) {
+    const cells = new Set();
+    const lines = [];
+
+    const startX =
+        Math.floor(
+            GRID / 2
+        );
+
+    const startY =
+        Math.floor(
+            GRID / 2
+        );
+
+    cells.add(
+        startX + "," +
+        startY
+    );
+
+    const branches = [];
+    const START_BRANCHES = 10;
+
+    for (
+        let i = 0;
+        i < START_BRANCHES;
+        i++
+    ) {
+        let angle =
+            i *
+            (
+                2 *
+                Math.PI /
+                START_BRANCHES
+            );
+
+        angle +=
+            myceliumRand(
+                -0.15,
+                0.15
+            );
+
+        branches.push({
+            x: startX,
+            y: startY,
+            angle,
+            energy: 100
+        });
+    }
+
+    for (
+        let step = 0;
+        step < steps;
+        step++
+    ) {
+        if (!branches.length) {
+            break;
+        }
+
+        const bi =
+            Math.floor(
+                Math.random() *
+                branches.length
+            );
+
+        const branch =
+            branches[bi];
+
+        const possible = [];
+
+        for (
+            let dx = -1;
+            dx <= 1;
+            dx++
+        ) {
+            for (
+                let dy = -1;
+                dy <= 1;
+                dy++
+            ) {
+                if (
+                    dx === 0 &&
+                    dy === 0
+                ) {
+                    continue;
+                }
+
+                const nx =
+                    branch.x + dx;
+
+                const ny =
+                    branch.y + dy;
+
+                if (
+                    nx < 0 ||
+                    nx >= GRID ||
+                    ny < 0 ||
+                    ny >= GRID
+                ) {
+                    continue;
+                }
+
+                if (
+                    cells.has(
+                        nx + "," + ny
+                    )
+                ) {
+                    continue;
+                }
+
+                const score =
+                    myceliumDirectionScore(
+                        branch.x,
+                        branch.y,
+                        nx,
+                        ny,
+                        branch.angle
+                    );
+
+                possible.push({
+                    score,
+                    nx,
+                    ny
+                });
+            }
+        }
+
+        if (!possible.length) {
+            branches.splice(
+                bi,
+                1
+            );
+            continue;
+        }
+
+        possible.sort(
+            (a, b) =>
+                b.score -
+                a.score
+        );
+
+        const next =
+            possible[0];
+
+        cells.add(
+            next.nx + "," +
+            next.ny
+        );
+
+        lines.push({
+            number:
+                lines.length + 1,
+            color,
+            x1: branch.x,
+            y1: branch.y,
+            x2: next.nx,
+            y2: next.ny,
+            energy: branch.energy
+        });
+
+        branch.x =
+            next.nx;
+
+        branch.y =
+            next.ny;
+
+        branch.angle +=
+            myceliumRand(
+                -0.55,
+                0.55
+            );
+
+        branch.energy -=
+            myceliumRand(
+                1.5,
+                4.5
+            );
+
+        if (
+            branch.energy <= 0
+        ) {
+            branches.splice(
+                bi,
+                1
+            );
+            continue;
+        }
+
+        if (
+            Math.random() < 0.08 &&
+            branch.energy > 25
+        ) {
+            branches.push({
+                x: branch.x,
+                y: branch.y,
+                angle:
+                    branch.angle +
+                    (
+                        Math.random() < 0.5
+                            ? -1
+                            : 1
+                    ) *
+                    myceliumRand(
+                        0.6,
+                        1.4
+                    ),
+                energy:
+                    branch.energy *
+                    myceliumRand(
+                        0.45,
+                        0.7
+                    )
+            });
+        }
+    }
+
+    const points = [];
+    let number = 1;
+
+    for (
+        const key of cells
+    ) {
+        const parts =
+            key.split(",");
+
+        points.push({
+            number:
+                number++,
+            color,
+            x:
+                Number(parts[0]),
+            y:
+                Number(parts[1])
+        });
+    }
+
+    return {
+        type:
+            "mycelium_card",
+
+        grid: {
+            width: GRID,
+            height: GRID
+        },
+
+        color,
+        points,
+        lines
+    };
+}
+
+function myceliumDirectionScore(
+    x,
+    y,
+    nx,
+    ny,
+    angle
+) {
+    const dx =
+        nx - x;
+
+    const dy =
+        ny - y;
+
+    const moveAngle =
+        Math.atan2(
+            dy,
+            dx
+        );
+
+    const angleDiff =
+        Math.abs(
+            Math.atan2(
+                Math.sin(
+                    moveAngle -
+                    angle
+                ),
+                Math.cos(
+                    moveAngle -
+                    angle
+                )
+            )
+        );
+
+    const centerX =
+        GRID / 2;
+
+    const centerY =
+        GRID / 2;
+
+    const dist =
+        Math.hypot(
+            nx - centerX,
+            ny - centerY
+        );
+
+    return (
+        -angleDiff * 2 +
+        dist * 0.03 +
+        Math.random()
+    );
+}
+
+function startMyceliumDrawCard() {
+    myceliumMode =
+        "draw";
+
+    myceliumDrawingCard = {
+        type:
+            "mycelium_card",
+
+        grid: {
+            width: GRID,
+            height: GRID
+        },
+
+        color:
+            myceliumColorInput.value,
+
+        points: [],
+        lines: []
+    };
+
+    myceliumDrawingOrigin =
+        null;
+
+    setMyceliumStatus(
+        "Режим рисования включён"
+    );
+}
+
+function drawMyceliumPointOnBoard(
+    event
+) {
+    if (
+        !myceliumDrawingCard
+    ) {
+        return;
+    }
+
+    const position =
+        getMyceliumPointerPosition(
+            event
+        );
+
+    const gx =
+        Math.floor(
+            (
+                position.x -
+                myceliumOffsetX
+            ) /
+            myceliumCell
+        );
+
+    const gy =
+        Math.floor(
+            (
+                position.y -
+                myceliumOffsetY
+            ) /
+            myceliumCell
+        );
+
+    if (
+        gx < 0 ||
+        gx >= GRID ||
+        gy < 0 ||
+        gy >= GRID
+    ) {
+        return;
+    }
+
+    if (
+        !myceliumDrawingOrigin
+    ) {
+        myceliumDrawingOrigin = {
+            x:
+                gx *
+                myceliumCell,
+
+            y:
+                gy *
+                myceliumCell
+        };
+    }
+
+    const baseGX =
+        Math.round(
+            myceliumDrawingOrigin.x /
+            myceliumCell
+        );
+
+    const baseGY =
+        Math.round(
+            myceliumDrawingOrigin.y /
+            myceliumCell
+        );
+
+    const localX =
+        gx - baseGX;
+
+    const localY =
+        gy - baseGY;
+
+    if (
+        localX < 0 ||
+        localX >= GRID ||
+        localY < 0 ||
+        localY >= GRID
+    ) {
+        return;
+    }
+
+    /*
+       Не добавляем одну и ту же клетку
+       несколько раз при движении пальца/мыши.
+    */
+    const exists =
+        myceliumDrawingCard.points.some(
+            point =>
+                point.x === localX &&
+                point.y === localY
+        );
+
+    if (exists) {
+        return;
+    }
+
+    const color =
+        myceliumColorInput.value;
+
+    const newPoint = {
+        number:
+            myceliumDrawingCard.points.length + 1,
+
+        color,
+
+        x: localX,
+        y: localY
+    };
+
+    if (
+        myceliumDrawingCard.points.length > 0
+    ) {
+        const prev =
+            myceliumDrawingCard.points[
+                myceliumDrawingCard.points.length - 1
+            ];
+
+        myceliumDrawingCard.lines.push({
+            number:
+                myceliumDrawingCard.lines.length + 1,
+
+            color,
+
+            x1: prev.x,
+            y1: prev.y,
+            x2: localX,
+            y2: localY,
+            energy: 70
+        });
+    }
+
+    myceliumDrawingCard.points.push(
+        newPoint
+    );
+
+    redrawMyceliumBoard();
+}
+
+function finishMyceliumDrawCard() {
+    if (
+        !myceliumDrawingCard ||
+        !myceliumDrawingCard.points.length
+    ) {
+        setMyceliumStatus(
+            "Нет точек для сохранения"
+        );
+        return;
+    }
+
+    createMyceliumLibraryCard(
+        myceliumDrawingCard
+    );
+
+    myceliumDrawingCard = null;
+    myceliumDrawingOrigin = null;
+    myceliumDrawingPointerId = null;
+    myceliumMode = "normal";
+
+    redrawMyceliumBoard();
+
+    setMyceliumStatus(
+        "Рисунок сохранён в библиотеку"
+    );
+}
+
+function clearMyceliumDrawCard() {
+    myceliumDrawingCard = null;
+    myceliumDrawingOrigin = null;
+    myceliumDrawingPointerId = null;
+    myceliumMode = "normal";
+
+    redrawMyceliumBoard();
+
+    setMyceliumStatus(
+        "Текущий рисунок очищен"
+    );
+}
+
+function drawMyceliumSmallPreview(
+    canvas,
+    fieldData
+) {
+    drawMyceliumToCanvas(
+        canvas,
+        fieldData,
+        0,
+        0,
+        canvas.width / GRID,
+        true
+    );
+}
+
+function drawMyceliumToCanvas(
+    canvas,
+    fieldData,
+    ox,
+    oy,
+    cell,
+    small
+) {
+    const ctx =
+        canvas.getContext("2d");
+
+    ctx.fillStyle =
+        BG;
+
+    ctx.fillRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+    if (!fieldData) {
+        return;
+    }
+
+    if (
+        Array.isArray(fieldData.lines)
+    ) {
+        for (
+            const line of fieldData.lines
+        ) {
+            const x1 =
+                ox +
+                line.x1 *
+                cell +
+                cell / 2;
+
+            const y1 =
+                oy +
+                line.y1 *
+                cell +
+                cell / 2;
+
+            const x2 =
+                ox +
+                line.x2 *
+                cell +
+                cell / 2;
+
+            const y2 =
+                oy +
+                line.y2 *
+                cell +
+                cell / 2;
+
+            ctx.strokeStyle =
+                line.color ||
+                fieldData.color ||
+                "#00bfff";
+
+            ctx.lineWidth =
+                small
+                    ? 1.2
+                    : Math.max(
+                        1,
+                        Math.floor(
+                            (
+                                line.energy ||
+                                40
+                            ) / 18
+                        )
+                    );
+
+            ctx.lineCap =
+                "round";
+
+            ctx.beginPath();
+
+            ctx.moveTo(
+                x1,
+                y1
+            );
+
+            ctx.lineTo(
+                x2,
+                y2
+            );
+
+            ctx.stroke();
+        }
+    }
+
+    if (
+        Array.isArray(fieldData.points)
+    ) {
+        for (
+            const p of fieldData.points
+        ) {
+            const x =
+                ox +
+                p.x *
+                cell +
+                cell / 2;
+
+            const y =
+                oy +
+                p.y *
+                cell +
+                cell / 2;
+
+            ctx.fillStyle =
+                p.color ||
+                fieldData.color ||
+                "#00bfff";
+
+            ctx.beginPath();
+
+            ctx.arc(
+                x,
+                y,
+                small
+                    ? 1.4
+                    : 2.3,
+                0,
+                Math.PI * 2
+            );
+
+            ctx.fill();
+        }
+    }
+}
+
+function hexToMyceliumRgb(hex) {
+    hex =
+        String(hex)
+            .replace("#", "");
+
+    return {
+        r:
+            parseInt(
+                hex.substring(0, 2),
+                16
+            ),
+
+        g:
+            parseInt(
+                hex.substring(2, 4),
+                16
+            ),
+
+        b:
+            parseInt(
+                hex.substring(4, 6),
+                16
+            )
+    };
+}
+
+function rgbToMyceliumHex(
+    r,
+    g,
+    b
+) {
+    return (
+        "#" +
+        r.toString(16).padStart(2, "0") +
+        g.toString(16).padStart(2, "0") +
+        b.toString(16).padStart(2, "0")
+    );
+}
+
+function mixMyceliumTwoColors(
+    a,
+    b
+) {
+    const c1 =
+        hexToMyceliumRgb(a);
+
+    const c2 =
+        hexToMyceliumRgb(b);
+
+    const r =
+        Math.floor(
+            (c1.r + c2.r) / 2
+        );
+
+    const g =
+        Math.floor(
+            (c1.g + c2.g) / 2
+        );
+
+    const bl =
+        Math.floor(
+            (c1.b + c2.b) / 2
+        );
+
+    return rgbToMyceliumHex(
+        r,
+        g,
+        bl
+    );
+}
+
+function mixMyceliumColors(
+    colors
+) {
+    if (!colors.length) {
+        return "#ffffff";
+    }
+
+    let result =
+        colors[0];
+
+    for (
+        let i = 1;
+        i < colors.length;
+        i++
+    ) {
+        result =
+            mixMyceliumTwoColors(
+                result,
+                colors[i]
+            );
+    }
+
+    return result;
+}
+
+function myceliumRand(
+    a,
+    b
+) {
+    return (
+        a +
+        Math.random() *
+        (b - a)
+    );
+}
+
+/* Первичная отрисовка после создания DOM. */
+requestAnimationFrame(() => {
+    updateMyceliumColorLabel();
+    resizeMyceliumBoard();
+});
+
+
 /* =============================================================
    GENERATION INPUT
 ============================================================= */
@@ -2811,56 +4877,10 @@ generationSubmit.addEventListener(
    GENERATION BACK
 ============================================================= */
 
-const generationBack =
-    document.createElement(
-        "button"
-    );
-
-generationBack.type =
-    "button";
-
-generationBack.style.position =
-    "fixed";
-
-generationBack.style.top =
-    "14px";
-
-generationBack.style.left =
-    "14px";
-
-generationBack.style.width =
-    "40px";
-
-generationBack.style.height =
-    "40px";
-
-generationBack.style.background =
-    "#080808";
-
-generationBack.style.color =
-    "#fff";
-
-generationBack.style.border =
-    "1px solid #242424";
-
-generationBack.style.fontSize =
-    "22px";
-
-generationBack.textContent =
-    "←";
-
-generationScreen.appendChild(
-    generationBack
-);
-
 generationBack.addEventListener(
     "click",
     () => {
-
-        showScreen(
-            homeScreen
-        );
-
+        showScreen(homeScreen);
     }
 );
 
@@ -2902,22 +4922,6 @@ let roomMoveX = 0;
 let roomMoveY = 0;
 let roomLookLastX = 0;
 let roomLookLastY = 0;
-let roomTwoFingerState = null;
-
-function createTwoFingerState() {
-    return getTwoFingerState();
-}
-
-function getTwoFingerState() {
-    if (roomTouchPointers.size < 2) return null;
-
-    const points = [...roomTouchPointers.values()].slice(0, 2);
-
-    return {
-        centerX: (points[0].x + points[1].x) / 2,
-        centerY: (points[0].y + points[1].y) / 2
-    };
-}
 
 const ROOM_LENGTH = 7;
 const ROOM_WIDTH = 6;
@@ -2933,23 +4937,8 @@ const roomTextureLoader =
 roomTextureLoader.setCrossOrigin("anonymous");
 
 function setRoomStatus(text, visible = true) {
-    /*
-        Текстовые статусы ROOM больше не показываются.
-        Любой активный статус отображается одним анимированным
-        индикатором. После завершения передаётся visible=false.
-    */
-    if (roomViewerStatus) {
-        roomViewerStatus.textContent = "";
-        roomViewerStatus.style.display = "none";
-    }
-
-    if (roomViewerLoader) {
-        roomViewerLoader.classList.toggle("hidden", !visible);
-        roomViewerLoader.setAttribute(
-            "aria-hidden",
-            visible ? "false" : "true"
-        );
-    }
+    roomViewerStatus.textContent = text || "";
+    roomViewerStatus.style.display = visible ? "block" : "none";
 }
 
 function roomNumberValue(item, index) {
@@ -4873,6 +6862,7 @@ async function buildRoom(item) {
     roomVerticalInput = 0;
     roomVerticalButtonInput = 0;
 
+    resetRoomMovePadVisual();
     clampRoomCamera();
     updateRoomCameraRotation();
     resizeRoomViewer();
@@ -4955,14 +6945,71 @@ async function buildRoom(item) {
     }
 
     if (errors.length) {
-        /*
-            Ошибки всё равно не выводим текстом в ROOM.
-            Индикатор завершает работу после попытки загрузки
-            всех ресурсов.
-        */
+        const errorText = errors.map(result =>
+            `${result.label}.png\n${result.error || "ошибка"}`
+        ).join("\n\n");
+
+        setRoomStatus(
+            `ROOM ${folder}: 3D модель загружена.\n` +
+            `Текстуры: ${loadedCount}/6.\n\n` +
+            `Ошибки текстур:\n${errorText}`,
+            true
+        );
+    }
+}
+
+function resetRoomMovePadVisual() {
+    if (!roomMoveKnob) return;
+
+    roomMoveKnob.style.transform =
+        "translate3d(0,0,0)";
+}
+
+function updateRoomMovePad(clientX, clientY) {
+    if (!roomMovePad) return;
+
+    const rect = roomMovePad.getBoundingClientRect();
+
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+
+    const max = Math.max(
+        18,
+        Math.min(rect.width, rect.height) * 0.32
+    );
+
+    let dx = clientX - centerX;
+    let dy = clientY - centerY;
+
+    const length = Math.hypot(dx, dy);
+
+    if (length > max) {
+        dx = dx / length * max;
+        dy = dy / length * max;
     }
 
-    setRoomStatus("", false);
+    roomPadX = dx / max;
+    roomPadY = dy / max;
+
+    roomMoveKnob.style.transform =
+        `translate3d(${dx}px, ${dy}px, 0)`;
+}
+
+function releaseRoomMovePad() {
+    roomPadPointerId = null;
+    roomPadX = 0;
+    roomPadY = 0;
+    resetRoomMovePadVisual();
+}
+
+function startRoomVertical(direction) {
+    roomVerticalButtonInput = direction;
+}
+
+function stopRoomVertical(direction) {
+    if (roomVerticalButtonInput === direction) {
+        roomVerticalButtonInput = 0;
+    }
 }
 
 function isMobileDevice() {
@@ -5015,19 +7062,6 @@ function initRoomViewer() {
 
     roomClock = new THREE.Clock();
 
-    /*
-        Мобильное управление без экранных джойстиков:
-
-        1 палец:
-            движение пальца = осмотр комнаты
-
-        2 пальца:
-            движение обоих пальцев = перемещение камеры
-            по X/Z относительно направления взгляда.
-
-        Это позволяет управлять ROOM непосредственно
-        поверх изображения и не закрывать экран лишними кнопками.
-    */
     roomRenderer.domElement.addEventListener("pointerdown", event => {
         if (event.pointerType === "mouse") {
             roomMouseDown = true;
@@ -5042,16 +7076,19 @@ function initRoomViewer() {
             y: event.clientY
         });
 
-        roomRenderer.domElement.setPointerCapture?.(event.pointerId);
+        const half = window.innerWidth / 2;
 
-        if (roomTouchPointers.size === 1) {
+        if (event.clientX < half && roomMovePointerId === null) {
+            roomMovePointerId = event.pointerId;
+            roomMoveX = event.clientX;
+            roomMoveY = event.clientY;
+        } else if (roomLookPointerId === null) {
             roomLookPointerId = event.pointerId;
             roomLookLastX = event.clientX;
             roomLookLastY = event.clientY;
-        } else if (roomTouchPointers.size === 2) {
-            roomLookPointerId = null;
-            roomTwoFingerState = createTwoFingerState();
         }
+
+        roomRenderer.domElement.setPointerCapture?.(event.pointerId);
     });
 
     roomRenderer.domElement.addEventListener("pointermove", event => {
@@ -5066,7 +7103,6 @@ function initRoomViewer() {
 
             roomYaw -= dx * ROOM_LOOK_SPEED;
             roomPitch -= dy * ROOM_LOOK_SPEED;
-
             roomPitch = THREE.MathUtils.clamp(
                 roomPitch,
                 -Math.PI / 2 + 0.05,
@@ -5084,49 +7120,20 @@ function initRoomViewer() {
             y: event.clientY
         });
 
-        if (roomTouchPointers.size >= 2) {
-            const state = getTwoFingerState();
+        if (event.pointerId === roomMovePointerId) {
+            const dx = event.clientX - roomMoveX;
+            const dy = event.clientY - roomMoveY;
+            const limit = 65;
+            const length = Math.hypot(dx, dy) || 1;
 
-            if (!state) return;
+            roomMoveX = event.clientX;
+            roomMoveY = event.clientY;
 
-            if (!roomTwoFingerState) {
-                roomTwoFingerState = state;
-                return;
-            }
-
-            const dx = state.centerX - roomTwoFingerState.centerX;
-            const dy = state.centerY - roomTwoFingerState.centerY;
-
-            const moveScale = ROOM_SPEED * 0.012;
-
-            const forwardX = Math.sin(roomYaw);
-            const forwardZ = Math.cos(roomYaw);
-
-            const rightX = Math.cos(roomYaw);
-            const rightZ = -Math.sin(roomYaw);
-
-            /*
-                Свайп вверх  = вперёд
-                Свайп вниз  = назад
-                Свайп влево = влево
-                Свайп вправо = вправо
-            */
-            roomCamera.position.x +=
-                (rightX * dx + forwardX * -dy) * moveScale;
-
-            roomCamera.position.z +=
-                (rightZ * dx + forwardZ * -dy) * moveScale;
-
-            clampRoomCamera();
-
-            roomTwoFingerState = state;
-            return;
+            roomMovePointerX = THREE.MathUtils.clamp(dx / limit, -1, 1);
+            roomMovePointerY = THREE.MathUtils.clamp(dy / limit, -1, 1);
         }
 
-        if (
-            roomTouchPointers.size === 1 &&
-            event.pointerId === roomLookPointerId
-        ) {
+        if (event.pointerId === roomLookPointerId) {
             const dx = event.clientX - roomLookLastX;
             const dy = event.clientY - roomLookLastY;
 
@@ -5135,7 +7142,6 @@ function initRoomViewer() {
 
             roomYaw -= dx * ROOM_LOOK_SPEED;
             roomPitch -= dy * ROOM_LOOK_SPEED;
-
             roomPitch = THREE.MathUtils.clamp(
                 roomPitch,
                 -Math.PI / 2 + 0.05,
@@ -5154,34 +7160,21 @@ function initRoomViewer() {
 
         roomTouchPointers.delete(event.pointerId);
 
-        if (roomTouchPointers.size === 1) {
-            const remaining = [...roomTouchPointers.entries()][0];
+        if (event.pointerId === roomMovePointerId) {
+            roomMovePointerId = null;
+            roomMoveX = 0;
+            roomMoveY = 0;
+        }
 
-            roomLookPointerId = remaining[0];
-            roomLookLastX = remaining[1].x;
-            roomLookLastY = remaining[1].y;
-            roomTwoFingerState = null;
-        } else {
+        if (event.pointerId === roomLookPointerId) {
             roomLookPointerId = null;
-            roomTwoFingerState = null;
         }
     });
 
     roomRenderer.domElement.addEventListener("pointercancel", event => {
         roomTouchPointers.delete(event.pointerId);
-
-        if (roomTouchPointers.size < 2) {
-            roomTwoFingerState = null;
-        }
-
-        if (roomTouchPointers.size === 1) {
-            const remaining = [...roomTouchPointers.entries()][0];
-            roomLookPointerId = remaining[0];
-            roomLookLastX = remaining[1].x;
-            roomLookLastY = remaining[1].y;
-        } else {
-            roomLookPointerId = null;
-        }
+        if (event.pointerId === roomMovePointerId) roomMovePointerId = null;
+        if (event.pointerId === roomLookPointerId) roomLookPointerId = null;
     });
 
     window.addEventListener("keydown", event => {
@@ -5197,9 +7190,220 @@ function initRoomViewer() {
     window.addEventListener("blur", () => {
         roomKeyboard.clear();
         roomMouseDown = false;
+        releaseRoomMovePad();
         roomVerticalInput = 0;
         roomVerticalButtonInput = 0;
     });
+
+    /*
+        МОБИЛЬНОЕ УПРАВЛЕНИЕ ROOM
+
+        Левый круг:
+            вверх    = вперёд
+            вниз     = назад
+            влево    = влево
+            вправо   = вправо
+    */
+    roomMovePad.addEventListener("pointerdown", event => {
+        event.preventDefault();
+
+        if (roomPadPointerId !== null) return;
+
+        roomPadPointerId = event.pointerId;
+
+        roomMovePad.setPointerCapture?.(
+            event.pointerId
+        );
+
+        updateRoomMovePad(
+            event.clientX,
+            event.clientY
+        );
+    });
+
+    roomMovePad.addEventListener("pointermove", event => {
+        if (event.pointerId !== roomPadPointerId) return;
+
+        event.preventDefault();
+
+        updateRoomMovePad(
+            event.clientX,
+            event.clientY
+        );
+    });
+
+    roomMovePad.addEventListener("pointerup", event => {
+        if (event.pointerId !== roomPadPointerId) return;
+        releaseRoomMovePad();
+    });
+
+    roomMovePad.addEventListener("pointercancel", event => {
+        if (event.pointerId !== roomPadPointerId) return;
+        releaseRoomMovePad();
+    });
+
+    /*
+        Правое поле:
+            горизонталь = поворот влево/вправо
+            вертикаль   = наклон вверх/вниз
+    */
+    roomLookPad.addEventListener("pointerdown", event => {
+        event.preventDefault();
+
+        if (roomLookPointerId !== null) return;
+
+        roomLookPointerId = event.pointerId;
+        roomLookLastX = event.clientX;
+        roomLookLastY = event.clientY;
+
+        roomLookPad.setPointerCapture?.(
+            event.pointerId
+        );
+    });
+
+    roomLookPad.addEventListener("pointermove", event => {
+        if (event.pointerId !== roomLookPointerId) return;
+
+        event.preventDefault();
+
+        const dx = event.clientX - roomLookLastX;
+        const dy = event.clientY - roomLookLastY;
+
+        roomLookLastX = event.clientX;
+        roomLookLastY = event.clientY;
+
+        roomYaw -= dx * ROOM_LOOK_SPEED;
+        roomPitch -= dy * ROOM_LOOK_SPEED;
+
+        roomPitch = THREE.MathUtils.clamp(
+            roomPitch,
+            -Math.PI / 2 + 0.05,
+            Math.PI / 2 - 0.05
+        );
+
+        updateRoomCameraRotation();
+    });
+
+    const releaseRoomLook = event => {
+        if (event.pointerId === roomLookPointerId) {
+            roomLookPointerId = null;
+        }
+    };
+
+    roomLookPad.addEventListener(
+        "pointerup",
+        releaseRoomLook
+    );
+
+    roomLookPad.addEventListener(
+        "pointercancel",
+        releaseRoomLook
+    );
+
+    /*
+        ↑ / ↓ — подъём и спуск.
+        Кнопка работает и на touch, и мышью.
+    */
+    roomMoveUp.addEventListener(
+        "pointerdown",
+        event => {
+            event.preventDefault();
+            startRoomVertical(1);
+            roomMoveUp.setPointerCapture?.(
+                event.pointerId
+            );
+        }
+    );
+
+    roomMoveUp.addEventListener(
+        "pointerup",
+        event => {
+            event.preventDefault();
+            stopRoomVertical(1);
+        }
+    );
+
+    roomMoveUp.addEventListener(
+        "pointercancel",
+        () => stopRoomVertical(1)
+    );
+
+    roomMoveDown.addEventListener(
+        "pointerdown",
+        event => {
+            event.preventDefault();
+            startRoomVertical(-1);
+            roomMoveDown.setPointerCapture?.(
+                event.pointerId
+            );
+        }
+    );
+
+    roomMoveDown.addEventListener(
+        "pointerup",
+        event => {
+            event.preventDefault();
+            stopRoomVertical(-1);
+        }
+    );
+
+    roomMoveDown.addEventListener(
+        "pointercancel",
+        () => stopRoomVertical(-1)
+    );
+
+    /*
+        ↶ / ↷ — roll, то есть вращение изображения
+        вокруг оси взгляда.
+    */
+    roomRollLeft.addEventListener(
+        "click",
+        () => {
+            roomRoll += 0.12;
+            roomRoll = THREE.MathUtils.clamp(
+                roomRoll,
+                -Math.PI / 3,
+                Math.PI / 3
+            );
+            updateRoomCameraRotation();
+        }
+    );
+
+    roomRollRight.addEventListener(
+        "click",
+        () => {
+            roomRoll -= 0.12;
+            roomRoll = THREE.MathUtils.clamp(
+                roomRoll,
+                -Math.PI / 3,
+                Math.PI / 3
+            );
+            updateRoomCameraRotation();
+        }
+    );
+
+    roomReset.addEventListener(
+        "click",
+        () => {
+            if (!roomCamera) return;
+
+            roomYaw = Math.PI;
+            roomPitch = 0;
+            roomRoll = 0;
+            roomVerticalInput = 0;
+            roomVerticalButtonInput = 0;
+
+            roomCamera.position.set(
+                0,
+                ROOM_EYE_HEIGHT,
+                1.0
+            );
+
+            releaseRoomMovePad();
+            clampRoomCamera();
+            updateRoomCameraRotation();
+        }
+    );
 
     resizeRoomViewer();
     roomAnimationFrame = requestAnimationFrame(roomRenderLoop);
@@ -5284,6 +7488,16 @@ function updateRoomMovement(dt) {
             ? keyboardVertical
             : roomVerticalButtonInput;
 
+    if (roomMovePointerId !== null) {
+        strafe += roomMovePointerX;
+        forward -= roomMovePointerY;
+    }
+
+    if (roomPadPointerId !== null) {
+        strafe += roomPadX;
+        forward -= roomPadY;
+    }
+
     const length = Math.hypot(strafe, forward);
     if (length > 1) {
         strafe /= length;
@@ -5340,109 +7554,6 @@ function resizeRoomViewer() {
     roomCamera.aspect = width / height;
     roomCamera.updateProjectionMatrix();
     roomRenderer.setSize(width, height, false);
-}
-
-function getRoomGalleryImage(item) {
-    const folder = String(
-        item?.folder ||
-        item?.name ||
-        ""
-    ).trim();
-
-    const directIcon = String(
-        item?.icon_url ||
-        item?.icon?.url ||
-        ""
-    ).trim();
-
-    if (directIcon) return directIcon;
-
-    if (!folder) return "";
-
-    return roomFileUrl(
-        folder,
-        "01_BACKGROUND.png"
-    );
-}
-
-function openRoomGallery() {
-    if (!roomGalleryOverlay || !roomGalleryList) return;
-
-    roomGalleryOverlay.classList.add("active");
-    roomGalleryOverlay.setAttribute("aria-hidden", "false");
-
-    roomGalleryList.style.display = "flex";
-    renderRoomGallery();
-}
-
-function closeRoomGallery() {
-    if (!roomGalleryOverlay) return;
-
-    roomGalleryOverlay.classList.remove("active");
-    roomGalleryOverlay.setAttribute("aria-hidden", "true");
-}
-
-function renderRoomGallery() {
-    if (!roomGalleryList) return;
-
-    if (!rooms.length) {
-        roomGalleryList.innerHTML = `
-            <div class="roomGalleryEmpty">
-                ROOM EMPTY
-            </div>
-        `;
-        return;
-    }
-
-    roomGalleryList.innerHTML = "";
-
-    rooms.forEach((item, index) => {
-        const card = document.createElement("button");
-        card.type = "button";
-        card.className = "roomGalleryCard";
-
-        const imageUrl = getRoomGalleryImage(item);
-
-        if (imageUrl) {
-            const image = document.createElement("img");
-            image.src = imageUrl;
-            image.alt = "";
-            image.loading = "lazy";
-            image.decoding = "async";
-
-            image.addEventListener(
-                "error",
-                () => image.remove(),
-                { once: true }
-            );
-
-            card.appendChild(image);
-        }
-
-        const content = document.createElement("div");
-        content.className = "roomGalleryCardContent";
-
-        const number = document.createElement("div");
-        number.className = "roomGalleryCardNumber";
-        number.textContent =
-            `ROOM ${roomNumberValue(item, index)}`;
-
-        const name = document.createElement("div");
-        name.className = "roomGalleryCardName";
-        name.textContent =
-            roomName(item, index);
-
-        content.appendChild(number);
-        content.appendChild(name);
-        card.appendChild(content);
-
-        card.addEventListener("click", () => {
-            closeRoomGallery();
-            openRoom(index);
-        });
-
-        roomGalleryList.appendChild(card);
-    });
 }
 
 async function loadRooms() {
@@ -5587,8 +7698,6 @@ async function loadRooms() {
             roomGrid.appendChild(card);
         });
 
-        renderRoomGallery();
-
     } catch (error) {
         console.error(
             "ROOM LIST ERROR:",
@@ -5654,10 +7763,11 @@ function openRoom(index) {
     buildRoom(item).catch(error => {
         console.error("ROOM BUILD ERROR:", error);
 
-        setRoomStatus("", false);
-        console.error(
-            "ROOM LOAD FAILED:",
-            error
+        setRoomStatus(
+            `Не удалось загрузить ROOM ${name}.\n\n` +
+            `${error?.message || "Неизвестная ошибка"}\n\n` +
+            `API: ${ROOMS_API}`,
+            true
         );
     });
 }
@@ -5671,42 +7781,16 @@ document
     });
 
 roomBack.addEventListener("click", () => {
-    setRoomStatus("", false);
     showScreen(homeScreen);
 });
 
 roomViewerBack.addEventListener("click", () => {
-    if (!requireAccess()) return;
-    openRoomGallery();
-});
-
-roomGalleryClose.addEventListener("click", () => {
-    closeRoomGallery();
-});
-
-roomMainMenuButton.addEventListener("click", () => {
-    closeRoomGallery();
-
     currentRoom = null;
     ++roomModelLoadToken;
     roomRequestId = null;
-
     disposeRoomModel();
     clearRoomScene();
-
-    setRoomStatus("", false);
-    showScreen(homeScreen);
-});
-
-roomGalleryButton.addEventListener("click", () => {
-    renderRoomGallery();
-    roomGalleryList.style.display = "flex";
-});
-
-window.addEventListener("keydown", event => {
-    if (event.code === "Escape") {
-        closeRoomGallery();
-    }
+    showScreen(roomScreen);
 });
 
 window.addEventListener(
