@@ -1288,7 +1288,7 @@ async function marketBuy(idx, price){
   // ВАЖНО: цену и баланс проверяет GUI, а не браузер.
   try {
     const response=await fetch('/api/game/purchase',{method:'POST',credentials:'same-origin',
-      headers:{'Content-Type':'application/json'},body:JSON.stringify({tile_index:idx,quantity:10})});
+      headers:{'Content-Type':'application/json'},body:JSON.stringify({tile_index:idx,quantity:10,username:window.ROMEROS_UserName?.()||'Гость'})});
     const result=await response.json();
     if(!response.ok)throw Error(result.error||'Покупка отклонена сервером');
     const p=loadProfile();p.coins=Number(result.balance.coins);
@@ -3138,7 +3138,7 @@ async function aiAddResult(){const task=aiState.current;if(!task||task.engine===
  }catch(e){setStatus('Не удалось добавить плитку');console.warn('[bridge]',e)}finally{btn.disabled=false;}
 }
 async function aiWarehouse(){const task=aiState.current;if(!task)return;
- try{const r=await aiJson('/api/game/warehouse',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:task.id,ticket:task.ticket})});
+ try{const r=await aiJson('/api/game/warehouse',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:task.id,ticket:task.ticket,username:window.ROMEROS_UserName?.()||'Гость'})});
  setStatus(r.message||'Сохранено на склад');}catch(e){setStatus('Склад временно недоступен');console.warn('[bridge]',e)}
 }
 $('gameAiFromMarket').onclick=()=>aiOpen('market');
@@ -3550,7 +3550,7 @@ function downloadResult(task){if(!task?.resultUrl)return;const a=document.create
 async function saveModel(action){const task=app.current;if(!task||task.engine!=='meshy')return;
  if(action==='scene'&&window.ROMEROS_GameScene?.importGLB){try{const res=await window.ROMEROS_GameScene.importGLB(task.resultUrl);toast('GLB добавлен в игровую сцену: '+res.parts+' частей');return}catch(e){console.warn('[import scene]',e);toast('Не удалось добавить GLB в сцену');return}}
  if(task.local){toast('Локальная модель: используйте «В сцену», а не серверный склад');return}
- try{await jsonApi('/api/model-action/'+encodeURIComponent(task.id),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ticket:task.ticket,action})});toast(action==='scene'?'Модель сохранена в папку сцены':'Модель сохранена на склад');}
+ try{await jsonApi('/api/model-action/'+encodeURIComponent(task.id),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ticket:task.ticket,action,username:window.ROMEROS_UserName?.()||'Гость'})});toast(action==='scene'?'Модель сохранена в папку сцены':'Модель сохранена на склад');}
  catch(e){errSilent('save model',e)} }
 function getViewer(){if(app.viewer)return app.viewer;
  const node=$('rom13ViewerCanvas');const scene=new THREE.Scene();scene.background=new THREE.Color('#101e30');
