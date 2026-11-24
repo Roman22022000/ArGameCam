@@ -898,18 +898,18 @@ window.addEventListener('unhandledrejection', e => { console.warn('[ROMEROS inte
     <div id="aiPanel" class="modal">
       <div class="actions"><h2 style="flex:1;margin:0">AI-советник</h2><button id="closeAi">Закрыть</button></div>
       <p class="note">Локальный помощник: анализирует вашу историю и предлагает борд, плитки и палитру.</p>
-      <div class="shape-ai"><b>Предпромпт: геометрия плитки</b><div class="shape-options" id="aiShapeOptions"><button data-ai-shape="triangle">△ Треугольник</button><button data-ai-shape="square" class="active">□ Квадрат</button><button data-ai-shape="hexagon">⬡ Шестиугольник</button></div><label>Описание рисунка / фотографии<input id="aiShapeDescription" type="text" maxlength="400" placeholder="Например: резьба по камню, листья, мозаика"></label><button id="aiBuildPrompt">Составить предпромпт</button><button id="aiOpenBoard">Рисовать выбранную форму</button><p class="note">Составьте эскиз и получите варианты узора от языковой модели за 15 монет. Результат можно использовать в генерации текстуры.</p></div>
+      <div class="shape-ai"><b>Предпромпт: геометрия плитки</b><div class="shape-options" id="aiShapeOptions"><button data-ai-shape="triangle">△ Треугольник</button><button data-ai-shape="square" class="active">□ Квадрат</button><button data-ai-shape="hexagon">⬡ Шестиугольник</button></div><label>Описание рисунка / фотографии<input id="aiShapeDescription" type="text" maxlength="400" placeholder="Например: резьба по камню, листья, мозаика"></label><button id="aiBuildPrompt">Составить предпромпт</button><button id="aiOpenBoard">Рисовать выбранную форму</button><p class="note">Составьте эскиз и получите бесплатные варианты узора. Результат можно использовать в генерации текстуры.</p></div>
       <div class="actions">
         <button id="aiIdea">Идея борда</button>
         <button id="aiPalette">Палитра</button>
         <button id="aiTiles">Подбор плиток</button>
       </div>
       <div id="rom22Assist" class="rom22-ai-helper">
-  <label>ИИ-помощник по созданию плитки · 15 монет
+  <label>ИИ-помощник по созданию плитки · бесплатно
     <textarea id="rom22AssistPrompt" maxlength="1000" rows="3" placeholder="Например: предложи 3 варианта симметричной малахитовой плитки с геометрическим узором"></textarea>
   </label>
-  <div class="rom22-control-row"><button id="rom22AssistSend" type="button">✧ Получить варианты · 15 монет</button><button id="rom22AssistToTexture" type="button">Использовать ответ для текстуры</button></div>
-  <p id="rom22AssistStatus" class="note" aria-live="polite">Запрос отправляется в GPT через GUI; при ошибке монеты возвращаются.</p>
+  <div class="rom22-control-row"><button id="rom22AssistSend" type="button">✧ Получить варианты · бесплатно</button><button id="rom22AssistToTexture" type="button">Использовать ответ для текстуры</button></div>
+  <p id="rom22AssistStatus" class="note" aria-live="polite">Запрос отправляется на сервер через GUI. Монеты за ответ не списываются.</p>
   <div id="rom22AssistAnswer" class="rom22-ai-answer" aria-live="polite"></div>
 </div>
 <div id="aiOut" class="aiOut">Нажмите кнопку — совет появится здесь.</div>
@@ -937,7 +937,7 @@ window.addEventListener('unhandledrejection', e => { console.warn('[ROMEROS inte
 <!-- AI BRIDGE: отдельная мастерская заказов. Доступна из рынка и окна рисования. -->
 <div id="gameAiOrderPanel" class="modal game-ai-order" role="dialog" aria-label="Заказ плитки ИИ">
   <div class="actions"><h2 style="flex:1">Генерация плитки · AI</h2><button id="gameAiClose" type="button">Закрыть</button></div>
-  <p class="note">Изображение будет отправлено в ROMEROS GUI. Для генерации списываются игровые монеты сервером. Созданные PNG автоматически можно добавить в коллекцию плиток.</p>
+  <p class="note">Рисунок или фото отправляется в ROMEROS GUI. За генерацию монеты не списываются. Созданный PNG можно добавить в коллекцию плиток.</p>
   <label class="game-ai-field">Источник заявки<select id="gameAiSource"><option value="market">Магазин · новая плитка</option><option value="drawing">Редактор · улучшить мой рисунок</option></select></label>
   <label class="game-ai-field">Модель<select id="gameAiEngine"><option value="gpt">GPT Image / API</option><option value="sd15">Stable Diffusion 1.5 / NVIDIA</option><option value="meshy">Meshy 3D / GLB</option></select></label>
   <label class="game-ai-field">Размер / качество<select id="gameAiQuality"><option value="standard">512 × 512 · стандарт</option><option value="high">1000 × 1000 · высокое</option></select></label>
@@ -3037,7 +3037,7 @@ document.querySelectorAll('[data-market-shape]').forEach(b=>b.onclick=()=>{
   Источник: market / drawing; размер standard 512 / high 1000.
   Изображение из редактора отправляется как multipart photo PNG.
   ============================================================ */
-const aiState={prices:{},wallet:null,source:'market',drawingBlob:null,tasks:[],current:null,pricesReady:false};
+const aiState={prices:{},wallet:null,source:'market',drawingBlob:null,tasks:[],current:null,pricesReady:true};
 // Прайс не кешируем локально: backend — единственный источник истины.
 const aiStages=['received','prepared','sent','waiting','delivered'];
 const aiStageLabels=['Загрузка','Обработка','Отправка','Ожидание','Выдача'];
@@ -3046,12 +3046,13 @@ async function aiJson(url,options){const r=await fetch(url,{credentials:'same-or
 async function aiReloadWallet(){const wallet=await aiJson('/api/wallet');aiState.wallet=wallet;
   const p=loadProfile();p.coins=Number(wallet.coins||0);saveProfile(p);addCoinsView();
   $('gameAiBalance').textContent='Монеты: '+aiFmt(wallet.coins);aiUpdatePrice();return wallet;}
-async function aiReloadPrices(){aiState.pricesReady=false;aiUpdatePrice();const obj=await aiJson('/api/prices');if(!obj.coin_prices)throw Error('Missing server coin prices');aiState.prices=obj.coin_prices;aiState.baseFee=Number(obj.base_fee||0);aiState.generationPrices=obj.generation_prices||{};aiState.pricesReady=true;aiUpdatePrice();}
-function aiUpdatePrice(){const engine=$('gameAiEngine').value,quality=$('gameAiQuality').value;
-  const q=engine==='meshy'?'high':quality;const cost=aiState.prices[engine]?.[q];
-  $('gameAiCost').textContent=!aiState.pricesReady||!Number.isInteger(cost)?'Подключаем сервер…':'Генерация бесплатна · до 10 запросов в сутки на имя';
-  $('gameAiSubmit').disabled=!aiState.pricesReady||!Number.isInteger(cost);
-  const meshy=engine==='meshy';$('gameAiQuality').disabled=meshy;
+// Генерация бесплатна: состояние интерфейса не зависит от GET /api/prices.
+async function aiReloadPrices(){aiState.pricesReady=true;aiUpdatePrice()}
+function aiUpdatePrice(){
+  $('gameAiCost').textContent='Бесплатно · до 10 запросов в сутки на имя';
+  $('gameAiBalance').textContent='Без списания монет';
+  $('gameAiSubmit').disabled=false;
+  const meshy=$('gameAiEngine').value==='meshy';$('gameAiQuality').disabled=meshy;
 }
 async function aiDrawingBlob(){const source=$('drawCanvas');const square=document.createElement('canvas');square.width=square.height=1024;square.getContext('2d').drawImage(source,0,0,1024,1024);return canvasToBlob(square,'image/png')}
 async function aiOpen(source){aiState.source=source;
@@ -3062,7 +3063,7 @@ async function aiOpen(source){aiState.source=source;
     $('gameAiPrompt').value=$('aiShapeDescription')?.value||'Улучши художественный рисунок плитки, сохрани исходную композицию и цвета';
   }else{aiState.drawingBlob=null;$('gameAiAttachment').textContent='Без вложения';}
   openModal('gameAiOrderPanel');
-  try{await aiReloadPrices();aiReloadWallet().catch(e=>console.warn('[wallet]',e));}catch(e){$('gameAiCost').textContent='Сервис временно недоступен';console.warn('[bridge]',e);}
+  aiUpdatePrice();
 }
 function aiRoad(task){const el=document.createElement('div');el.className='game-ai-task';el.dataset.job=task.id;
   const head=document.createElement('div');head.textContent=`${task.engine.toUpperCase()} · #${task.id.slice(0,8)}`;
@@ -3087,11 +3088,11 @@ async function aiPoll(task){for(;;){try{
       task.resultUrl=job.result_url;task.status='done';task.engine=job.engine;task.price=Number(job.price??task.price);window.dispatchEvent(new CustomEvent('romeros:generated',{detail:{...task}}));
       // ОДНО событие на генерацию: предотвращаем дублирующий архив GLB.
       if(job.result_url){task.ui.note.textContent='Готово · бесплатно'; const b=document.createElement('button');b.textContent='Посмотреть результат';b.onclick=()=>aiShow(task);task.ui.el.append(b);}
-      await aiReloadWallet().catch(e=>console.warn('[wallet]',e));return;
+      return;
     }
     if(job.status==='error'){
       task.status='error';task.ui.note.textContent='Не удалось завершить генерацию';
-      await aiReloadWallet().catch(e=>console.warn('[wallet]',e));return;
+      return;
     }
   }catch(e){task.ui.note.textContent='Восстанавливаем соединение…';console.warn('[bridge]',e);}
   await new Promise(resolve=>setTimeout(resolve,2300));
@@ -3099,20 +3100,20 @@ async function aiPoll(task){for(;;){try{
 async function aiSubmit(){const btn=$('gameAiSubmit');if(btn.disabled)return;
  const prompt=$('gameAiPrompt').value.trim(),engine=$('gameAiEngine').value,quality=$('gameAiQuality').value;
  if(!prompt||prompt.length>1000){setStatus('Введите описание плитки до 1000 символов');return;}
- const effectiveQuality=engine==='meshy'?'high':quality;const price=aiState.prices[engine]?.[effectiveQuality];if(!aiState.pricesReady||!Number.isInteger(price)){setStatus('Сервер генерации пока недоступен');return;}
+ const effectiveQuality=engine==='meshy'?'high':quality; // генерация бесплатна; наличие прайса для отправки не требуется.
  const f=$('gameAiPhoto').files[0];
  let blob=aiState.drawingBlob;
  try{if(f)blob=await window.ROMEROS_Image.squarePhoto(f,8192)}
  catch(e){setStatus('Фото нельзя подготовить для сервера');console.warn('[square image]',e);return}
  if(blob&&blob.size>window.ROMEROS_Image.MAX_POST){setStatus('Вложение превышает 20 МиБ');return;}
  const data=new FormData();data.append('engine',engine);data.append('quality',effectiveQuality);
- data.append('currency','coins');data.append('source',aiState.source);data.append('tile_shape',selectedTileShape);data.append('username',window.ROMEROS_UserName());
+ data.append('source',aiState.source);data.append('tile_shape',selectedTileShape);data.append('username',window.ROMEROS_UserName());
  data.append('prompt',prompt);if(blob)data.append('photo',blob,'tile_square.'+(blob.type==='image/png'?'png':blob.type==='image/jpeg'?'jpg':'webp'));
  btn.disabled=true;btn.textContent='Отправка…';
  try{const reply=await aiJson('/api/generate',{method:'POST',body:data});
    const task={id:reply.id,ticket:reply.ticket,engine,quality:effectiveQuality,source:aiState.source,price:Number(reply.price),status:'running',resultUrl:''};
-   aiState.tasks.unshift(task);task.ui=aiRoad(task);task.ui.note.textContent='Сервер принял бесплатный запрос. Обработка…';aiPoll(task);aiReloadWallet().catch(e=>console.warn('[wallet]',e));
-   historyPush('aiOrder',{id:reply.id,engine,quality,source:aiState.source,price:reply.price});
+   aiState.tasks.unshift(task);task.ui=aiRoad(task);task.ui.note.textContent='Сервер принял бесплатный запрос. Обработка…';aiPoll(task);
+   historyPush('aiOrder',{id:reply.id,engine,quality,source:aiState.source,price:0});
  }catch(e){setStatus('Не удалось отправить заявку');console.warn('[bridge]',e);}
  finally{btn.disabled=false;btn.textContent='Отправить запрос →';}
 }
@@ -3449,7 +3450,7 @@ window.addEventListener('load',()=>{
 <script type="module">/*
  ROMEROS v13 — отдельное расширение сайта. В GUI не загружаются скрипты сайта.
  Сайт -> POST /api/generate -> poll /api/status -> GET /api/result (PNG/GLB).
- Сервер: принимает цену и списывает монеты самостоятельно; API keys не хранятся здесь.
+ Сервер принимает заявку и возвращает результат; генерация бесплатна, API keys не хранятся на сайте.
 */
 import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
@@ -3460,18 +3461,18 @@ const stages=['received','prepared','sent','waiting','delivered'];
 const labels=['Загрузка','Обработка','Отправка','Ожидание','Выдача'];
 const app={tasks:[],prices:{},pricesReady:false,current:null,viewer:null};
 function toast(message){const x=$('rom13Toast');x.textContent=message;x.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>x.hidden=true,3800)}
-function open(id){document.querySelectorAll('.modal.open').forEach(n=>n.classList.remove('open'));$(id).classList.add('open');if(id==='rom13TexturePanel'||id==='rom13ModelPanel')loadPrices().catch(e=>{console.warn('[pricing]',e);toast('Сервер цен временно недоступен')})}
+function open(id){document.querySelectorAll('.modal.open').forEach(n=>n.classList.remove('open'));$(id).classList.add('open');if(id==='rom13TexturePanel'||id==='rom13ModelPanel')paintPrices()}
 function close(id){$(id).classList.remove('open')}
 const errSilent=(label,error)=>{console.warn('[ROMEROS v13]',label,error);toast('Операция временно недоступна')};
 async function jsonApi(url,opts){const r=await fetch(url,{credentials:'same-origin',cache:'no-store',...opts});if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}
-async function loadPrices(){app.pricesReady=false;paintPrices();const data=await jsonApi('/api/prices');if(!data.coin_prices)throw Error('Server coin price list missing');app.prices=data.coin_prices;app.baseFee=Number(data.base_fee||0);app.generationPrices=data.generation_prices||{};app.pricesReady=true;paintPrices();return app.prices}
-function priceOf(engine,quality){const q=engine==='meshy'?'high':quality;const price=app.prices[engine]?.[q];return app.pricesReady&&Number.isInteger(price)?price:null}
+// Генерация фиксированно бесплатна; GET /api/prices не блокирует POST-заявку.
+async function loadPrices(){app.pricesReady=true;app.prices={sd15:{standard:0,high:0},gpt:{standard:0,high:0},meshy:{high:0}};app.baseFee=0;paintPrices();return app.prices}
+function priceOf(engine,quality){return 0}
 function paintPrices(){
- const engine=$('rom13TextureEngine').value,quality=$('rom13TextureQuality').value,price=priceOf(engine,quality),model=priceOf('meshy','high');
- $('rom13TexturePrice').textContent=price==null?'Подключаем GUI…':`Бесплатно · до 10 запросов в сутки · ${quality==='standard'?'512×512':'1000×1000'}`;
- $('rom13ModelPrice').textContent=model==null?'Подключаем GUI…':'Бесплатно · до 10 запросов в сутки · 3D GLB';
- $('rom13TextureSend').disabled=price==null;
- $('rom13ModelSend').disabled=model==null;
+ const quality=$('rom13TextureQuality').value;
+ $('rom13TexturePrice').textContent=`Бесплатно · до 10 запросов в сутки · ${quality==='standard'?'512×512':'1000×1000'}`;
+ $('rom13ModelPrice').textContent='Бесплатно · до 10 запросов в сутки · 3D GLB';
+ $('rom13TextureSend').disabled=false;$('rom13ModelSend').disabled=false;
 }
 
 function bindClick(id,fn){$(id).addEventListener('click',fn)}
@@ -3516,17 +3517,15 @@ async function monitor(task){for(let i=0;i<900;i++){try{const s=await jsonApi('/
  task.ui.detail.textContent='Ожидание продлено · проверьте позже';}
 async function submit(engine,prompt,quality,input,source,shape,polycount,isDrawing,container,button){if(button.disabled)return;
  prompt=prompt.trim();if(!prompt||prompt.length>(engine==='meshy'?800:1000)){toast('Укажите описание');return}
- // Проверка серверного прайса перед отправкой. Клиент НЕ передаёт цену в POST.
- let price=priceOf(engine,quality);if(price===null){try{await loadPrices();price=priceOf(engine,quality)}catch(e){errSilent('price',e);return}}
- if(price===null){toast('Цена не подтверждена сервером');return}
+ // Бесплатная генерация: отправляем POST напрямую, без прайса и проверки баланса.
  let photo=null;try{photo=await photoFor(input,isDrawing)}catch(e){toast('Изображение: PNG/JPG/WebP, исходник до 50 МиБ');console.warn(e);return}
- const data=new FormData();data.append('engine',engine);data.append('prompt',prompt);data.append('quality',quality);data.append('source',source);data.append('currency','coins');data.append('tile_shape',shape||'square');data.append('username',window.ROMEROS_UserName?.()||'Гость');
+ const data=new FormData();data.append('engine',engine);data.append('prompt',prompt);data.append('quality',quality);data.append('source',source);data.append('tile_shape',shape||'square');data.append('username',window.ROMEROS_UserName?.()||'Гость');
  if(polycount)data.append('target_polycount',String(polycount));
  if(photo)data.append('photo',photo.blob,photo.type==='image/png'?'art.png':photo.type==='image/jpeg'?'art.jpg':'art.webp');
  button.disabled=true;button.textContent='Отправка…';
  try{const result=await jsonApi('/api/generate',{method:'POST',body:data});const task={id:result.id,ticket:result.ticket,engine,quality,source,price:Number(result.price),status:'running',resultUrl:''};
  app.tasks.unshift(task);stepsRow(task,container);task.ui.detail.textContent='GUI принял бесплатный запрос';toast(`Заявка принята`);monitor(task);
- window.ROMEROS_GameAI?.refreshWallet?.().catch(()=>{});
+ // Генерация бесплатна, поэтому обновление кошелька не требуется.
  }catch(e){errSilent('submit',e)}finally{button.disabled=false;button.textContent=engine==='meshy'?'Создать 3D-модель':'Сгенерировать текстуру'}
 }
 function showHistory(){open('rom13ModelPanel');$('rom13ModelTasks').scrollIntoView({block:'nearest',behavior:'smooth'});toast('История текущего сеанса находится в окнах заявок')}
@@ -3583,7 +3582,7 @@ function openViewer(task){app.current=task;window.dispatchEvent(new CustomEvent(
 // Interfaces for future game integration.
 window.ROMEROS_Extra={openModel:()=>open('rom13ModelPanel'),openTexture:()=>open('rom13TexturePanel'),viewGLB:openViewer,orders:()=>app.tasks,exportDrawing:drawingBlob};
 // DOM module executes after main game modules; defer one tick so the dock is assembled.
-requestAnimationFrame(()=>{appendDock();bindForms();loadPrices().catch(e=>{console.warn('[prices]',e);toast('Цены будут доступны после запуска GUI')})});
+requestAnimationFrame(()=>{appendDock();bindForms();paintPrices()});
 </script>
 
 <!-- ===== ROMEROS v14: МЕНЮ, СЦЕНЫ, НАСТРОЙКИ И ИНСТРУМЕНТЫ ===== -->
@@ -3623,7 +3622,7 @@ function panel(title,intro,content){openMenu(title,`<p>${intro}</p>${content}`)}
 async function walletData(){const r=await fetch('/api/wallet',{credentials:'same-origin'});if(!r.ok)throw new Error('wallet');return r.json()}
 function profile(){panel('Профиль','Ваши настройки и прогресс сохраняются в браузере. Баланс берётся из GUI.',cards([
  ['Профиль игры','Имя, сохранения и история','Открыть','profile'],['Архив','Сохранённые модели','Открыть','archive'],['Мои плитки','Коллекция и установка в сцену','Коллекция','tiles'],['Кошелёк','Игровой баланс GUI','Проверить','wallet']]));attach({profile:()=>gameClick('menuProfile'),archive:()=>window.ROMEROS_Workspace?.openArchive(),tiles:()=>{closeMenu();byId('tiles')?.scrollIntoView({behavior:'smooth'})},wallet})}
-function wallet(){panel('Кошелёк','Баланс хранится на сервере. Генерация и покупка списываются только через GUI.',`<div id="rom14Wallet">Загрузка баланса…</div><div class="rom14-actions"><button id="rom14WalletReload">Обновить</button><button id="rom14WalletMarket">Открыть магазин</button></div>`);bind('rom14WalletReload',refreshWallet);bind('rom14WalletMarket',shop);refreshWallet()}
+function wallet(){panel('Кошелёк','Баланс хранится на сервере. Генерация текстур и 3D-моделей бесплатна.',`<div id="rom14Wallet">Загрузка баланса…</div><div class="rom14-actions"><button id="rom14WalletReload">Обновить</button><button id="rom14WalletMarket">Открыть магазин</button></div>`);bind('rom14WalletReload',refreshWallet);bind('rom14WalletMarket',shop);refreshWallet()}
 async function refreshWallet(){try{const w=await walletData();const f=v=>Number(v||0).toLocaleString('ru-RU');byId('rom14Wallet').innerHTML=`<div class="rom14-grid"><div class="rom14-tile"><b>Монеты</b><strong>${f(w.coins)}</strong></div><div class="rom14-tile"><b>Кристаллы</b><strong>${f(w.crystals)}</strong></div><div class="rom14-tile"><b>Изумруды</b><strong>${f(w.emeralds)}</strong></div></div>`;byId('headerCoins').textContent='◈ '+f(w.coins)}catch(e){console.warn('[wallet]',e);notify('Баланс временно недоступен')}}
 function shop(){panel('Магазин / Рынок','Товарные карточки покупаются в GUI. NFT и реальные платежи не подключены.',cards([
  ['Плитка','Покупка набора плиток ×10 за монеты','К плиткам','tiles'],['Глина','Лепка — встроенный инструмент; пополнение пока локальное','Лепка','clay'],['NFT','Демонстрационный раздел без блокчейн-транзакций','Просмотр','nft'],['3D-модели','По тексту или фото → GLB','Создать','model'],['Билеты','Доступ в игровые зоны (локальный прототип)','Билеты','tickets'],['AI-текстура','Рисунок или фото → генерация','Купить','texture']
@@ -3842,7 +3841,7 @@ window.ROMEROS_Workspace={openArchive,archiveTask,showTask,sceneBounds:{width:10
     <label>Описание для AI<textarea id="rom16Prompt" maxlength="800" placeholder="Доработать узор: малахит, янтарные прожилки, гжель…"></textarea></label>
     <label>Размер подготовленного квадратного эскиза<select id="rom16ExportSize"><option value="1024">1024 × 1024</option><option value="2048" selected>2048 × 2048</option><option value="4096">4096 × 4096</option><option value="8192">8192 × 8192 · ПК</option></select></label>
     <div class="rom16-buttons"><button id="rom16Save">Сохранить рисунок</button><button id="rom16Download">Скачать PNG</button><button id="rom16ExportProject">Проект JSON</button><button id="rom16ImportProject">Открыть JSON</button></div>
-    <div class="rom16-buttons rom16-primary-actions"><button id="rom22PatternIdeas" type="button">✧ Варианты узора · 15 монет</button><button id="rom16ToTexture">✧ Доработать текстуру</button><button id="rom16ToModel">⬡ Создать 3D-плитку</button></div>
+    <div class="rom16-buttons rom16-primary-actions"><button id="rom22PatternIdeas" type="button">✧ Варианты узора · бесплатно</button><button id="rom16ToTexture">✧ Доработать текстуру</button><button id="rom16ToModel">⬡ Создать 3D-плитку</button></div>
     <small>Изображение преобразуется в квадрат и сжимается до 20 МиБ для GUI (8192×8192 на ПК, на мобильных лучше 4096×4096). Облачные генераторы требуют подключения сервера и оплачиваются по его прайсу.</small>
    </div>
   </div>
@@ -3966,35 +3965,25 @@ render();updateControls();if(document.readyState==='loading')document.addEventLi
 
 <!-- v20: доступный игроку тариф. Стоимость подтверждается API /api/prices, а не вычисляется для списания в браузере. -->
 <div id="rom20Tariff" class="rom20-tariff" hidden role="dialog" aria-label="Тарифы AI">
-  <div class="rom20-tariff-head"><strong>Тарифы генерации · монеты</strong><button id="rom20TariffClose" type="button">Закрыть</button></div>
-  <p>За каждый запрос списывается 1000 монет + стоимость выбранной генерации. Итог подтверждает GUI до обработки.</p>
+  <div class="rom20-tariff-head"><strong>Бесплатная генерация</strong><button id="rom20TariffClose" type="button">Закрыть</button></div>
+  <p>Генерация текстур и 3D-моделей бесплатна. До 10 заявок в сутки на имя пользователя.</p>
   <div id="rom20TariffList"></div>
   <div class="rom20-tariff-actions"><button id="rom20TariffTexture">Создать текстуру</button><button id="rom20TariffModel">Создать 3D</button></div>
-  <p id="rom20TariffBalance" class="rom20-hint">Загрузка баланса…</p>
+  <p id="rom20TariffBalance" class="rom20-hint">Генерация без игровых монет</p>
 </div>
 <script type="module">/* ROMEROS PLITKA v20: one server price, dynamic UI and direct old-GLB import. */
 const $=id=>document.getElementById(id);
 const format=n=>Number(n||0).toLocaleString('ru-RU');
 const name={sd15:'SD 1.5 — текстура',gpt:'GPT Image — текстура',meshy:'Meshy — GLB'};
-async function openTariff(){
+function openTariff(){
  const node=$('rom20Tariff');node.hidden=false;
- const list=$('rom20TariffList');list.textContent='Читаем актуальные цены GUI…';
- try{
-  const [prices,wallet]=await Promise.all([
-   fetch('/api/prices',{credentials:'same-origin',cache:'no-store'}).then(r=>{if(!r.ok)throw Error('prices');return r.json()}),
-   fetch('/api/wallet',{credentials:'same-origin',cache:'no-store'}).then(r=>{if(!r.ok)throw Error('wallet');return r.json()})
-  ]);
-  if(!prices.coin_prices)throw Error('no coin prices');
-  const fee=Number(prices.base_fee||0),rows=[];
-  for(const engine of ['sd15','gpt','meshy'])for(const q of (engine==='meshy'?['high']:['standard','high'])){
-   const total=Number(prices.coin_prices[engine]?.[q]);if(!Number.isFinite(total))continue;
-   const div=document.createElement('div');div.className='rom20-tariff-row';
-   const label=document.createElement('span');label.textContent=name[engine]+' · '+(engine==='meshy'?'GLB':q==='standard'?'512²':'1000²');
-   const value=document.createElement('b');value.textContent='Бесплатно';
-   div.append(label,value);rows.push(div);
-  }
-  list.replaceChildren(...rows);$('rom20TariffBalance').textContent='Генерация без игровых монет';
- }catch(error){console.warn('[tariffs]',error);list.textContent='Цены недоступны — генерация будет заблокирована до подключения GUI';}
+ const list=$('rom20TariffList'),rows=[];
+ for(const engine of ['sd15','gpt','meshy'])for(const q of (engine==='meshy'?['high']:['standard','high'])){
+  const div=document.createElement('div');div.className='rom20-tariff-row';
+  const label=document.createElement('span');label.textContent=name[engine]+' · '+(engine==='meshy'?'GLB':q==='standard'?'512²':'1000²');
+  const value=document.createElement('b');value.textContent='Бесплатно';div.append(label,value);rows.push(div);
+ }
+ list.replaceChildren(...rows);$('rom20TariffBalance').textContent='Генерация без игровых монет';
 }
 function addDockButtons(){
  const dock=$('dockScroller')||$('bottomDock');if(!dock)return;
