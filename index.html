@@ -1,44 +1,62 @@
 <!doctype html>
 <html lang="ru">
 <head>
-<script>/* Routes the existing GitHub Pages API calls to the HTTPS relay. */
+<script>
+/* ROMEROS API v25 — единая транспортная функция для всех окон игры.
+   Cloudflare HTTPS :443 -> Flask 127.0.0.1:3467.
+   POST не зависит от проверки баланса или доступности /api/health. */
 (() => {
   'use strict';
-  const script = document.currentScript;
-  const relay = new URL(script?.dataset.relay || 'https://api.araicameragame.party');
-  if (relay.protocol !== 'https:') throw new Error('ROMEROS relay must use HTTPS');
-  const localOrigin = location.origin;
-  const local = ['127.0.0.1', 'localhost'].includes(location.hostname) && location.port === '3467';
-  const apiOrigin = local ? localOrigin : relay.origin;
-  const fetchOriginal = window.fetch.bind(window);
-
-  function relayUrl(input) {
-    const url = new URL(input, location.href);
-    if (!url.pathname.startsWith('/api/') && !url.pathname.startsWith('/viewer/')) return null;
-    if (url.origin === apiOrigin) return url.href;
-    if (url.origin !== localOrigin) return null;
-    return new URL(url.pathname + url.search, apiOrigin).href;
+  const PUBLIC_API = 'https://api.araicameragame.party';
+  const local = ['127.0.0.1','localhost'].includes(location.hostname) && location.port === '3467';
+  const API = local ? location.origin : PUBLIC_API;
+  const nativeFetch = window.fetch.bind(window);
+  function route(input) {
+    const u = new URL(input, location.href);
+    if (!/^\/(api|viewer)\//.test(u.pathname)) return null;
+    if (![location.origin, PUBLIC_API, API].includes(u.origin) && !['127.0.0.1','localhost'].includes(u.hostname)) return null;
+    return new URL(u.pathname + u.search, API).href;
   }
-
-  window.ROMEROS_REMOTE_API = apiOrigin;
-  window.ROMEROS_RemoteURL = (url) => relayUrl(url) || url;
-  window.ROMEROS_DownloadURL = (input) => {
-    const url = new URL(window.ROMEROS_RemoteURL(input), location.href);
-    if (url.origin === apiOrigin && url.pathname.startsWith('/api/result/')) {
-      url.searchParams.set('download', '1');
-    }
-    return url.href;
+  window.ROMEROS_REMOTE_API = API;
+  window.ROMEROS_RemoteURL = u => route(u) || u;
+  window.ROMEROS_DownloadURL = input => {
+    const u = new URL(window.ROMEROS_RemoteURL(input), location.href);
+    if (u.origin === API && u.pathname.startsWith('/api/result/')) u.searchParams.set('download','1');
+    return u.href;
   };
-  window.fetch = (input, options) => {
-    const original = input instanceof Request ? input.url : input;
-    let target;
-    try { target = relayUrl(original); } catch { return fetchOriginal(input, options); }
-    if (!target) return fetchOriginal(input, options);
-
-    if (input instanceof Request) {
-      return fetchOriginal(new Request(target, input), { ...options, credentials: 'include' });
-    }
-    return fetchOriginal(target, { ...options, credentials: 'include' });
+  window.fetch = async (input, options={}) => {
+    const raw = input instanceof Request ? input.url : input;
+    let target; try { target = route(raw); } catch { return nativeFetch(input,options); }
+    if (!target) return nativeFetch(input,options);
+    const method = String(options.method || (input instanceof Request ? input.method : 'GET')).toUpperCase();
+    const signal = options.signal || (input instanceof Request ? input.signal : undefined);
+    const controller = new AbortController();
+    const cancel = () => controller.abort();
+    if(signal?.aborted) cancel(); else signal?.addEventListener('abort',cancel,{once:true});
+    const timer = setTimeout(cancel, method === 'POST' ? 180000 : 90000);
+    try {
+      const opts = {...options, credentials:'include', cache:'no-store', signal:controller.signal};
+      // FormData: браузер сам добавляет multipart boundary. Не задавать Content-Type вручную.
+      return await nativeFetch(input instanceof Request ? new Request(target,input) : target,opts);
+    } catch(e) {
+      const path = new URL(target).pathname;
+      throw new Error(controller.signal.aborted ? `Тайм-аут ${method} ${path}. POST мог быть принят; проверьте входящие GUI.` : `Нет HTTP-ответа от ${API}${path}. Проверьте DNS, туннель и CORS.`);
+    } finally { clearTimeout(timer); signal?.removeEventListener('abort',cancel); }
+  };
+  // Одинаковая обработка JSON и ошибок для всех существующих AI-панелей.
+  window.ROMEROS_API_JSON = async (url,opts={}) => {
+    const r = await window.fetch(url,opts);
+    let obj;
+    try { obj = await r.json(); } catch { throw new Error(`HTTP ${r.status}: API вернул не JSON. Проверьте маршрут Cloudflare.`); }
+    if (!r.ok) throw new Error(`HTTP ${r.status}: ${obj.error || obj.message || 'Ошибка сервера'}`);
+    if (new URL(url,location.href).pathname === '/api/generate' && (!obj.id || !obj.ticket)) throw new Error('Сервер не вернул ID и билет заявки');
+    if (obj.result_url) obj.result_url = window.ROMEROS_RemoteURL(obj.result_url);
+    return obj;
+  };
+  window.ROMEROS_CheckAPI = async () => {
+    const data = await window.ROMEROS_API_JSON('/api/health');
+    if(data.status !== 'online') throw new Error('Flask не подтвердил статус online');
+    return data;
   };
 })();
 </script>
@@ -3042,7 +3060,7 @@ const aiState={prices:{},wallet:null,source:'market',drawingBlob:null,tasks:[],c
 const aiStages=['received','prepared','sent','waiting','delivered'];
 const aiStageLabels=['Загрузка','Обработка','Отправка','Ожидание','Выдача'];
 function aiFmt(n){return Number(n||0).toLocaleString('ru-RU')}
-async function aiJson(url,options){const r=await fetch(url,{credentials:'same-origin',cache:'no-store',...options});const obj=await r.json();if(!r.ok)throw Error(obj.error||obj.message||`HTTP ${r.status}`);return obj}
+async function aiJson(url,opts={}){return window.ROMEROS_API_JSON(url,opts)}
 async function aiReloadWallet(){const wallet=await aiJson('/api/wallet');aiState.wallet=wallet;
   const p=loadProfile();p.coins=Number(wallet.coins||0);saveProfile(p);addCoinsView();
   $('gameAiBalance').textContent='Монеты: '+aiFmt(wallet.coins);aiUpdatePrice();return wallet;}
@@ -3114,7 +3132,7 @@ async function aiSubmit(){const btn=$('gameAiSubmit');if(btn.disabled)return;
    const task={id:reply.id,ticket:reply.ticket,engine,quality:effectiveQuality,source:aiState.source,price:Number(reply.price),status:'running',resultUrl:''};
    aiState.tasks.unshift(task);task.ui=aiRoad(task);task.ui.note.textContent='Сервер принял бесплатный запрос. Обработка…';aiPoll(task);
    historyPush('aiOrder',{id:reply.id,engine,quality,source:aiState.source,price:0});
- }catch(e){setStatus('Не удалось отправить заявку');console.warn('[bridge]',e);}
+ }catch(e){setStatus(e.message);console.warn('[bridge]',e);}
  finally{btn.disabled=false;btn.textContent='Отправить запрос →';}
 }
 function aiShow(task){aiState.current=task;openModal('gameAiPreviewPanel');
@@ -3159,7 +3177,7 @@ $('gameAiDownload').onclick=()=>{const t=aiState.current;if(!t)return;const a=do
 window.ROMEROS_GameAI={open:aiOpen,submit:aiSubmit,show:aiShow,refreshWallet:aiReloadWallet,getTasks:()=>aiState.tasks};
 // v16: permit the separate pattern editor to store textures in the EXISTING game tile collection.
 window.ROMEROS_GameAI.addTileBlob=(blob,name)=>registerCustomTile(blob,name);
-aiReloadWallet().catch(()=>{});
+// Кошелёк не требуется для запуска генерации.
 document.addEventListener('contextmenu',e=>e.preventDefault());document.addEventListener('dragstart',e=>{if(e.target instanceof HTMLImageElement)e.preventDefault()});
 /* =============================================================
   SCULPT v5 — Управление объектами и историей. Упрощение применяется
@@ -3463,8 +3481,8 @@ const app={tasks:[],prices:{},pricesReady:false,current:null,viewer:null};
 function toast(message){const x=$('rom13Toast');x.textContent=message;x.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>x.hidden=true,3800)}
 function open(id){document.querySelectorAll('.modal.open').forEach(n=>n.classList.remove('open'));$(id).classList.add('open');if(id==='rom13TexturePanel'||id==='rom13ModelPanel')paintPrices()}
 function close(id){$(id).classList.remove('open')}
-const errSilent=(label,error)=>{console.warn('[ROMEROS v13]',label,error);toast('Операция временно недоступна')};
-async function jsonApi(url,opts){const r=await fetch(url,{credentials:'same-origin',cache:'no-store',...opts});if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}
+const errSilent=(label,error)=>{console.warn('[ROMEROS v13]',label,error);toast(error.message || 'Операция временно недоступна')};
+async function jsonApi(url,opts={}){return window.ROMEROS_API_JSON(url,opts)}
 // Генерация фиксированно бесплатна; GET /api/prices не блокирует POST-заявку.
 async function loadPrices(){app.pricesReady=true;app.prices={sd15:{standard:0,high:0},gpt:{standard:0,high:0},meshy:{high:0}};app.baseFee=0;paintPrices();return app.prices}
 function priceOf(engine,quality){return 0}
@@ -4073,8 +4091,8 @@ window.addEventListener('load',()=>requestAnimationFrame(init),{once:true});
 const $=id=>document.getElementById(id);
 function note(text){const n=$('rom14Notice');if(!n)return;n.textContent=text;n.hidden=false;clearTimeout(note.timer);note.timer=setTimeout(()=>n.hidden=true,3800)}
 const fmt=n=>Number(n||0).toLocaleString('ru-RU');
-async function json(url,opts={}){const r=await fetch(url,{credentials:'same-origin',cache:'no-store',...opts});let obj={};try{obj=await r.json()}catch{}if(!r.ok)throw new Error(obj.error||'Сервис временно недоступен');return obj}
-async function wallet(){try{const data=await json('/api/wallet');if($('headerCoins'))$('headerCoins').textContent='◈ '+fmt(data.coins);if($('coinsView'))$('coinsView').textContent=fmt(data.coins);if($('gameAiBalance'))$('gameAiBalance').textContent='Без монет';return data}catch(e){console.warn('[wallet]',e);note('Нет соединения с GUI. Проверьте запуск сервера.');return null}}
+async function json(url,opts={}){return window.ROMEROS_API_JSON(url,opts)}
+async function wallet(){try{const data=await json('/api/wallet');if($('headerCoins'))$('headerCoins').textContent='◈ '+fmt(data.coins);if($('coinsView'))$('coinsView').textContent=fmt(data.coins);if($('gameAiBalance'))$('gameAiBalance').textContent='Без монет';return data}catch(e){console.warn('[wallet]',e);return null}}
 function tilePanel(){window.ROMEROS_TileEdit?.open()}
 function createBtn(parent,id,label,fn){if($(id))return $(id);const b=document.createElement('button');b.type='button';b.id=id;b.className='rom14-button';b.textContent=label;b.addEventListener('click',fn);parent.append(b);return b}
 function setupTile(){
@@ -4108,8 +4126,8 @@ function setupAssistant(){
   btn.disabled=true;status.textContent='Запрос отправляется в GUI…';out.textContent='';
   try{
    const result=await json('/api/ai/assist',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({topic:'tile',prompt,tile_shape:document.querySelector('[data-ai-shape].active')?.dataset.aiShape||'square',username:window.ROMEROS_UserName?.()||'Гость'})});
-   out.textContent=result.answer||'Ответ пуст';status.textContent='Готово · бесплатно';await wallet();
-  }catch(e){console.warn('[AI assistant]',e);status.textContent='Не удалось получить ответ. Повторите запрос позже.';await wallet()}
+   out.textContent=result.answer||'Ответ пуст';status.textContent='Готово · бесплатно';
+  }catch(e){console.warn('[AI assistant]',e);status.textContent=e.message; }
   finally{btn.disabled=false}
  });
  $('rom22AssistToTexture')?.addEventListener('click',()=>{
@@ -4157,7 +4175,7 @@ function setupShop(){
  const obs=new MutationObserver(()=>{if(market.classList.contains('open'))wallet()});obs.observe(market,{attributes:true,attributeFilter:['class']});
  const tabsRow=market.querySelector('.menu-tabs');if(tabsRow){tabsRow.setAttribute('role','tablist');tabsRow.querySelectorAll('button').forEach(x=>x.setAttribute('role','tab'))}
 }
-function init(){setupTile();setupTileLibrary();setupAssistant();setupShop();setupCircularDock();wallet();window.addEventListener('romeros:generated',wallet);}
+function init(){setupTile();setupTileLibrary();setupAssistant();setupShop();setupCircularDock(); /* Кошелёк загружается только при открытии магазина, не блокирует AI. */}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>requestAnimationFrame(init));else requestAnimationFrame(init);
 window.ROMEROS_V22={wallet,tilePanel};
 })();
@@ -4203,6 +4221,20 @@ window.ROMEROS_V22={wallet,tilePanel};
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
+</script>
+<script>
+/* Диагностика API в нижнем меню. Никакой генерации при проверке. */
+window.addEventListener('load',()=>{
+ const dock=document.getElementById('dockScroller'); if(!dock)return;
+ const button=document.createElement('button');button.type='button';button.className='rom14-button';button.textContent='API · Проверка';dock.append(button);
+ const panel=document.createElement('section');panel.className='modal';panel.style.zIndex='260';
+ const title=document.createElement('h2');title.textContent='Подключение Flask / Cloudflare';
+ const text=document.createElement('pre');text.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;user-select:text;font-size:12px';
+ const link=document.createElement('a');link.href=window.ROMEROS_REMOTE_API+'/api/health';link.target='_blank';link.rel='noopener';link.textContent='Открыть /api/health напрямую';link.style.color='#80caff';
+ const close=document.createElement('button');close.textContent='Закрыть';close.onclick=()=>panel.classList.remove('open');
+ panel.append(title,text,link,document.createElement('hr'),close);document.body.append(panel);
+ button.onclick=async()=>{panel.classList.add('open');button.disabled=true;text.textContent=window.ROMEROS_REMOTE_API+'\nПроверка HTTP…';try{const data=await window.ROMEROS_CheckAPI();text.textContent='Flask online · очередь: '+data.queue+'\n'+window.ROMEROS_REMOTE_API+'\nCORS: ответ доступен браузеру';}catch(e){text.textContent=e.message+'\nОткройте ссылку ниже. Если напрямую работает, а здесь нет — проверьте CORS и разрешённый Origin.';}finally{button.disabled=false;}};
+});
 </script>
 </body>
 </html>
