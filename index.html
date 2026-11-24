@@ -1,14 +1,55 @@
 <!doctype html>
 <html lang="ru">
 <head>
+<script>/* Routes the existing GitHub Pages API calls to the HTTPS relay. */
+(() => {
+  'use strict';
+  const script = document.currentScript;
+  const relay = new URL(script?.dataset.relay || 'https://api.araicameragame.party');
+  if (relay.protocol !== 'https:') throw new Error('ROMEROS relay must use HTTPS');
+  const localOrigin = location.origin;
+  const local = ['127.0.0.1', 'localhost'].includes(location.hostname) && location.port === '3467';
+  const apiOrigin = local ? localOrigin : relay.origin;
+  const fetchOriginal = window.fetch.bind(window);
+
+  function relayUrl(input) {
+    const url = new URL(input, location.href);
+    if (!url.pathname.startsWith('/api/') && !url.pathname.startsWith('/viewer/')) return null;
+    if (url.origin === apiOrigin) return url.href;
+    if (url.origin !== localOrigin) return null;
+    return new URL(url.pathname + url.search, apiOrigin).href;
+  }
+
+  window.ROMEROS_REMOTE_API = apiOrigin;
+  window.ROMEROS_RemoteURL = (url) => relayUrl(url) || url;
+  window.ROMEROS_DownloadURL = (input) => {
+    const url = new URL(window.ROMEROS_RemoteURL(input), location.href);
+    if (url.origin === apiOrigin && url.pathname.startsWith('/api/result/')) {
+      url.searchParams.set('download', '1');
+    }
+    return url.href;
+  };
+  window.fetch = (input, options) => {
+    const original = input instanceof Request ? input.url : input;
+    let target;
+    try { target = relayUrl(original); } catch { return fetchOriginal(input, options); }
+    if (!target) return fetchOriginal(input, options);
+
+    if (input instanceof Request) {
+      return fetchOriginal(new Request(target, input), { ...options, credentials: 'include' });
+    }
+    return fetchOriginal(target, { ...options, credentials: 'include' });
+  };
+})();
+</script>
+
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>ROMEROS PLITKA v22 — Sculpt & Tile Studio</title>
 <meta name="theme-color" content="#172638">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<link rel="manifest" href="/game/manifest.webmanifest">
-<link rel="icon" href="/game/app-icon.svg" type="image/svg+xml">
+<link rel="icon" href="./app-icon.svg" type="image/svg+xml">
 <style>
 /* ===============================================================
    UI — базовые цвета, компоновка, панели, редактор, мобильные экраны
@@ -1034,7 +1075,64 @@ window.addEventListener('unhandledrejection', e => { console.warn('[ROMEROS inte
 </div>
 <div id="tileActionMenu"><button id="tileActionCreate">Создать</button><button id="tileActionBuy">Купить</button><button id="tileActionAdd">Добавить</button></div>
 
-<script src="/game/romeros_image.js" defer></script>
+<script defer>/* ROMEROS v17 / единая подготовка фото для AI и импортов.
+ * Лимит ОРИГИНАЛА 50 МиБ, ПЕРЕДАВАЕМОГО файла 50 МиБ, КВАДРАТА 8192².
+ * +5 МиБ запаса для входных фото: большой исходник не отправляется в GUI напрямую.
+ * Всегда центральная квадратная обрезка, EXIF ориентация, PNG/WebP/JPEG.
+ * На малом экране сторона ограничена 4096 для снижения вероятности нехватки памяти.
+ * Фактическое разрешение надо определять из Blob: при компрессии оно может снижаться.
+ */
+(function(){
+ 'use strict';
+ const MAX_SOURCE=50*1024*1024;
+ const MAX_POST=50*1024*1024;
+ const MAX_SIDE=8192;
+ const MAX_PIXELS=8192*8192;
+ const MAX_SOURCE_PIXELS=100_000_000;
+ const formats=new Set(['image/png','image/jpeg','image/webp']);
+ const encode=(canvas,mime,quality)=>new Promise(resolve=>canvas.toBlob(resolve,mime,quality));
+ function normalizeSide(requested){
+   const n=Math.floor(Number(requested)||1024);
+   return Math.max(512,Math.min(MAX_SIDE,n));
+ }
+ async function squarePhoto(file,requestedSide=1024){
+   if(!file||!formats.has(file.type))throw Error('Нужен PNG, JPEG или WebP');
+   if(file.size>MAX_SOURCE)throw Error('Исходный файл больше 50 МиБ');
+   let bitmap;
+   try{bitmap=await createImageBitmap(file,{imageOrientation:'from-image'});}
+   catch{throw Error('Не удалось открыть изображение')}
+   try{
+     if(bitmap.width<32||bitmap.height<32||bitmap.width*bitmap.height>MAX_SOURCE_PIXELS)
+       throw Error('Неподдерживаемые размеры исходного изображения');
+     const lowMemory=window.matchMedia('(max-width:700px)').matches || Number(navigator.deviceMemory||8)<=4;
+     const target=Math.min(normalizeSide(requestedSide),lowMemory?4096:8192);
+     const crop=Math.min(bitmap.width,bitmap.height);
+     const x=Math.floor((bitmap.width-crop)/2),y=Math.floor((bitmap.height-crop)/2);
+     // Вплоть до 8192² на десктопе; при переполнении понижаем сторону / качество.
+     let lastError=null;
+     for(let side=target;side>=512;side=Math.floor(side/2)){
+       if(side*side>MAX_PIXELS)continue;
+       let canvas=null;
+       try{
+         canvas=document.createElement('canvas');canvas.width=canvas.height=side;
+         const ctx=canvas.getContext('2d',{alpha:true});if(!ctx)throw Error('Canvas недоступен');
+         ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
+         ctx.drawImage(bitmap,x,y,crop,crop,0,0,side,side);
+         for(const [mime,qs] of [['image/png',[1]],['image/webp',[.96,.86,.74,.6]],['image/jpeg',[.94,.82,.70]]]){
+           for(const q of qs){
+             const blob=await encode(canvas,mime,q);
+             if(blob&&blob.size>0&&blob.size<=MAX_POST)return blob;
+           }
+         }
+       }catch(err){lastError=err;console.warn('[ROMEROS image prepare]',side,err)}
+       finally{if(canvas){canvas.width=0;canvas.height=0}}
+     }
+     throw lastError || Error('Не удалось подготовить квадрат до 50 МиБ');
+   }finally{bitmap.close()}
+ }
+ window.ROMEROS_Image=Object.freeze({squarePhoto,MAX_SOURCE,MAX_POST,MAX_PIXELS,MAX_SIDE,MAX_SOURCE_PIXELS});
+})();
+</script>
 <script type="module">
 /* ============================================================
    БЛОК 1. ИМПОРТЫ, КОНСТАНТЫ, УТИЛИТЫ
@@ -1162,6 +1260,7 @@ function loadProfile(){
   return result;
 }
 function saveProfile(p){ p.lastSeen = nowISO(); writeJSON(LS_PROFILE, p); }
+window.ROMEROS_UserName = () => String(loadProfile().name || 'Гость').trim().slice(0, 32) || 'Гость';
 
 function historyPush(kind, payload){
   const hist = readJSON(LS_HISTORY, []);
@@ -2950,8 +3049,8 @@ async function aiReloadWallet(){const wallet=await aiJson('/api/wallet');aiState
 async function aiReloadPrices(){aiState.pricesReady=false;aiUpdatePrice();const obj=await aiJson('/api/prices');if(!obj.coin_prices)throw Error('Missing server coin prices');aiState.prices=obj.coin_prices;aiState.baseFee=Number(obj.base_fee||0);aiState.generationPrices=obj.generation_prices||{};aiState.pricesReady=true;aiUpdatePrice();}
 function aiUpdatePrice(){const engine=$('gameAiEngine').value,quality=$('gameAiQuality').value;
   const q=engine==='meshy'?'high':quality;const cost=aiState.prices[engine]?.[q];
-  $('gameAiCost').textContent=!aiState.pricesReady||!Number.isInteger(cost)||cost<=0?'Цена уточняется на сервере…':`Генерация: ${aiFmt(cost)} монет · списание при отправке`;
-  $('gameAiSubmit').disabled=!aiState.pricesReady||!Number.isInteger(cost)||cost<=0;
+  $('gameAiCost').textContent=!aiState.pricesReady||!Number.isInteger(cost)?'Подключаем сервер…':'Генерация бесплатна · до 10 запросов в сутки на имя';
+  $('gameAiSubmit').disabled=!aiState.pricesReady||!Number.isInteger(cost);
   const meshy=engine==='meshy';$('gameAiQuality').disabled=meshy;
 }
 async function aiDrawingBlob(){const source=$('drawCanvas');const square=document.createElement('canvas');square.width=square.height=1024;square.getContext('2d').drawImage(source,0,0,1024,1024);return canvasToBlob(square,'image/png')}
@@ -2963,7 +3062,7 @@ async function aiOpen(source){aiState.source=source;
     $('gameAiPrompt').value=$('aiShapeDescription')?.value||'Улучши художественный рисунок плитки, сохрани исходную композицию и цвета';
   }else{aiState.drawingBlob=null;$('gameAiAttachment').textContent='Без вложения';}
   openModal('gameAiOrderPanel');
-  try{await Promise.all([aiReloadPrices(),aiReloadWallet()]);}catch(e){$('gameAiCost').textContent='Сервис временно недоступен';console.warn('[bridge]',e);}
+  try{await aiReloadPrices();aiReloadWallet().catch(e=>console.warn('[wallet]',e));}catch(e){$('gameAiCost').textContent='Сервис временно недоступен';console.warn('[bridge]',e);}
 }
 function aiRoad(task){const el=document.createElement('div');el.className='game-ai-task';el.dataset.job=task.id;
   const head=document.createElement('div');head.textContent=`${task.engine.toUpperCase()} · #${task.id.slice(0,8)}`;
@@ -2987,12 +3086,12 @@ async function aiPoll(task){for(;;){try{
     if(job.status==='done'){
       task.resultUrl=job.result_url;task.status='done';task.engine=job.engine;task.price=Number(job.price??task.price);window.dispatchEvent(new CustomEvent('romeros:generated',{detail:{...task}}));
       // ОДНО событие на генерацию: предотвращаем дублирующий архив GLB.
-      if(job.result_url){task.ui.note.textContent=`Готово · оплачено ${aiFmt(task.price)} монет`; const b=document.createElement('button');b.textContent='Посмотреть результат';b.onclick=()=>aiShow(task);task.ui.el.append(b);}
-      await aiReloadWallet();return;
+      if(job.result_url){task.ui.note.textContent='Готово · бесплатно'; const b=document.createElement('button');b.textContent='Посмотреть результат';b.onclick=()=>aiShow(task);task.ui.el.append(b);}
+      await aiReloadWallet().catch(e=>console.warn('[wallet]',e));return;
     }
     if(job.status==='error'){
       task.status='error';task.ui.note.textContent='Не удалось завершить генерацию';
-      await aiReloadWallet();return;
+      await aiReloadWallet().catch(e=>console.warn('[wallet]',e));return;
     }
   }catch(e){task.ui.note.textContent='Восстанавливаем соединение…';console.warn('[bridge]',e);}
   await new Promise(resolve=>setTimeout(resolve,2300));
@@ -3000,20 +3099,19 @@ async function aiPoll(task){for(;;){try{
 async function aiSubmit(){const btn=$('gameAiSubmit');if(btn.disabled)return;
  const prompt=$('gameAiPrompt').value.trim(),engine=$('gameAiEngine').value,quality=$('gameAiQuality').value;
  if(!prompt||prompt.length>1000){setStatus('Введите описание плитки до 1000 символов');return;}
- const effectiveQuality=engine==='meshy'?'high':quality;const price=aiState.prices[engine]?.[effectiveQuality];if(!aiState.pricesReady||!Number.isInteger(price)||price<=0){setStatus('Не удалось подтвердить цену сервера');return;}
- if((aiState.wallet?.coins||0)<price){setStatus('Не хватает игровых монет');return;}
+ const effectiveQuality=engine==='meshy'?'high':quality;const price=aiState.prices[engine]?.[effectiveQuality];if(!aiState.pricesReady||!Number.isInteger(price)){setStatus('Сервер генерации пока недоступен');return;}
  const f=$('gameAiPhoto').files[0];
  let blob=aiState.drawingBlob;
  try{if(f)blob=await window.ROMEROS_Image.squarePhoto(f,8192)}
  catch(e){setStatus('Фото нельзя подготовить для сервера');console.warn('[square image]',e);return}
  if(blob&&blob.size>window.ROMEROS_Image.MAX_POST){setStatus('Вложение превышает 20 МиБ');return;}
  const data=new FormData();data.append('engine',engine);data.append('quality',effectiveQuality);
- data.append('currency','coins');data.append('source',aiState.source);data.append('tile_shape',selectedTileShape);
+ data.append('currency','coins');data.append('source',aiState.source);data.append('tile_shape',selectedTileShape);data.append('username',window.ROMEROS_UserName());
  data.append('prompt',prompt);if(blob)data.append('photo',blob,'tile_square.'+(blob.type==='image/png'?'png':blob.type==='image/jpeg'?'jpg':'webp'));
  btn.disabled=true;btn.textContent='Отправка…';
  try{const reply=await aiJson('/api/generate',{method:'POST',body:data});
    const task={id:reply.id,ticket:reply.ticket,engine,quality:effectiveQuality,source:aiState.source,price:Number(reply.price),status:'running',resultUrl:''};
-   aiState.tasks.unshift(task);task.ui=aiRoad(task);task.ui.note.textContent=`Сервер подтвердил оплату: ${aiFmt(task.price)} монет. Обработка…`;aiPoll(task);await aiReloadWallet();
+   aiState.tasks.unshift(task);task.ui=aiRoad(task);task.ui.note.textContent='Сервер принял бесплатный запрос. Обработка…';aiPoll(task);aiReloadWallet().catch(e=>console.warn('[wallet]',e));
    historyPush('aiOrder',{id:reply.id,engine,quality,source:aiState.source,price:reply.price});
  }catch(e){setStatus('Не удалось отправить заявку');console.warn('[bridge]',e);}
  finally{btn.disabled=false;btn.textContent='Отправить запрос →';}
@@ -3021,7 +3119,7 @@ async function aiSubmit(){const btn=$('gameAiSubmit');if(btn.disabled)return;
 function aiShow(task){aiState.current=task;openModal('gameAiPreviewPanel');
  const target=$('gameAiPreviewImage');target.replaceChildren();
  if(task.engine==='meshy'){
-   const frame=document.createElement('iframe');frame.src='/viewer/'+encodeURIComponent(task.id)+'?ticket='+encodeURIComponent(task.ticket);frame.title='3D модель';target.append(frame);
+   const frame=document.createElement('iframe');frame.src=window.ROMEROS_RemoteURL('/viewer/'+encodeURIComponent(task.id)+'?ticket='+encodeURIComponent(task.ticket));frame.title='3D модель';target.append(frame);
    $('gameAiAdd').disabled=true;
  }else{
    const img=document.createElement('img');img.src=task.resultUrl;img.alt='Квадратная плитка';target.append(img);
@@ -3054,15 +3152,14 @@ $('gameAiPhoto').onchange=()=>{const f=$('gameAiPhoto').files[0];$('gameAiAttach
 $('gameAiSubmit').onclick=aiSubmit;$('gameAiRefresh').onclick=()=>aiReloadWallet().catch(e=>{console.warn('[bridge]',e);setStatus('Не удалось обновить баланс')});
 $('gameAiAdd').onclick=aiAddResult;
 $('gameAiWarehouse').onclick=aiWarehouse;
-$('gameAiDownload').onclick=()=>{const t=aiState.current;if(!t)return;const a=document.createElement('a');a.href=t.resultUrl;a.download=t.engine==='meshy'?'model.glb':'tile.png';a.click()};
+$('gameAiDownload').onclick=()=>{const t=aiState.current;if(!t)return;const a=document.createElement('a');a.href=window.ROMEROS_DownloadURL(t.resultUrl);a.download=t.engine==='meshy'?'model.glb':'tile.png';a.click()};
 // Не меняем существующую сцену, материалы и обработчики скульптинга.
 // Интеграционный интерфейс доступен остальной игре:
 window.ROMEROS_GameAI={open:aiOpen,submit:aiSubmit,show:aiShow,refreshWallet:aiReloadWallet,getTasks:()=>aiState.tasks};
 // v16: permit the separate pattern editor to store textures in the EXISTING game tile collection.
 window.ROMEROS_GameAI.addTileBlob=(blob,name)=>registerCustomTile(blob,name);
 aiReloadWallet().catch(()=>{});
-</script>
-<script>document.addEventListener('contextmenu',e=>e.preventDefault());document.addEventListener('dragstart',e=>{if(e.target instanceof HTMLImageElement)e.preventDefault()});
+document.addEventListener('contextmenu',e=>e.preventDefault());document.addEventListener('dragstart',e=>{if(e.target instanceof HTMLImageElement)e.preventDefault()});
 /* =============================================================
   SCULPT v5 — Управление объектами и историей. Упрощение применяется
   только к выбранной модели, независимо от остальных объектов сцены.
@@ -3349,7 +3446,145 @@ window.addEventListener('load',()=>{
 </div>
 <div class="rom13-toast" id="rom13Toast" hidden aria-live="polite"></div>
 
-<script type="module" src="/game/romeros_extra.js"></script>
+<script type="module">/*
+ ROMEROS v13 — отдельное расширение сайта. В GUI не загружаются скрипты сайта.
+ Сайт -> POST /api/generate -> poll /api/status -> GET /api/result (PNG/GLB).
+ Сервер: принимает цену и списывает монеты самостоятельно; API keys не хранятся здесь.
+*/
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+const $=id=>document.getElementById(id);
+const MAX_UPLOAD=50*1024*1024; // GUI v17 Upload20, multipart photo
+const stages=['received','prepared','sent','waiting','delivered'];
+const labels=['Загрузка','Обработка','Отправка','Ожидание','Выдача'];
+const app={tasks:[],prices:{},pricesReady:false,current:null,viewer:null};
+function toast(message){const x=$('rom13Toast');x.textContent=message;x.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>x.hidden=true,3800)}
+function open(id){document.querySelectorAll('.modal.open').forEach(n=>n.classList.remove('open'));$(id).classList.add('open');if(id==='rom13TexturePanel'||id==='rom13ModelPanel')loadPrices().catch(e=>{console.warn('[pricing]',e);toast('Сервер цен временно недоступен')})}
+function close(id){$(id).classList.remove('open')}
+const errSilent=(label,error)=>{console.warn('[ROMEROS v13]',label,error);toast('Операция временно недоступна')};
+async function jsonApi(url,opts){const r=await fetch(url,{credentials:'same-origin',cache:'no-store',...opts});if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}
+async function loadPrices(){app.pricesReady=false;paintPrices();const data=await jsonApi('/api/prices');if(!data.coin_prices)throw Error('Server coin price list missing');app.prices=data.coin_prices;app.baseFee=Number(data.base_fee||0);app.generationPrices=data.generation_prices||{};app.pricesReady=true;paintPrices();return app.prices}
+function priceOf(engine,quality){const q=engine==='meshy'?'high':quality;const price=app.prices[engine]?.[q];return app.pricesReady&&Number.isInteger(price)?price:null}
+function paintPrices(){
+ const engine=$('rom13TextureEngine').value,quality=$('rom13TextureQuality').value,price=priceOf(engine,quality),model=priceOf('meshy','high');
+ $('rom13TexturePrice').textContent=price==null?'Подключаем GUI…':`Бесплатно · до 10 запросов в сутки · ${quality==='standard'?'512×512':'1000×1000'}`;
+ $('rom13ModelPrice').textContent=model==null?'Подключаем GUI…':'Бесплатно · до 10 запросов в сутки · 3D GLB';
+ $('rom13TextureSend').disabled=price==null;
+ $('rom13ModelSend').disabled=model==null;
+}
+
+function bindClick(id,fn){$(id).addEventListener('click',fn)}
+function appendDock(){const dock=$('dockScroller')||$('bottomDock');if(!dock)return;
+ for(const [label,action] of [['⬡ Создать 3D',()=>open('rom13ModelPanel')],['▧ Текстура AI',()=>open('rom13TexturePanel')],['◉ Мои генерации',()=>showHistory()]]){
+  const b=document.createElement('button');b.type='button';b.textContent=label;b.className='rom13-dock';b.addEventListener('click',action);dock.appendChild(b);
+ }
+}
+// Редактор игры 1024². Отправляем копию в желаемом квадратном размере.
+// Если PNG >4МБ, используем WebP и, если нужно, уменьшаем сторону — не теряя квадратность.
+async function drawingBlob(){
+ const source=$('drawCanvas');const requested=Number($('rom13DrawExport')?.value||2048);
+ const input=await new Promise((resolve,reject)=>source.toBlob(b=>b?resolve(b):reject(Error('Canvas PNG error')),'image/png'));
+ const blob=await window.ROMEROS_Image.squarePhoto(input,requested);
+ const bitmap=await createImageBitmap(blob);const side=bitmap.width;bitmap.close();
+ return {blob,side,type:blob.type};
+}
+async function photoFor(inputId,draw=false){if(draw){return window.ROMEROS_TileCreator?.activeSketch ? await window.ROMEROS_TileCreator.exportForServer() : await drawingBlob()};const file=$(inputId).files[0];if(!file)return null;
+ if(!['image/png','image/jpeg','image/webp'].includes(file.type))throw new Error('Некорректный файл');
+ const blob=await window.ROMEROS_Image.squarePhoto(file,8192);
+ return {blob,type:blob.type,side:1024};}
+function stepsRow(task,container){const card=document.createElement('div');card.className='game-ai-task';
+ const title=document.createElement('div');title.textContent=(task.engine==='meshy'?'3D-модель':'Текстура')+' · '+task.id.slice(0,8);
+ const row=document.createElement('div');row.className='steps';
+ stages.forEach((s,i)=>{const span=document.createElement('div');span.className='step';span.dataset.stage=s;span.textContent=labels[i];row.append(span)});
+ const detail=document.createElement('div');detail.className='note';detail.textContent='Заявка зарегистрирована';
+ const fish=document.createElement('span');fish.className='ai-fish';fish.textContent='🐟';
+ const action=document.createElement('button');action.type='button';action.textContent='Открыть результат';action.hidden=true;action.onclick=()=>showResult(task);
+ card.append(title,row,detail,fish,action);$(container).prepend(card);task.ui={card,detail,fish,action};
+}
+function setProgress(task,status){const raw=status.stages||{};const mapped=Array.isArray(raw)?Object.fromEntries(raw.map(x=>[x.id,x.state])):raw;
+ task.ui.card.querySelectorAll('[data-stage]').forEach(el=>{el.classList.remove('done','active','error');const state=mapped[el.dataset.stage];const s=typeof state==='string'?state:state?.state;if(['done','active','error'].includes(s))el.classList.add(s)});
+ if(status.status==='done'){task.ui.detail.textContent='Готово · результат доступен';task.ui.fish.hidden=true;task.ui.action.hidden=false}
+ else if(status.status==='error'){task.ui.detail.textContent='Задание не выполнено';task.ui.fish.hidden=true}
+ else{task.ui.detail.textContent='Запрос обрабатывается';task.ui.fish.hidden=false}
+}
+async function monitor(task){for(let i=0;i<900;i++){try{const s=await jsonApi('/api/status/'+encodeURIComponent(task.id)+'?ticket='+encodeURIComponent(task.ticket));setProgress(task,s);
+  if(s.status==='done'){task.resultUrl=s.result_url;task.status='done';task.price=Number(s.price??task.price);task.ui.detail.textContent='Готово · бесплатно';window.dispatchEvent(new CustomEvent('romeros:generated',{detail:{...task}}));return}
+  if(s.status==='error'){task.status='error';return}
+ }catch(e){console.warn('[ROMEROS poll]',e);task.ui.detail.textContent='Ожидаем соединение с сервером'}
+ await new Promise(r=>setTimeout(r,2600));}
+ task.ui.detail.textContent='Ожидание продлено · проверьте позже';}
+async function submit(engine,prompt,quality,input,source,shape,polycount,isDrawing,container,button){if(button.disabled)return;
+ prompt=prompt.trim();if(!prompt||prompt.length>(engine==='meshy'?800:1000)){toast('Укажите описание');return}
+ // Проверка серверного прайса перед отправкой. Клиент НЕ передаёт цену в POST.
+ let price=priceOf(engine,quality);if(price===null){try{await loadPrices();price=priceOf(engine,quality)}catch(e){errSilent('price',e);return}}
+ if(price===null){toast('Цена не подтверждена сервером');return}
+ let photo=null;try{photo=await photoFor(input,isDrawing)}catch(e){toast('Изображение: PNG/JPG/WebP, исходник до 50 МиБ');console.warn(e);return}
+ const data=new FormData();data.append('engine',engine);data.append('prompt',prompt);data.append('quality',quality);data.append('source',source);data.append('currency','coins');data.append('tile_shape',shape||'square');data.append('username',window.ROMEROS_UserName?.()||'Гость');
+ if(polycount)data.append('target_polycount',String(polycount));
+ if(photo)data.append('photo',photo.blob,photo.type==='image/png'?'art.png':photo.type==='image/jpeg'?'art.jpg':'art.webp');
+ button.disabled=true;button.textContent='Отправка…';
+ try{const result=await jsonApi('/api/generate',{method:'POST',body:data});const task={id:result.id,ticket:result.ticket,engine,quality,source,price:Number(result.price),status:'running',resultUrl:''};
+ app.tasks.unshift(task);stepsRow(task,container);task.ui.detail.textContent='GUI принял бесплатный запрос';toast(`Заявка принята`);monitor(task);
+ window.ROMEROS_GameAI?.refreshWallet?.().catch(()=>{});
+ }catch(e){errSilent('submit',e)}finally{button.disabled=false;button.textContent=engine==='meshy'?'Создать 3D-модель':'Сгенерировать текстуру'}
+}
+function showHistory(){open('rom13ModelPanel');$('rom13ModelTasks').scrollIntoView({block:'nearest',behavior:'smooth'});toast('История текущего сеанса находится в окнах заявок')}
+function bindForms(){bindClick('rom13ModelClose',()=>close('rom13ModelPanel'));bindClick('rom13TextureClose',()=>close('rom13TexturePanel'));
+ bindClick('rom13ModelHistory',showHistory);bindClick('rom13TextureHistory',showHistory);
+ const range=$('rom13Poly'),num=$('rom13PolyNumber');const setPoly=value=>{const v=Math.round(Math.max(100,Math.min(30000,Number(value)||15000))/100)*100;range.value=v;num.value=v;$('rom13PolyValue').textContent=v.toLocaleString('ru-RU')};
+ range.addEventListener('input',()=>setPoly(range.value));num.addEventListener('change',()=>setPoly(num.value));
+ $('rom13TextureQuality').addEventListener('change',paintPrices);$('rom13TextureEngine').addEventListener('change',paintPrices);
+ bindClick('rom13ModelSend',()=>submit('meshy',$('rom13ModelPrompt').value,'high','rom13ModelPhoto','model_creator','square',Number(num.value),Boolean(window.ROMEROS_TileCreator?.modelFromSketch),'rom13ModelTasks',$('rom13ModelSend')));
+ bindClick('rom13TextureSend',()=>submit($('rom13TextureEngine').value,$('rom13TexturePrompt').value,$('rom13TextureQuality').value,'rom13TexturePhoto',$('rom13TextureDrawing').checked?'drawing':'texture_market',document.querySelector('#shapeDock button.active')?.dataset.shape||'square',null,$('rom13TextureDrawing').checked,'rom13TextureTasks',$('rom13TextureSend')));
+ // Новая функция доступна непосредственно из борда
+ const row=$('drawingPanel')?.querySelector('.editorControls:last-of-type');if(row){const b=document.createElement('button');b.textContent='✧ Текстура AI по рисунку';b.onclick=()=>{open('rom13TexturePanel');$('rom13TextureDrawing').checked=true};row.appendChild(b)}
+ // Прямая покупка из магазина
+ const market=$('marketPanel')?.querySelector('.actions');if(market){const b=document.createElement('button');b.textContent='✧ Текстура по описанию';b.onclick=()=>open('rom13TexturePanel');market.appendChild(b)}
+ bindClick('rom13ViewerClose',closeViewer);bindClick('rom13ViewerReset',()=>resetCamera());bindClick('rom13ViewerSpin',()=>{if(app.viewer)app.viewer.spin=!app.viewer.spin});bindClick('rom13ViewerWire',()=>toggleWire());
+ bindClick('rom13ViewerDownload',()=>downloadResult(app.current));bindClick('rom13ViewerScene',()=>saveModel('scene'));bindClick('rom13ViewerWarehouse',()=>saveModel('warehouse'));
+}
+function showResult(task){app.current=task;if(task.engine==='meshy')return openViewer(task);if(window.ROMEROS_GameAI?.show){window.ROMEROS_GameAI.show(task);return}
+ window.open(task.resultUrl,'_blank','noopener,noreferrer')}
+function downloadResult(task){if(!task?.resultUrl)return;const a=document.createElement('a');a.href=window.ROMEROS_DownloadURL(task.resultUrl);a.download=task.engine==='meshy'?'model.glb':'tile.png';a.click()}
+async function saveModel(action){const task=app.current;if(!task||task.engine!=='meshy')return;
+ if(action==='scene'&&window.ROMEROS_GameScene?.importGLB){try{const res=await window.ROMEROS_GameScene.importGLB(task.resultUrl);toast('GLB добавлен в игровую сцену: '+res.parts+' частей');return}catch(e){console.warn('[import scene]',e);toast('Не удалось добавить GLB в сцену');return}}
+ if(task.local){toast('Локальная модель: используйте «В сцену», а не серверный склад');return}
+ try{await jsonApi('/api/model-action/'+encodeURIComponent(task.id),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ticket:task.ticket,action})});toast(action==='scene'?'Модель сохранена в папку сцены':'Модель сохранена на склад');}
+ catch(e){errSilent('save model',e)} }
+function getViewer(){if(app.viewer)return app.viewer;
+ const node=$('rom13ViewerCanvas');const scene=new THREE.Scene();scene.background=new THREE.Color('#101e30');
+ const camera=new THREE.PerspectiveCamera(45,1,0.01,500);camera.position.set(3,2,4);
+ const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false});renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));renderer.outputColorSpace=THREE.SRGBColorSpace;node.append(renderer.domElement);
+ const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.dampingFactor=.07;
+ scene.add(new THREE.HemisphereLight(0xffffff,0x7184a0,2));const sun=new THREE.DirectionalLight(0xffffff,3);sun.position.set(3,8,5);scene.add(sun);
+ const grid=new THREE.GridHelper(10,20,0x355471,0x243b51);scene.add(grid);
+ const v={scene,camera,renderer,controls,node,model:null,spin:false,grid,center:new THREE.Vector3(),radius:1,sourceToken:0};
+ const resize=()=>{const w=node.clientWidth,h=node.clientHeight;if(!w||!h)return;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()};
+ new ResizeObserver(resize).observe(node);resize();
+ function animate(){requestAnimationFrame(animate);if(!$('rom13Viewer').hidden){if(v.spin&&v.model)v.model.rotation.y+=.005;controls.update();renderer.render(scene,camera)}}animate();app.viewer=v;return v;
+}
+function resetCamera(){const v=getViewer();v.camera.position.copy(v.center).add(new THREE.Vector3(v.radius*1.7,v.radius*.9,v.radius*2));v.controls.target.copy(v.center);v.camera.near=Math.max(.001,v.radius/1000);v.camera.far=Math.max(100,v.radius*100);v.camera.updateProjectionMatrix();v.controls.update()}
+function toggleWire(){const v=getViewer();if(!v.model)return;v.model.traverse(obj=>{if(obj.isMesh){const arr=Array.isArray(obj.material)?obj.material:[obj.material];arr.forEach(m=>{if(m)m.wireframe=!m.wireframe})}})}
+function closeViewer(){$('rom13Viewer').hidden=true}
+function openViewer(task){app.current=task;window.dispatchEvent(new CustomEvent('romeros:viewer-open',{detail:{...task}}));$('rom13Viewer').hidden=false;const v=getViewer();const token=++v.sourceToken;
+ $('rom13ViewerInfo').textContent='Загрузка модели…';
+ new GLTFLoader().load(task.resultUrl,gltf=>{
+  if(token!==v.sourceToken)return;
+  if(v.model)v.scene.remove(v.model);v.model=gltf.scene;v.scene.add(v.model);
+  const box=new THREE.Box3().setFromObject(v.model);const size=box.getSize(new THREE.Vector3());v.center=box.getCenter(new THREE.Vector3());v.radius=Math.max(.2,size.length()*.5);resetCamera();
+  let vertices=0,faces=0,meshes=0,textures=0;
+  v.model.traverse(obj=>{if(!obj.isMesh)return;meshes++;const g=obj.geometry;vertices+=g.attributes.position?.count||0;faces+=g.index?Math.floor(g.index.count/3):Math.floor((g.attributes.position?.count||0)/3);
+   for(const m of(Array.isArray(obj.material)?obj.material:[obj.material]))if(m?.map)textures++;
+  });
+  $('rom13ViewerInfo').textContent=`GLB · ${vertices.toLocaleString('ru-RU')} вершин буфера · ${faces.toLocaleString('ru-RU')} граней · ${meshes} частей · ${textures} материалов с текстурой`;
+ },undefined,e=>{console.warn('[GLB]',e);$('rom13ViewerInfo').textContent='Модель не удалось открыть';toast('Просмотр модели временно недоступен')});
+}
+// Interfaces for future game integration.
+window.ROMEROS_Extra={openModel:()=>open('rom13ModelPanel'),openTexture:()=>open('rom13TexturePanel'),viewGLB:openViewer,orders:()=>app.tasks,exportDrawing:drawingBlob};
+// DOM module executes after main game modules; defer one tick so the dock is assembled.
+requestAnimationFrame(()=>{appendDock();bindForms();loadPrices().catch(e=>{console.warn('[prices]',e);toast('Цены будут доступны после запуска GUI')})});
+</script>
 
 <!-- ===== ROMEROS v14: МЕНЮ, СЦЕНЫ, НАСТРОЙКИ И ИНСТРУМЕНТЫ ===== -->
 <div class="modal rom14-panel" id="rom14Panel" role="dialog" aria-modal="true" aria-label="ROMEROS раздел">
@@ -3360,7 +3595,78 @@ window.addEventListener('load',()=>{
 <div id="rom14Notice" class="rom14-notice" hidden aria-live="polite"></div>
 <input id="rom14ImportGLB" hidden type="file" accept=".glb,model/gltf-binary">
 <!-- scripts: основной игровой движок остается в HTML, расширения — отдельные файлы -->
-<script type="module" src="/game/romeros_menus.js"></script>
+<script type="module">/*
+ ROMEROS v14 — UI router attached to existing Sculpt Studio without replacing
+ original Three.js scene or shop. No API keys, all purchases through GUI API.
+ SERVER-ONLY: real balance, purchase price, generation and output download.
+ LOCAL PROTOTYPES: friends, plot permissions, NFT demo, settings and news.
+*/
+const byId=id=>document.getElementById(id);
+const box=byId('rom14Body'), dialog=byId('rom14Panel');
+const UI={ current:'', prefs:read('rom14-prefs',{accent:'#369de9',scale:100,animations:true,grid:true}),friends:read('rom14-friends',[]),plots:read('rom14-plots',{0:true}),stock:read('rom14-local-stock',[]) };
+function read(key,fallback){try{return JSON.parse(localStorage.getItem(key))??fallback}catch{return fallback}}
+function save(key,value){try{localStorage.setItem(key,JSON.stringify(value))}catch(e){console.warn('[local storage]',e)}}
+function notify(message){const n=byId('rom14Notice');n.textContent=message;n.hidden=false;clearTimeout(notify.timer);notify.timer=setTimeout(()=>n.hidden=true,3400)}
+function openMenu(title,body){dialog.classList.add('open');byId('rom14Title').textContent=title;box.innerHTML=body;byId('rom14MoreMenu').hidden=true;document.querySelectorAll('.modal.open').forEach(x=>{if(x!==dialog)x.classList.remove('open')})}
+function closeMenu(){dialog.classList.remove('open')}
+byId('rom14Close').addEventListener('click',closeMenu);
+function bind(id,fn){const el=byId(id);if(el)el.addEventListener('click',fn)}
+function oldPanel(id){closeMenu();if(window.ROMEROS_Extra){if(id==='rom13ModelPanel')return window.ROMEROS_Extra.openModel();if(id==='rom13TexturePanel')return window.ROMEROS_Extra.openTexture()}
+ document.querySelectorAll('.modal.open').forEach(n=>n.classList.remove('open'));byId(id)?.classList.add('open')}
+function gameClick(id){closeMenu();const el=byId(id);if(!el){notify('Функция недоступна в текущей сцене');return}el.click()}
+function tool(mode){closeMenu();const button=document.querySelector('[data-mode="'+mode+'"]');if(button)button.click();else notify('Инструмент недоступен')}
+function brush(name){closeMenu();let b=document.querySelector('[data-brush="'+name+'"]');if(b){document.querySelector('[data-mode="sculpt"]')?.click();b.click()}else notify('Кисть недоступна')}
+function card(title,desc,button,action){return `<div class="rom14-tile"><b>${title}</b><span class="meta">${desc}</span><button data-r14="${action}">${button}</button></div>`}
+function cards(items){return `<div class="rom14-grid">${items.map(i=>card(...i)).join('')}</div>`}
+function attach(actions){box.querySelectorAll('[data-r14]').forEach(b=>b.addEventListener('click',()=>{const action=actions[b.dataset.r14];if(action)action();else notify('Функция готовится')}))}
+function panel(title,intro,content){openMenu(title,`<p>${intro}</p>${content}`)}
+async function walletData(){const r=await fetch('/api/wallet',{credentials:'same-origin'});if(!r.ok)throw new Error('wallet');return r.json()}
+function profile(){panel('Профиль','Ваши настройки и прогресс сохраняются в браузере. Баланс берётся из GUI.',cards([
+ ['Профиль игры','Имя, сохранения и история','Открыть','profile'],['Архив','Сохранённые модели','Открыть','archive'],['Мои плитки','Коллекция и установка в сцену','Коллекция','tiles'],['Кошелёк','Игровой баланс GUI','Проверить','wallet']]));attach({profile:()=>gameClick('menuProfile'),archive:()=>window.ROMEROS_Workspace?.openArchive(),tiles:()=>{closeMenu();byId('tiles')?.scrollIntoView({behavior:'smooth'})},wallet})}
+function wallet(){panel('Кошелёк','Баланс хранится на сервере. Генерация и покупка списываются только через GUI.',`<div id="rom14Wallet">Загрузка баланса…</div><div class="rom14-actions"><button id="rom14WalletReload">Обновить</button><button id="rom14WalletMarket">Открыть магазин</button></div>`);bind('rom14WalletReload',refreshWallet);bind('rom14WalletMarket',shop);refreshWallet()}
+async function refreshWallet(){try{const w=await walletData();const f=v=>Number(v||0).toLocaleString('ru-RU');byId('rom14Wallet').innerHTML=`<div class="rom14-grid"><div class="rom14-tile"><b>Монеты</b><strong>${f(w.coins)}</strong></div><div class="rom14-tile"><b>Кристаллы</b><strong>${f(w.crystals)}</strong></div><div class="rom14-tile"><b>Изумруды</b><strong>${f(w.emeralds)}</strong></div></div>`;byId('headerCoins').textContent='◈ '+f(w.coins)}catch(e){console.warn('[wallet]',e);notify('Баланс временно недоступен')}}
+function shop(){panel('Магазин / Рынок','Товарные карточки покупаются в GUI. NFT и реальные платежи не подключены.',cards([
+ ['Плитка','Покупка набора плиток ×10 за монеты','К плиткам','tiles'],['Глина','Лепка — встроенный инструмент; пополнение пока локальное','Лепка','clay'],['NFT','Демонстрационный раздел без блокчейн-транзакций','Просмотр','nft'],['3D-модели','По тексту или фото → GLB','Создать','model'],['Билеты','Доступ в игровые зоны (локальный прототип)','Билеты','tickets'],['AI-текстура','Рисунок или фото → генерация','Купить','texture']
+ ]));attach({tiles:()=>gameClick('menuMarket'),clay:()=>tool('sculpt'),nft:()=>infoPanel('NFT','Настоящее NFT-владение потребует контракт, кошелёк и серверную проверку. Покупка NFT здесь не выполняется.'),model:()=>oldPanel('rom13ModelPanel'),tickets:territory,texture:()=>oldPanel('rom13TexturePanel')})}
+function settings(){panel('Настройки','Настройка лёгкой темы Telegram; настройки кистей и плитки доступны в самой сцене.',`
+ <label>Цвет акцента <input type="color" id="rom14Accent" value="${UI.prefs.accent}"></label>
+ <label>Масштаб элементов <input id="rom14Scale" type="range" min="80" max="125" step="5" value="${UI.prefs.scale}"><output id="rom14ScaleValue">${UI.prefs.scale}%</output></label>
+ <label><input type="checkbox" id="rom14Animations" ${UI.prefs.animations?'checked':''}> Анимации интерфейса</label>
+ <div class="rom14-actions"><button class="r14-primary" id="rom14SavePrefs">Применить</button><button id="rom14GameSettings">Настройки объектов</button></div>`);
+ bind('rom14Scale',()=>byId('rom14ScaleValue').textContent=byId('rom14Scale').value+'%');bind('rom14GameSettings',()=>{closeMenu();byId('settingsInfo')?.click()});bind('rom14SavePrefs',()=>{UI.prefs={accent:byId('rom14Accent').value,scale:Number(byId('rom14Scale').value),animations:byId('rom14Animations').checked};save('rom14-prefs',UI.prefs);applySettings();notify('Настройки сохранены')})}
+function applySettings(){document.documentElement.style.setProperty('--r14-accent',UI.prefs.accent);dialog.style.fontSize=(13*UI.prefs.scale/100)+'px';document.documentElement.classList.toggle('r14-reduced',!UI.prefs.animations)}
+function friends(){panel('Друзья','Локальный список друзей. Для реальных посещений и приглашений нужен сетевой сервер игроков.',`<label>Имя друга <input id="rom14FriendName" maxlength="32" placeholder="Введите никнейм"></label><button id="rom14FriendAdd" class="r14-primary">Добавить в список</button><div id="rom14FriendsList"></div>`);bind('rom14FriendAdd',()=>{const v=byId('rom14FriendName').value.trim();if(!v)return notify('Введите имя');if(!UI.friends.includes(v))UI.friends.push(v);save('rom14-friends',UI.friends);friends()});const list=byId('rom14FriendsList');UI.friends.forEach((name,i)=>{const d=document.createElement('div');d.className='rom14-tile';const b=document.createElement('button');b.textContent='Удалить';b.onclick=()=>{UI.friends.splice(i,1);save('rom14-friends',UI.friends);friends()};d.append(document.createTextNode(name+' · локальный контакт'),b);list.append(d)})}
+function workshop(){panel('Мастерская','Действия выполняются в существующей сцене Three.js.',cards([
+ ['Плитка','Установка поверх 3D, поворот, толщина и размер','Наложить','tile'],['Скульптинг','Вытягивать, гладить и добавлять глину','Лепка','sculpt'],['Создание плитки','Симметрия, рисунок и AI по эскизу','Рисовать','drawing'],['AI-текстура','Из текста, рисунка, фото','Генерировать','texture'],['AI 3D-объект','Meshy GLB, детализация','Создать','model'],['Загрузка GLB','Просмотр файла с текстурой','Загрузить','import'],['Фото всех сторон','AI-лист с четырьмя проекциями','Сгенерировать','turnaround'],['AI-скульпт','Новая форма 3D по описанию','Создать форму','sculptai']
+ ]));attach({tile:()=>tool('tile'),sculpt:()=>tool('sculpt'),drawing:()=>window.ROMEROS_TileCreator?.open()||gameClick('menuDraw'),texture:()=>oldPanel('rom13TexturePanel'),model:()=>oldPanel('rom13ModelPanel'),import:()=>byId('rom14ImportGLB').click(),turnaround:turnaround,sculptai:()=>{oldPanel('rom13ModelPanel');byId('rom13ModelPrompt').value='3D sculpture: '+byId('rom13ModelPrompt').value}})}
+function turnaround(){oldPanel('rom13TexturePanel');byId('rom13TextureEngine').value='gpt';byId('rom13TexturePrompt').value='Create a four-view orthographic model reference sheet in a 2x2 grid (front, back, left, right) of: '+byId('rom13TexturePrompt').value;notify('Одна генерация изображения с 4 ракурсами. Это не готовая 3D-модель')}
+function tools(){panel('Инструменты','Выберите режим работы с 3D-сценой.',cards([
+ ['Плитки','Размер, толщина, поворот и текстура','Выбрать','tile'],['Удалить плитку','Удаление выбранной плитки','Выбрать','erase'],['Draw','Нарастить объём','Кисть','draw'],['Smooth','Сглаживание геометрии','Кисть','smooth'],['Clay','Добавление глины','Кисть','clay'],['Crease','Острая складка','Кисть','crease'],['Pinch','Заострение кромки','Кисть','pinch'],['Inflate','Выпуклость','Кисть','inflate'],['Flatten','Плоскость','Кисть','flatten'],['Grab','Вытянуть за участок','Кисть','grab'],['AI инструменты','Текстуры, 3D, фото','Открыть','ai'],['Загрузка GLB','Локальный 3D-просмотр','Открыть','import']
+ ]));attach({tile:()=>tool('tile'),erase:()=>tool('erase'),draw:()=>brush('draw'),smooth:()=>brush('smooth'),clay:()=>brush('clay'),crease:()=>brush('crease'),pinch:()=>brush('pinch'),inflate:()=>brush('inflate'),flatten:()=>brush('flatten'),grab:()=>brush('grab'),ai:workshop,import:()=>byId('rom14ImportGLB').click()})}
+function territory(){panel('Карта стеклянных кубов','Локальная карта участков. Запертые зоны показывают глитч-заглушку; приобретение настоящего онлайн-участка требует серверной собственности.',`<div class="rom14-cubemap" id="rom14CubeMap"></div><p>Закрытые кубы скрывают содержимое от гостя. В демонстрации вы можете открыть доступ только в этом браузере.</p><div id="rom14ZoneDetail" class="rom14-chip">Выберите куб</div>`);
+ const root=byId('rom14CubeMap');for(let i=0;i<9;i++){const owned=!!UI.plots[i],b=document.createElement('button');b.type='button';b.innerHTML=`<span class="cube">${owned?'◇':'▧'}</span><b>Куб ${i+1}</b><small>${owned?'Ваш участок':'Закрыт · глитч'}</small>`;b.onclick=()=>{byId('rom14ZoneDetail').textContent=owned?'Куб '+(i+1)+': ваша локальная зона':'Куб '+(i+1)+': закрыто для гостей';if(!owned){const allow=confirm('Открыть демонстрационный доступ к кубу '+(i+1)+'? Реальная покупка не выполняется.');if(allow){UI.plots[i]=true;save('rom14-plots',UI.plots);territory()}}};root.append(b)}}
+function warehouse(){panel('Склад','Серверные модели сохраняются через кнопку «На склад» в просмотрщике GLB. Локальные позиции ниже — только в этом браузере.',`<div class="rom14-actions"><button id="rom14Open3D">Мои 3D-заявки</button><button id="rom14Import">Открыть GLB</button></div><div id="rom14LocalStock"></div>`);bind('rom14Open3D',()=>oldPanel('rom13ModelPanel'));bind('rom14Import',()=>byId('rom14ImportGLB').click());byId('rom14LocalStock').textContent=UI.stock.length?UI.stock.join(', '):'Пока нет локальных предметов'}
+function infoPanel(title,text){panel(title,text,`<button id="rom14InfoBack">Вернуться в мастерскую</button>`);bind('rom14InfoBack',workshop)}
+function extras(){const n=byId('rom14MoreMenu');n.style.top='44px';n.style.bottom='auto';n.innerHTML='';const pages=[['О игре',()=>infoPanel('О игре','ROMEROS Plitka: 3D-скульптинг, плитки, AI-текстуры и GLB.')],['Новости',()=>infoPanel('Новости','Сетевой канал новостей пока не подключён. Здесь будут публикации обновлений игры.')],['Техподдержка',support],['Донат',()=>infoPanel('Донат','Платёжная система не подключена; переводов нет.')],['Разработчикам',developers],['Продавцам',()=>infoPanel('Продавцам','Для торговли требуется серверная модерация товаров, авторизация и комиссия.')],['Контакты',()=>infoPanel('Контакты','Официальные контакты нужно добавить в конфигурацию проекта; адреса не выдуманы.')],['Промо',promo]];for(const [name,fn] of pages){const b=document.createElement('button');b.textContent=name;b.onclick=fn;n.append(b)}n.hidden=!n.hidden}
+function support(){panel('Техподдержка','Локальный черновик обращения: скопируйте и отправьте через официальный контакт проекта.',`<label>Тема<input id="rom14TicketSubject" maxlength="80" placeholder="Тема"></label><label>Сообщение<textarea id="rom14TicketMessage" maxlength="1500" placeholder="Опишите проблему"></textarea></label><button id="rom14CopyTicket" class="r14-primary">Скопировать обращение</button>`);bind('rom14CopyTicket',async()=>{try{await navigator.clipboard.writeText('Тема: '+byId('rom14TicketSubject').value+'\n'+byId('rom14TicketMessage').value);notify('Текст скопирован')}catch{notify('Копирование недоступно')}})}
+function developers(){panel('Разработчикам','Интеграция через HTTP API GUI. Запросы обрабатываются отдельно от сайта.',`<div class="rom14-tile"><code>POST /api/generate</code><span class="meta">engine, prompt, quality, source, tile_shape, photo, currency, target_polycount</span></div><div class="rom14-tile"><code>GET /api/status/&lt;id&gt;?ticket=...</code><span class="meta">Этапы обработки, progress, результат</span></div><div class="rom14-tile"><code>POST /api/game/purchase</code><span class="meta">Покупка плиток; цена проверяется сервером</span></div>`)}
+function promo(){panel('Промо','Промокод проверяется только сервером. Сейчас такого маршрута нет — бонусы не начисляются.',`<label>Промокод<input id="rom14PromoCode" maxlength="32" placeholder="ROMEROS-..."></label><button id="rom14PromoCheck">Проверить</button>`);bind('rom14PromoCheck',()=>notify('Промокоды пока не подключены к серверу'))}
+const pages={Профиль:profile,Настройки:settings,Магазин:shop,Кошелек:wallet,Друзья:friends,Мастерская:workshop,Карта:territory,Склад:warehouse,Инструменты:tools};
+function installDock(){const dock=byId('dockScroller')||byId('bottomDock');if(!dock)return false;
+ const items=[['◉','Профиль'],['⚙','Настройки'],['▦','Магазин'],['◈','Кошелек'],['♧','Друзья'],['▣','Мастерская'],['⬡','Карта'],['▤','Склад'],['✦','Инструменты']];
+ items.forEach(([icon,label])=>{if(dock.querySelector('[data-rom14="'+label+'"]'))return;const b=document.createElement('button');b.className='rom14-button';b.type='button';b.dataset.rom14=label;b.innerHTML=`<span class="r14-icon">${icon}</span><span>${label}</span>`;b.onclick=pages[label];dock.append(b)});
+ // Кнопка ⋮ сверху справа открывает ЭТО ЖЕ меню, не старую панель с тремя пунктами.
+ const topMore=byId('moreBtn');if(topMore&&!topMore.dataset.rom15Bound){topMore.dataset.rom15Bound='1';topMore.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();extras()},{capture:true})}
+ const more=document.createElement('button');more.className='rom14-button';more.innerHTML='<span class="r14-icon">⋮</span><span>Ещё</span>';more.addEventListener('click',extras);dock.append(more);
+ // Existing game's infinite scroll handler remains; this additionally supports drag with mouse.
+ let pressed=false,startX=0,startScroll=0;dock.addEventListener('pointerdown',e=>{if(e.pointerType!=='mouse'||e.button!==0)return;pressed=true;startX=e.clientX;startScroll=dock.scrollLeft});dock.addEventListener('pointermove',e=>{if(!pressed)return;if(Math.abs(e.clientX-startX)>6)dock.scrollLeft=startScroll-(e.clientX-startX)});window.addEventListener('pointerup',()=>pressed=false);
+ return true}
+const importInput=byId('rom14ImportGLB');importInput.addEventListener('change',e=>{const file=e.target.files?.[0];if(!file)return;if(!file.name.toLowerCase().endsWith('.glb')||file.size>60*1024*1024){notify('Нужен GLB до 60 МБ');return}const url=URL.createObjectURL(file);const task={id:'local-'+Date.now(),engine:'meshy',status:'done',ticket:'',resultUrl:url,local:true};closeMenu();window.ROMEROS_Extra?.viewGLB(task);notify('Локальный GLB открыт. Кнопки сервера для него недоступны');setTimeout(()=>URL.revokeObjectURL(url),30*60*1000)});
+applySettings();
+// The original game creates the scroller on window load; initialize immediately after load.
+if(document.readyState==='complete'){installDock()}else{window.addEventListener('load',()=>{if(!installDock())setTimeout(installDock,250)})}
+window.ROMEROS_Menu={open:name=>pages[name]?.(),openMore:extras,getLocalPlots:()=>({...UI.plots})};
+</script>
 
 
 <!-- v15: Архив физических GLB в IndexedDB. Без API-ключей, файлы остаются в браузере. -->
@@ -3371,7 +3677,138 @@ window.addEventListener('load',()=>{
   <div id="rom15ArchiveList"></div>
  </section>
 </div>
-<script type="module" src="/game/romeros_workspace.js"></script>
+<script type="module">/* ================================================================
+ * ROMEROS v15 / 3D WORKSPACE
+ * Файлы не вшиваются в Python GUI: этот модуль живёт в game/.
+ * - GLB модель в окне генерации; OrbitControls, текстуры, вращение, сетка
+ * - Автоархив результата в IndexedDB (GLB, не ссылка по ticket)
+ * - Перенос из архива в исходную игровую сцену (не дублируем Three.js игру)
+ * - Работа с выбранным объектом через ROMEROS_GameScene (до 24 mesh)
+ * - Область размещения 10000x10000 (X/Z: ±5000)
+ * ================================================================ */
+import * as THREE from 'three';
+import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+const $=id=>document.getElementById(id);
+const DB_NAME='romeros-glb-archive-v15',STORE='models';
+const MAX_GLB=60*1024*1024;
+const current={task:null,viewer:null,spin:false,wire:false,objectUrl:null,archiving:new Set()};
+function notify(message){const el=$('rom14Notice')||$('rom13Toast');if(!el)return;el.hidden=false;el.textContent=message;clearTimeout(notify.timer);notify.timer=setTimeout(()=>el.hidden=true,3700)}
+function log(context,e){console.warn('[ROMEROS v15]',context,e);notify('Действие пока не удалось выполнить')}
+function openDB(){return new Promise((resolve,reject)=>{
+ const req=indexedDB.open(DB_NAME,1);
+ req.onupgradeneeded=()=>{const db=req.result;if(!db.objectStoreNames.contains(STORE))db.createObjectStore(STORE,{keyPath:'id'})};
+ req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);
+})}
+async function storeFile(record){const db=await openDB();try{return await new Promise((res,rej)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).put(record);tx.oncomplete=()=>res(record);tx.onerror=()=>rej(tx.error)})}finally{db.close()}}
+async function loadFile(id){const db=await openDB();try{return await new Promise((res,rej)=>{const req=db.transaction(STORE,'readonly').objectStore(STORE).get(id);req.onsuccess=()=>res(req.result||null);req.onerror=()=>rej(req.error)})}finally{db.close()}}
+async function listFiles(){const db=await openDB();try{return await new Promise((res,rej)=>{const req=db.transaction(STORE,'readonly').objectStore(STORE).getAll();req.onsuccess=()=>res(req.result.sort((a,b)=>b.created.localeCompare(a.created)));req.onerror=()=>rej(req.error)})}finally{db.close()}}
+async function deleteFile(id){const db=await openDB();try{return await new Promise((res,rej)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).delete(id);tx.oncomplete=res;tx.onerror=()=>rej(tx.error)})}finally{db.close()}}
+async function getBlobFromTask(task){
+ if(task.local && task.resultUrl){const r=await fetch(task.resultUrl);if(!r.ok)throw Error('Файл недоступен');return r.blob()}
+ if(!task?.resultUrl)throw Error('Отсутствует результат');
+ const response=await fetch(task.resultUrl,{credentials:'same-origin',cache:'no-store'});
+ if(!response.ok)throw Error('Файл GLB недоступен: '+response.status);
+ const blob=await response.blob();
+ if(blob.size>MAX_GLB)throw Error('GLB превышает лимит архива');
+ // Проверить сигнатуру бинарного формата glTF.
+ if(await blob.slice(0,4).text()!=='glTF')throw Error('Ожидался GLB');
+ return blob;
+}
+async function archiveTask(task){
+ if(!task||task.engine!=='meshy'||!task.resultUrl||current.archiving.has(task.id))return;
+ if(await loadFile(task.id))return;
+ current.archiving.add(task.id);
+ try{
+  const blob=await getBlobFromTask(task);
+  await storeFile({id:task.id,name:'3D модель '+task.id.slice(0,8),created:new Date().toISOString(),origin:task.source||'AI Meshy',size:blob.size,blob});
+  notify('3D-модель сохранена в архив браузера');
+ }finally{current.archiving.delete(task.id)}
+}
+function createViewer(){if(current.viewer)return current.viewer;
+ const container=$('rom15InlineCanvas');
+ const scene=new THREE.Scene();scene.background=new THREE.Color('#162536');
+ const camera=new THREE.PerspectiveCamera(48,1,.01,10000);camera.position.set(3,2.4,4);
+ const renderer=new THREE.WebGLRenderer({antialias:true});renderer.outputColorSpace=THREE.SRGBColorSpace;
+ renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));container.append(renderer.domElement);
+ scene.add(new THREE.HemisphereLight(0xffffff,0x9bb2cc,2));
+ const light=new THREE.DirectionalLight(0xffffff,2.4);light.position.set(5,9,4);scene.add(light);
+ const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;
+ const grid=new THREE.GridHelper(12,20,0x4b6784,0x2a3e54);scene.add(grid);
+ const v={scene,camera,renderer,controls,container,mesh:null,grid,center:new THREE.Vector3(),radius:2,rotation:false,wire:false,requestId:0};
+ const resize=()=>{const w=container.clientWidth,h=container.clientHeight;if(w&&h){renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}};
+ new ResizeObserver(resize).observe(container);resize();
+ const frame=()=>{requestAnimationFrame(frame);if(!$('rom15InlineResult').hidden){if(v.rotation&&v.mesh)v.mesh.rotation.y+=.004;controls.update();renderer.render(scene,camera)}};frame();
+ current.viewer=v;return v;
+}
+function resetCamera(){const v=createViewer();v.camera.position.copy(v.center).add(new THREE.Vector3(v.radius*1.6,v.radius*.75,v.radius*2.1));v.controls.target.copy(v.center);v.camera.near=Math.max(.001,v.radius/1000);v.camera.far=Math.max(100,v.radius*500);v.camera.updateProjectionMatrix();v.controls.update()}
+function wireframe(){const v=createViewer();v.wire=!v.wire;v.mesh?.traverse(o=>{if(o.isMesh)for(const m of (Array.isArray(o.material)?o.material:[o.material]))if(m){m.wireframe=v.wire;m.needsUpdate=true}});notify(v.wire?'Каркас включён':'Каркас выключен')}
+async function loadInlineFromUrl(url){
+ $('rom15InlineResult').hidden=false;const v=createViewer();const token=++v.requestId;
+ $('rom15ModelStats').textContent='Загрузка GLB…';
+ try{
+  const gltf=await new GLTFLoader().loadAsync(url);if(token!==v.requestId)return;
+  if(v.mesh)v.scene.remove(v.mesh);
+  v.mesh=gltf.scene;v.scene.add(v.mesh);v.mesh.updateMatrixWorld(true);
+  const bounds=new THREE.Box3().setFromObject(v.mesh);const dims=bounds.getSize(new THREE.Vector3());
+  v.center=bounds.getCenter(new THREE.Vector3());v.radius=Math.max(.2,dims.length()*.5);
+  let verts=0,tris=0,parts=0;
+  v.mesh.traverse(o=>{if(!o.isMesh)return;parts++;const g=o.geometry;verts+=g.attributes.position?.count||0;tris+=g.index?Math.floor(g.index.count/3):Math.floor((g.attributes.position?.count||0)/3)});
+  $('rom15ModelStats').textContent=`${verts.toLocaleString('ru-RU')} вершин · ${tris.toLocaleString('ru-RU')} треугольников · ${parts} частей`;
+  resetCamera();
+ }catch(e){console.warn('[inline GLB]',e);$('rom15ModelStats').textContent='Не удалось открыть GLB';notify('Модель не удалось загрузить')}
+}
+async function showTask(task){if(!task||!task.resultUrl||task.engine!=='meshy')return;
+ current.task=task;
+ // load in the actual order window with GLB texture support.
+ await loadInlineFromUrl(task.resultUrl);
+}
+function download(blob,name){const link=document.createElement('a');const url=URL.createObjectURL(blob);link.href=url;link.download=name;document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),15000)}
+async function archiveCurrent(){if(!current.task)return notify('Сначала создайте 3D-модель');try{await archiveTask(current.task)}catch(e){log('archive',e)}}
+async function sceneCurrent(){if(!current.task)return;try{
+ const api=window.ROMEROS_GameScene;
+ if(!api?.importGLB)throw Error('Игровая сцена недоступна');
+ // GLB remains in client archive; for older remote ticket fetch on demand.
+ const blob=await getBlobFromTask(current.task);const url=URL.createObjectURL(blob);
+ try{const result=await api.importGLB(url);notify('Добавлено mesh-частей: '+result.parts+' · выберите объект для плитки')}
+ finally{URL.revokeObjectURL(url)}
+ $('rom13ModelPanel')?.classList.remove('open');
+ }catch(e){log('scene',e)}}
+async function downloadCurrent(){try{if(!current.task)return;download(await getBlobFromTask(current.task),'ROMEROS_'+current.task.id+'.glb')}catch(e){log('download',e)}}
+function close(){ $('rom15Archive').hidden=true }
+async function openArchive(){ $('rom15Archive').hidden=false;await refreshArchive() }
+async function refreshArchive(){const list=$('rom15ArchiveList');list.replaceChildren();try{const models=await listFiles();if(!models.length){list.textContent='Архив пока пуст. Сгенерируйте 3D-модель или сохраните её из просмотрщика.';return}
+  for(const item of models){const row=document.createElement('div');row.className='rom15-archive-row';const title=document.createElement('strong');title.textContent=item.name+' · '+(item.size/1048576).toFixed(1)+' МБ';row.append(title);
+   const button=(label,fn)=>{const b=document.createElement('button');b.type='button';b.textContent=label;b.onclick=()=>Promise.resolve(fn()).catch(e=>log('archive item',e));row.append(b)};
+   button('Просмотр',async()=>{close();const url=URL.createObjectURL(item.blob);if(current.objectUrl)URL.revokeObjectURL(current.objectUrl);current.objectUrl=url;
+     current.task={id:item.id,engine:'meshy',local:true,resultUrl:url,source:'archive'};
+     document.querySelectorAll('.modal.open').forEach(n=>n.classList.remove('open'));
+     $('rom13ModelPanel').classList.add('open');await showTask(current.task)});
+   button('В сцену',async()=>{const url=URL.createObjectURL(item.blob);try{const res=await window.ROMEROS_GameScene.importGLB(url);notify('В сцене '+res.parts+' новых частей');close()}finally{URL.revokeObjectURL(url)}});
+   button('Скачать',()=>download(item.blob,item.name.replace(/[\\/:*?"<>|]/g,'_')+'.glb'));
+   button('Удалить',async()=>{if(!confirm('Удалить GLB из архива браузера?'))return;await deleteFile(item.id);await refreshArchive()});list.append(row)
+  }
+ }catch(e){console.warn('[archive render]',e);list.textContent='Не удалось открыть архив IndexedDB'}}
+function attachButtons(){
+ $('rom15ArchiveClose')?.addEventListener('click',close);
+ $('rom15ArchiveOpen')?.addEventListener('click',()=>openArchive().catch(e=>log('archive open',e)));
+ $('rom15Spin')?.addEventListener('click',()=>{const v=createViewer();v.rotation=!v.rotation;$('rom15Spin').textContent=v.rotation?'Остановить':'Автовращение'});
+ $('rom15Wire')?.addEventListener('click',wireframe);
+ $('rom15Recenter')?.addEventListener('click',resetCamera);
+ $('rom15FullViewer')?.addEventListener('click',()=>{if(current.task)window.ROMEROS_Extra?.viewGLB(current.task)});
+ $('rom15ArchiveSave')?.addEventListener('click',archiveCurrent);
+ $('rom15AddScene')?.addEventListener('click',sceneCurrent);
+ $('rom15Download')?.addEventListener('click',downloadCurrent);
+ // Архив — полноценная часть нижнего скролл-меню, профиль остаётся закреплённым.
+ const dock=$('dockScroller')||$('bottomDock');
+ if(dock&&!$('rom15DockArchive')){const b=document.createElement('button');b.id='rom15DockArchive';b.type='button';b.className='rom14-button';b.textContent='▣ Архив GLB';b.onclick=()=>openArchive().catch(e=>log('dock archive',e));dock.append(b)}
+}
+window.addEventListener('romeros:generated',async e=>{if(e.detail.engine==='meshy'){try{await archiveTask(e.detail);await showTask(e.detail)}catch(error){log('ready model',error)}}});
+window.addEventListener('romeros:viewer-open',e=>{if(e.detail.engine==='meshy')showTask(e.detail).catch(err=>log('open model',err))});
+function init(){attachButtons()}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+window.ROMEROS_Workspace={openArchive,archiveTask,showTask,sceneBounds:{width:10000,depth:10000,min:-5000,max:5000},listObjects:()=>window.ROMEROS_GameScene?.list()||[]};
+</script>
 
 <!-- v16: Tile Studio: independent editable drawing integrated with original scene. -->
 <div id="rom16TileCreator" class="rom16-overlay" hidden role="dialog" aria-modal="true" aria-label="Создание плитки">
@@ -3417,7 +3854,115 @@ window.addEventListener('load',()=>{
 </div>
 <!-- v16: итоговое изображение в отдельном окне с действующими кнопками. -->
 <div id="rom16TextureResult" class="rom16-overlay" hidden role="dialog" aria-label="Результат генерации текстуры"><section class="rom16-panel rom16-output"><div class="rom16-head"><h2>Готовая текстура</h2><button id="rom16ResultClose">Закрыть</button></div><div class="rom16-image-container"><img id="rom16ResultImage" alt="Результат генерации квадратной текстуры"></div><p id="rom16ResultMeta" class="rom16-hint"></p><div class="rom16-buttons"><button id="rom16ResultDownload">Скачать PNG</button><button id="rom16ResultSave">В архив</button><button id="rom16ResultScene">Добавить к моим плиткам</button><button id="rom16ResultRework">Доработать ещё</button></div></section></div>
-<script type="module" src="/game/romeros_tile_creator.js"></script>
+<script type="module">/**
+ * ROMEROS TILE CREATOR v16
+ * Browser-only drawing editor based on earlier ROMEROS Tile Studio.
+ * No paid keys, no separate API endpoint. Existing GUI Bridge handles all charges.
+ * 1) Draw/undo/redo and four-sector rotational symmetry (3 or 6 for other tiles)
+ * 2) Editable project JSON, PNG, local IndexedDB archive
+ * 3) Send the same sketch to GPT/SD texture or Meshy 3D tile
+ * 4) Image output is rendered separately. GLB uses the existing GLB viewer and scene.
+ */
+const $=id=>document.getElementById(id);
+const canvas=$('rom16Canvas'), ctx=canvas.getContext('2d');
+const W=1000,C=W/2;
+const MAX_BYTES=50*1024*1024; // Максимум для исходящего референса
+const DRAFT_KEY='romeros-tile-v16-sketch';
+const DB='romeros-tile-v16-results',STORE='images';
+const state={shape:'square',tool:'brush',color:'#216da8',base:'#e5eef5',size:14,repeat:true,mirror:false,grid:false,sectors:4,symmetryMode:'rotate',guides:true,strokes:[],redo:[],active:null,activeSketch:false,modelFromSketch:false,textureTask:null,imageUrl:null,imageBlob:null,latestId:null,baseImage:null,baseData:null};
+const notify=msg=>{const n=$('rom14Notice')||$('rom13Toast');if(n){n.textContent=msg;n.hidden=false;clearTimeout(notify.t);notify.t=setTimeout(()=>n.hidden=true,4200)}else console.info(msg)};
+const defaultPrompt=()=>`Decorative ceramic ${state.shape} tile with the ornamental pattern from the attached drawing; keep the motifs and palette; seamless square texture, no outer background`;
+function pathPolygon(g){g.beginPath();if(state.shape==='square'){g.rect(0,0,W,W);return}const n=state.shape==='triangle'?3:6;const radius=n===3?535:480;for(let i=0;i<n;i++){const a=-Math.PI/2+(n===6?Math.PI/6:0)+Math.PI*2*i/n;const x=C+Math.cos(a)*radius,y=C+Math.sin(a)*radius;if(i===0)g.moveTo(x,y);else g.lineTo(x,y)}g.closePath()}
+function primitive(g,step){const pts=step.points||[];if(!pts.length)return;g.save();g.strokeStyle=step.tool==='eraser'?step.base:step.color;g.fillStyle=g.strokeStyle;g.lineWidth=step.size;g.lineJoin='round';g.lineCap='round';if(step.tool==='dot'){for(const p of pts){g.beginPath();g.arc(p.x,p.y,step.size/2,0,Math.PI*2);g.fill()}}else{g.beginPath();g.moveTo(pts[0].x,pts[0].y);if(step.tool==='line'){const p=pts[pts.length-1];g.lineTo(p.x,p.y)}else if(pts.length===1){g.lineTo(pts[0].x+0.01,pts[0].y+0.01)}else for(const p of pts.slice(1))g.lineTo(p.x,p.y);g.stroke()}g.restore()}
+function effectiveSectors(shape){return ({square:4,triangle:3,hexagon:6}[shape]||4)}
+function stamp(g,step){
+ const n=step.repeat?Math.min(12,Math.max(1,Number(step.sectors)||effectiveSectors(step.shape))):1;
+ const mode=step.symmetryMode|| (step.mirror?'mirror':'rotate');
+ for(let i=0;i<n;i++){
+  g.save();g.translate(C,C);g.rotate(Math.PI*2*i/n);g.translate(-C,-C);
+  primitive(g,step);
+  if(mode==='mirror' || (step.mirror && step.symmetryMode!=='rotate')){
+   g.translate(C,C);g.scale(-1,1);g.translate(-C,-C);primitive(g,step);
+  }
+  g.restore();
+ }
+}
+function symmetryGuides(g){
+ if(!state.guides||!state.repeat||state.symmetryMode==='none')return;
+ const n=state.sectors||effectiveSectors(state.shape);
+ g.save();g.strokeStyle='#1560a884';g.lineWidth=1;g.setLineDash([10,8]);
+ for(let i=0;i<n;i++){const a=Math.PI*2*i/n-Math.PI/2;g.beginPath();g.moveTo(C,C);g.lineTo(C+Math.cos(a)*W,C+Math.sin(a)*W);g.stroke()}
+ g.setLineDash([]);g.fillStyle='#1560a8';g.beginPath();g.arc(C,C,5,0,Math.PI*2);g.fill();g.restore();
+}
+
+function render(showGrid=state.grid,showGuides=true){ctx.save();ctx.clearRect(0,0,W,W);pathPolygon(ctx);ctx.clip();ctx.fillStyle=state.base;ctx.fillRect(0,0,W,W);if(state.baseImage)ctx.drawImage(state.baseImage,0,0,W,W);for(const s of state.strokes)stamp(ctx,s);if(state.active)stamp(ctx,state.active);if(showGrid){ctx.strokeStyle='#4d91b644';ctx.lineWidth=1;for(let x=0;x<=W;x+=50){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,W);ctx.moveTo(0,x);ctx.lineTo(W,x);ctx.stroke()}}if(showGuides)symmetryGuides(ctx);ctx.restore()}
+function point(ev){const r=canvas.getBoundingClientRect();return{x:(ev.clientX-r.left)*W/r.width,y:(ev.clientY-r.top)*W/r.height}}
+function onStart(e){if(e.pointerType==='mouse'&&e.button!==0)return;canvas.setPointerCapture(e.pointerId);state.active={tool:state.tool,shape:state.shape,color:state.color,base:state.base,size:state.size,repeat:state.repeat,mirror:state.mirror,sectors:state.sectors,symmetryMode:state.symmetryMode,points:[point(e)]};render()}
+function onMove(e){if(!state.active)return;const p=point(e),pts=state.active.points;if(state.tool==='line'){pts.splice(1,Infinity,p)}else if(pts.length<8500){const last=pts[pts.length-1];if(Math.hypot(last.x-p.x,last.y-p.y)>2)pts.push(p)}render()}
+function onEnd(){if(!state.active)return;state.strokes.push(state.active);if(state.strokes.length>1500)state.strokes.shift();state.active=null;state.redo=[];render();saveDraft()}
+canvas.addEventListener('pointerdown',onStart);canvas.addEventListener('pointermove',onMove);canvas.addEventListener('pointerup',onEnd);canvas.addEventListener('pointercancel',onEnd);
+function saveDraft(){try{localStorage.setItem(DRAFT_KEY,JSON.stringify(project()))}catch(e){console.warn('[tile sketch save]',e)}}
+function project(){return{version:16,shape:state.shape,base:state.base,baseData:state.baseData,strokes:state.strokes,sectors:state.sectors,symmetryMode:state.symmetryMode,guides:state.guides,created:new Date().toISOString()}}
+function close(){ $('rom16TileCreator').hidden=true }
+function open(){document.querySelectorAll('.modal.open').forEach(n=>n.classList.remove('open'));$('rom16TileCreator').hidden=false;render()}
+function canvasDataUrl(img){const c=document.createElement('canvas');c.width=c.height=1000;c.getContext('2d').drawImage(img,0,0,1000,1000);return c.toDataURL('image/png')}
+function dl(blob,filename){const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),12000)}
+async function rawBlob(){render(false,false);try{return await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(Error('Canvas PNG failed')),'image/png'))}finally{render()}}
+/** Use the original network transport. Reduces file to <=20 MiB in an exact square. */
+async function exportForServer(){render(false,false);const width=Number($('rom16ExportSize').value||2048);const original=await rawBlob();{const blob=await window.ROMEROS_Image.squarePhoto(original,width);const probe=await createImageBitmap(blob);const side=probe.width;probe.close();return {blob,side,type:blob.type}}}
+function updateControls(){document.querySelectorAll('[data-r16-tool]').forEach(b=>b.classList.toggle('active',b.dataset.r16Tool===state.tool));$('rom16Info').textContent=`${state.shape} · ${state.repeat?state.sectors+' секторов':'один мазок'} · ${state.strokes.length} штрихов`}
+function goTexture(){close();state.activeSketch=true;state.modelFromSketch=false;const input=$('rom13TextureDrawing');input.checked=true;$('rom13TexturePhoto').value='';$('rom13TexturePrompt').value=$('rom16Prompt').value.trim()||defaultPrompt();window.ROMEROS_Extra?.openTexture();notify('Квадратный рисунок готов к отправке вместе с промптом')}
+function goModel(){close();state.activeSketch=true;state.modelFromSketch=true;$('rom13ModelPhoto').value='';$('rom13ModelPrompt').value=($('rom16Prompt').value.trim()||defaultPrompt()).slice(0,800);window.ROMEROS_Extra?.openModel();notify('Эскиз будет отправлен в Meshy вместе с описанием')}
+function bind(){
+ $('rom16Close').onclick=close;$('rom16OpenStudio')?.addEventListener('click',open);$('rom16MenuStudio')?.addEventListener('click',open);
+ $('rom16Shape').onchange=e=>{state.shape=e.target.value;sector.value=effectiveSectors(state.shape);$('rom20SectorsValue').textContent=sector.value;state.sectors=Number(sector.value);render();updateControls();saveDraft()};
+ document.querySelectorAll('[data-r16-tool]').forEach(b=>b.addEventListener('click',()=>{state.tool=b.dataset.r16Tool;updateControls()}));
+ $('rom16Color').oninput=e=>state.color=e.target.value;
+ $('rom16Base').oninput=e=>{state.base=e.target.value;render();saveDraft()};
+ $('rom16Photo').onchange=async e=>{const file=e.target.files?.[0];if(!file)return;try{const blob=await window.ROMEROS_Image.squarePhoto(file,1000);const url=URL.createObjectURL(blob);const img=new Image();img.onload=()=>{state.baseImage=img;state.baseData=canvasDataUrl(img);URL.revokeObjectURL(url);render();saveDraft();notify('Фотография обрезана квадратом и установлена под рисунком')};img.onerror=()=>{URL.revokeObjectURL(url);notify('Невозможно прочитать изображение')};img.src=url}catch(error){console.warn(error);notify('Требуется PNG/JPG/WebP до 25 МиБ')}};
+ $('rom16ClearPhoto').onclick=()=>{state.baseImage=null;state.baseData=null;$('rom16Photo').value='';render();saveDraft()};
+ $('rom16Size').oninput=e=>{state.size=+e.target.value;$('rom16SizeValue').textContent=String(state.size)};
+ // v20: режимы симметрии влияют на каждый новый мазок; история сохраняет параметры мазка.
+ const modes=$('rom20SymmetryMode'),sector=$('rom20Sectors'),count=$('rom20SectorsValue'),guides=$('rom20SymmetryGuides');
+ const sync=()=>{state.sectors=Math.max(1,Math.min(12,Math.round(Number(sector.value)||4)));count.textContent=state.sectors;state.symmetryMode=modes.value;state.repeat=state.symmetryMode!=='none';$('rom16Repeat').checked=state.repeat;state.mirror=state.symmetryMode==='mirror';$('rom16Mirror').checked=state.mirror;state.guides=guides.checked;render();updateControls();saveDraft()};
+ modes.onchange=sync;sector.oninput=sync;guides.onchange=sync;
+ $('rom20SectorAuto').onclick=()=>{sector.value=effectiveSectors(state.shape);sync()};
+ for(const count of [2,4,6,8,12])$('rom20Sector'+count).onclick=()=>{sector.value=count;sync()};
+ $('rom16Repeat').onchange=e=>{modes.value=e.target.checked?(state.mirror?'mirror':'rotate'):'none';sync()};
+ $('rom16Mirror').onchange=e=>{modes.value=e.target.checked?'mirror':(state.repeat?'rotate':'none');sync()};
+ $('rom16Grid').onchange=e=>{state.grid=e.target.checked;render()};
+ $('rom16Undo').onclick=()=>{if(state.strokes.length){state.redo.push(state.strokes.pop());render();saveDraft();updateControls()}};
+ $('rom16Redo').onclick=()=>{if(state.redo.length){state.strokes.push(state.redo.pop());render();saveDraft();updateControls()}};
+ $('rom16Clear').onclick=()=>{if(confirm('Очистить рисунок плитки?')){state.strokes=[];state.redo=[];state.baseImage=null;state.baseData=null;render();saveDraft();updateControls()}};
+ $('rom16Save').onclick=async()=>{const blob=await rawBlob();const name='Симметричная плитка';try{await window.ROMEROS_TileCreator?.addTextureToGame(blob,name);notify('Плитка сохранена в игровой коллекции')}catch(e){console.warn(e);dl(blob,'tile_1000.png');notify('PNG сохранён на устройство')}};
+ $('rom16Download').onclick=async()=>dl(await rawBlob(),'ROMEROS_pattern_1000.png');
+ $('rom16ExportProject').onclick=()=>dl(new Blob([JSON.stringify(project(),null,2)],{type:'application/json'}),'ROMEROS_tile_project.json');
+ $('rom16ImportProject').onclick=()=>{const inp=document.createElement('input');inp.type='file';inp.accept='.json';inp.onchange=async()=>{try{const data=JSON.parse(await inp.files[0].text());if(data.version!==16||!Array.isArray(data.strokes)||data.strokes.length>1500||!['square','triangle','hexagon'].includes(data.shape))throw Error('bad project');state.strokes=data.strokes;state.redo=[];state.shape=data.shape;state.base=data.base||'#e5eef5';state.sectors=Number(data.sectors)||effectiveSectors(state.shape);state.symmetryMode=data.symmetryMode||'rotate';state.guides=data.guides!==false;sector.value=state.sectors;modes.value=state.symmetryMode;guides.checked=state.guides;sync();state.baseData=null;state.baseImage=null; if(data.baseData&&typeof data.baseData==='string'&&data.baseData.startsWith('data:image/')&&data.baseData.length<6000000){const img=new Image();img.onload=()=>{state.baseImage=img;render()};img.src=data.baseData;state.baseData=data.baseData} $('rom16Shape').value=state.shape;$('rom16Base').value=state.base;render();saveDraft();updateControls();notify('Проект открыт')}catch(e){console.warn(e);notify('Неподдерживаемый файл рисунка')}};inp.click()};
+ $('rom16ToTexture').onclick=goTexture;$('rom16ToModel').onclick=goModel;
+ $('rom16HistoryClose').onclick=()=> $('rom16History').hidden=true;
+ $('rom16HistoryImages').onclick=()=>history('images');$('rom16HistoryModels').onclick=()=>history('models');
+ $('rom16ResultClose').onclick=()=> $('rom16TextureResult').hidden=true;
+ $('rom16ResultDownload').onclick=()=>state.imageBlob&&dl(state.imageBlob,`ROMEROS_${state.latestId}.png`);
+ $('rom16ResultSave').onclick=()=>state.textureTask&&saveImage(state.textureTask).then(()=>notify('Текстура сохранена в истории')).catch(e=>{console.warn(e);notify('Не удалось сохранить текстуру')});
+ $('rom16ResultScene').onclick=async()=>{if(!state.imageBlob)return;try{await addTextureToGame(state.imageBlob,`AI плитка ${state.latestId.slice(0,8)}`);notify('Плитка добавлена в нижнюю коллекцию игры');$('rom16TextureResult').hidden=true}catch(e){console.warn(e);notify('Не удалось добавить текстуру в коллекцию')}};
+ $('rom16ResultRework').onclick=()=>{if(!state.imageBlob)return;const canvas=$('rom16Canvas');const img=new Image();const url=URL.createObjectURL(state.imageBlob);img.onload=()=>{state.strokes=[];state.redo=[];state.base='#e5eef5';state.active=null;state.baseImage=img;state.baseData=canvasDataUrl(img);URL.revokeObjectURL(url);$('rom16TextureResult').hidden=true;open();render();saveDraft();notify('Результат открыт как подложка: рисуйте поверх, затем отправляйте новый запрос.');};img.src=url;};
+ const dock=$('dockScroller')||$('bottomDock');for(const [id,label,handler] of [['rom16DockCreator','✎ Создать плитку',open],['rom16DockHistory','▤ Мои генерации',()=>history('images')]])if(dock&&!$(id)){const b=document.createElement('button');b.id=id;b.type='button';b.textContent=label;b.onclick=handler;dock.append(b)}
+ // Source window always retains source=sketch when studio opened. Close does not clear it.
+ window.addEventListener('romeros:generated',async e=>{if(e.detail.engine==='meshy')return;const task=e.detail;if(!task.resultUrl)return;try{await showImage(task)}catch(err){console.warn('[image result]',err);notify('Изображение готово, но локальное сохранение не удалось')}});
+}
+// Existing browser game API: original 3D scene and its collections are unchanged.
+async function addTextureToGame(blob,name){const hook=window.ROMEROS_GameAI?.addTileBlob;if(hook){return hook(blob,name)};if(typeof window.ROMEROS_TileStudio?.addTile==='function')return window.ROMEROS_TileStudio.addTile(blob);throw Error('Game tile import bridge missing')}
+// IndexedDB: actual generated PNG file rather than short-lived remote URL.
+function database(){return new Promise((resolve,reject)=>{const r=indexedDB.open(DB,1);r.onupgradeneeded=()=>r.result.createObjectStore(STORE,{keyPath:'id'});r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})}
+async function query(mode,record){const db=await database();try{return await new Promise((resolve,reject)=>{const tx=db.transaction(STORE,mode);const os=tx.objectStore(STORE);const req=record.action==='put'?os.put(record.value):record.action==='delete'?os.delete(record.id):record.action==='get'?os.get(record.id):os.getAll();req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)})}finally{db.close()}}
+async function saveImage(task){const r=await fetch(task.resultUrl,{credentials:'same-origin'});if(!r.ok)throw Error('PNG unavailable');const blob=await r.blob();if(blob.size>MAX_BYTES*3||!blob.type.startsWith('image/'))throw Error('Unexpected PNG');const image=await createImageBitmap(blob);const {width,height}=image;image.close();if(width!==height||![512,1000].includes(width))throw Error('Not a supported square texture');await query('readwrite',{action:'put',value:{id:task.id,name:'AI текстура '+task.id.slice(0,8),created:new Date().toISOString(),engine:task.engine,width,height,blob}});return blob}
+async function showImage(task){state.textureTask=task;state.latestId=task.id;const blob=await saveImage(task);state.imageBlob=blob;const url=URL.createObjectURL(blob);if(state.imageUrl)URL.revokeObjectURL(state.imageUrl);state.imageUrl=url;$('rom16ResultImage').src=url;$('rom16ResultMeta').textContent=`${task.engine.toUpperCase()} · квадрат · ${task.quality==='high'?'1000 × 1000':'512 × 512'}`;$('rom16TextureResult').hidden=false}
+async function history(kind){$('rom16History').hidden=false;document.querySelectorAll('.rom16-history-tabs button').forEach(b=>b.classList.toggle('active',b.id===(kind==='models'?'rom16HistoryModels':'rom16HistoryImages')));const root=$('rom16HistoryList');root.replaceChildren();if(kind==='models'){root.textContent='3D-модели хранятся в архиве GLB.';const b=document.createElement('button');b.textContent='Открыть архив GLB';b.onclick=()=>{$('rom16History').hidden=true;window.ROMEROS_Workspace?.openArchive()};root.append(b);return}try{const images=(await query('readonly',{action:'list'})).sort((a,b)=>b.created.localeCompare(a.created));if(!images.length){root.textContent='Пока нет сохранённых текстур';return}for(const item of images){const row=document.createElement('div');row.className='rom16-history-entry';const title=document.createElement('strong');title.textContent=`${item.name} · ${item.width}×${item.height}`;row.append(title);const create=(txt,callback)=>{const b=document.createElement('button');b.textContent=txt;b.onclick=()=>Promise.resolve(callback()).catch(e=>{console.warn(e);notify('Операция недоступна')});row.append(b)};create('Просмотр',async()=>{state.latestId=item.id;state.imageBlob=item.blob;state.textureTask=null;const url=URL.createObjectURL(item.blob);if(state.imageUrl)URL.revokeObjectURL(state.imageUrl);state.imageUrl=url;$('rom16ResultImage').src=url;$('rom16ResultMeta').textContent=`${item.engine} · ${item.width}×${item.height}`;$('rom16History').hidden=true;$('rom16TextureResult').hidden=false});create('В плитки',()=>addTextureToGame(item.blob,item.name));create('Скачать',()=>dl(item.blob,item.id+'.png'));create('Удалить',async()=>{await query('readwrite',{action:'delete',id:item.id});history('images')});root.append(row)}}catch(e){console.warn(e);root.textContent='История временно недоступна'}}
+// The main game's registerCustomTile() is lexical inside its module, so we expose it via a tiny glue in index.html.
+window.ROMEROS_TileCreator={open,exportForServer,addTextureToGame,get activeSketch(){return state.activeSketch},get modelFromSketch(){return state.modelFromSketch},history,project};
+try{const v=JSON.parse(localStorage.getItem(DRAFT_KEY)||'null');if(v?.version===16&&Array.isArray(v.strokes)&&v.strokes.length<=1500){state.shape=v.shape;state.base=v.base;state.strokes=v.strokes;state.sectors=Number(v.sectors)||effectiveSectors(state.shape);state.symmetryMode=v.symmetryMode||'rotate';state.guides=v.guides!==false;$('rom20Sectors').value=state.sectors;$('rom20SectorsValue').textContent=String(state.sectors);$('rom20SymmetryMode').value=state.symmetryMode;$('rom20SymmetryGuides').checked=state.guides;state.repeat=state.symmetryMode!=='none';state.mirror=state.symmetryMode==='mirror';$('rom16Shape').value=v.shape;$('rom16Base').value=v.base;if(typeof v.baseData==='string'&&v.baseData.startsWith('data:image/')&&v.baseData.length<6000000){const img=new Image();img.onload=()=>{state.baseImage=img;render()};img.src=v.baseData;state.baseData=v.baseData}}}catch(e){console.warn(e)}
+render();updateControls();if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bind);else bind();
+</script>
 
 <!-- v20: доступный игроку тариф. Стоимость подтверждается API /api/prices, а не вычисляется для списания в браузере. -->
 <div id="rom20Tariff" class="rom20-tariff" hidden role="dialog" aria-label="Тарифы AI">
@@ -3427,8 +3972,248 @@ window.addEventListener('load',()=>{
   <div class="rom20-tariff-actions"><button id="rom20TariffTexture">Создать текстуру</button><button id="rom20TariffModel">Создать 3D</button></div>
   <p id="rom20TariffBalance" class="rom20-hint">Загрузка баланса…</p>
 </div>
-<script type="module" src="/game/romeros_v20.js"></script>
-<script src="/game/romeros_app.js" defer></script>
-<script src="/game/romeros_v22.js" defer></script>
+<script type="module">/* ROMEROS PLITKA v20: one server price, dynamic UI and direct old-GLB import. */
+const $=id=>document.getElementById(id);
+const format=n=>Number(n||0).toLocaleString('ru-RU');
+const name={sd15:'SD 1.5 — текстура',gpt:'GPT Image — текстура',meshy:'Meshy — GLB'};
+async function openTariff(){
+ const node=$('rom20Tariff');node.hidden=false;
+ const list=$('rom20TariffList');list.textContent='Читаем актуальные цены GUI…';
+ try{
+  const [prices,wallet]=await Promise.all([
+   fetch('/api/prices',{credentials:'same-origin',cache:'no-store'}).then(r=>{if(!r.ok)throw Error('prices');return r.json()}),
+   fetch('/api/wallet',{credentials:'same-origin',cache:'no-store'}).then(r=>{if(!r.ok)throw Error('wallet');return r.json()})
+  ]);
+  if(!prices.coin_prices)throw Error('no coin prices');
+  const fee=Number(prices.base_fee||0),rows=[];
+  for(const engine of ['sd15','gpt','meshy'])for(const q of (engine==='meshy'?['high']:['standard','high'])){
+   const total=Number(prices.coin_prices[engine]?.[q]);if(!Number.isFinite(total))continue;
+   const div=document.createElement('div');div.className='rom20-tariff-row';
+   const label=document.createElement('span');label.textContent=name[engine]+' · '+(engine==='meshy'?'GLB':q==='standard'?'512²':'1000²');
+   const value=document.createElement('b');value.textContent='Бесплатно';
+   div.append(label,value);rows.push(div);
+  }
+  list.replaceChildren(...rows);$('rom20TariffBalance').textContent='Генерация без игровых монет';
+ }catch(error){console.warn('[tariffs]',error);list.textContent='Цены недоступны — генерация будет заблокирована до подключения GUI';}
+}
+function addDockButtons(){
+ const dock=$('dockScroller')||$('bottomDock');if(!dock)return;
+ const button=(id,label,cb)=>{if($(id))return;const b=document.createElement('button');b.type='button';b.id=id;b.className='rom14-button';b.textContent=label;b.onclick=cb;dock.append(b)};
+ button('rom20TariffsDock','✧ AI · бесплатно',openTariff);
+ button('rom20ArchivedToScene','⬡ Из архива в сцену',()=>window.ROMEROS_Workspace?.openArchive());
+ // A shortcut inside scene object management: opens saved files with the "В сцену" action.
+ const panel=$('objectsPanel');if(panel && !$('rom20ArchivedObjects')){
+  const b=document.createElement('button');b.id='rom20ArchivedObjects';b.textContent='⬡ Загрузить созданную GLB из архива';
+  b.onclick=()=>{panel.classList.remove('open');window.ROMEROS_Workspace?.openArchive()};
+  (panel.querySelector('.actions')||panel).append(b);
+ }
+}
+function init(){
+ addDockButtons();
+ $('rom20TariffClose')?.addEventListener('click',()=>{$('rom20Tariff').hidden=true});
+ $('rom20TariffTexture')?.addEventListener('click',()=>{$('rom20Tariff').hidden=true;window.ROMEROS_Extra?.openTexture()});
+ $('rom20TariffModel')?.addEventListener('click',()=>{$('rom20Tariff').hidden=true;window.ROMEROS_Extra?.openModel()});
+ window.ROMEROS_Tariffs={open:openTariff};
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+</script>
+<script defer>/* ROMEROS PLITKA v21 app bootstrap. No extra server/API keys.
+   Full WebGL scene, shop, sculpt, AI remain in original game modules. */
+(() => {
+'use strict';
+const id=x=>document.getElementById(x);
+const MAX_GLB=60*1024*1024;
+const ICONS={
+  upload:'<path d="M12 16V3m0 0-4 4m4-4 4 4M4 16v4h16v-4"/>',
+  move:'<path d="M12 2v20M2 12h20M12 2l-3 3m3-3 3 3m-3 17-3-3m3 3 3-3M2 12l3-3m-3 3 3 3m17-3-3-3m3 3-3 3"/>',
+  rotate:'<path d="M20 11a8 8 0 1 0 0 4M20 4v7h-7"/>',
+  archive:'<rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v12h14V8M10 12h4"/>',
+  layers:'<path d="m12 3 9 5-9 5-9-5 9-5Zm-9 9 9 5 9-5M3 16l9 5 9-5"/>',
+};
+const icon=k=>`<svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[k]||ICONS.layers}</svg>`;
+function msg(text){const n=id('rom14Notice');if(n){n.textContent=text;n.hidden=false;clearTimeout(msg.timer);msg.timer=setTimeout(()=>n.hidden=true,3500)}}
+function dockAction(label,ico,cb){const dock=id('dockScroller');if(!dock)return;
+ const b=document.createElement('button');b.type='button';b.className='rom14-button';b.innerHTML=icon(ico)+'<span>'+label+'</span>';
+ b.addEventListener('click',cb);dock.append(b);dock.classList.add('rom21-app-rail');return b;}
+async function importFile(file){
+ if(!file)return;
+ if(!file.name.toLowerCase().endsWith('.glb')||file.size>MAX_GLB||file.size<20){msg('Выберите GLB размером до 60 МиБ');return}
+ if((await file.slice(0,4).text())!=='glTF'){msg('Неверный формат GLB');return}
+ const url=URL.createObjectURL(file);
+ try{
+  const res=await window.ROMEROS_GameScene.importGLB(url,file.name.replace(/\.glb$/i,''));
+  window.ROMEROS_Transform?.refresh();msg('GLB в сцене: '+res.parts+' частей. Выберите кисть или плитку.');
+ }catch(e){console.warn('[GLB import]',e);msg('Не удалось добавить GLB: проверьте файл и вместимость сцены')}
+ finally{URL.revokeObjectURL(url);id('rom21File').value=''}
+}
+function init(){
+ const input=id('rom21File');input?.addEventListener('change',()=>importFile(input.files?.[0]));
+ // v20 has viewer-only GLB upload; this additional button imports DIRECTLY to editable game scene.
+ dockAction('Импорт GLB','upload',()=>input?.click());
+ dockAction('Слои 3D','layers',()=>id('objectsDockBtn')?.click());
+ dockAction('Move','move',()=>{window.ROMEROS_Transform?.setMode('translate');id('objectsDockBtn')?.click()});
+ dockAction('Rotate','rotate',()=>{window.ROMEROS_Transform?.setMode('rotate');id('objectsDockBtn')?.click()});
+ dockAction('Архив GLB','archive',()=>window.ROMEROS_Workspace?.openArchive());
+ // Load image assets from GitHub structure, showing no broken-image icons if not uploaded.
+ const assets='/plitka_assets/';
+ const headers={about:'about.jpg',donate:'donate.jpg',support:'support.jpg'};
+ const originalMenu=window.ROMEROS_Menu?.openMore;
+ // Existing 3-dot navigation is kept, its 8 sections already functional or marked prototype.
+ // Decorative image cover for each 3-dot section (only the real files from repo are used).
+ const addCover=()=>{
+  const name=id('rom14Title')?.textContent||'';
+  const key=name.includes('О игре')?'about':name.includes('Техподдержка')?'support':name.includes('Донат')?'donate':null;
+  const body=id('rom14Body');if(!body)return;
+  body.querySelector('.rom21-cover')?.remove();if(!key)return;
+  const img=document.createElement('img');img.className='rom21-cover menu-hero';img.src=assets+headers[key];img.alt='';img.loading='lazy';
+  img.onerror=()=>img.remove();body.prepend(img);
+ };
+ if(id('rom14Title'))new MutationObserver(addCover).observe(id('rom14Title'),{childList:true,characterData:true,subtree:true});
+ // PWA available via HTTPS (GitHub Pages) or localhost, no API interception.
+ // Single-file delivery: no external service worker file is required.
+}
+window.ROMEROS_App={pickGLB:()=>id('rom21File')?.click(),importFile};
+window.addEventListener('load',()=>requestAnimationFrame(init),{once:true});
+})();
+</script>
+<script defer>/* ROMEROS v22 — presentation, wallet, assistant and tile-edit UI.
+ * IMPORTANT: server alone controls coin balances; browser only displays it.
+ * All API keys live on local GUI, never here.
+ */
+(()=>{'use strict';
+const $=id=>document.getElementById(id);
+function note(text){const n=$('rom14Notice');if(!n)return;n.textContent=text;n.hidden=false;clearTimeout(note.timer);note.timer=setTimeout(()=>n.hidden=true,3800)}
+const fmt=n=>Number(n||0).toLocaleString('ru-RU');
+async function json(url,opts={}){const r=await fetch(url,{credentials:'same-origin',cache:'no-store',...opts});let obj={};try{obj=await r.json()}catch{}if(!r.ok)throw new Error(obj.error||'Сервис временно недоступен');return obj}
+async function wallet(){try{const data=await json('/api/wallet');if($('headerCoins'))$('headerCoins').textContent='◈ '+fmt(data.coins);if($('coinsView'))$('coinsView').textContent=fmt(data.coins);if($('gameAiBalance'))$('gameAiBalance').textContent='Без монет';return data}catch(e){console.warn('[wallet]',e);note('Нет соединения с GUI. Проверьте запуск сервера.');return null}}
+function tilePanel(){window.ROMEROS_TileEdit?.open()}
+function createBtn(parent,id,label,fn){if($(id))return $(id);const b=document.createElement('button');b.type='button';b.id=id;b.className='rom14-button';b.textContent=label;b.addEventListener('click',fn);parent.append(b);return b}
+function setupTile(){
+ const dock=$('dockScroller');if(dock)createBtn(dock,'rom22BottomDockBtn','▧ Плитка · Edit',tilePanel);
+ for(const b of document.querySelectorAll('[data-rom22-tool]'))b.addEventListener('click',()=>window.ROMEROS_TileEdit?.setMode(b.dataset.rom22Tool));
+ $('rom22TileClose')?.addEventListener('click',()=>{$('rom22TilePanel').classList.remove('open');window.ROMEROS_TileEdit?.setMode('select')});
+ $('rom22TileScale')?.addEventListener('change',e=>window.ROMEROS_TileEdit?.resize(e.target.value));
+ $('rom22TileRotation')?.addEventListener('change',e=>window.ROMEROS_TileEdit?.rotate(e.target.value));
+ $('rom22TileDelete')?.addEventListener('click',()=>window.ROMEROS_TileEdit?.remove());
+ $('rom22TileTexture')?.addEventListener('click',()=>window.ROMEROS_TileEdit?.repaint());
+}
+function setupTileLibrary(){
+ const footer=document.querySelector('footer'),toggle=$('rom22LibraryToggle');if(!footer||!toggle)return;
+ const update=()=>{const hidden=footer.classList.contains('tiles-hidden');toggle.textContent=hidden?'▦ Показать плитки':'▦ Скрыть плитки';toggle.setAttribute('aria-expanded',String(!hidden))};
+ toggle.onclick=()=>{footer.classList.toggle('tiles-hidden');try{localStorage.setItem('romeros-tiles-hidden-v22',footer.classList.contains('tiles-hidden')?'1':'0')}catch{}update()};
+ try{footer.classList.toggle('tiles-hidden',localStorage.getItem('romeros-tiles-hidden-v22')==='1')}catch{}update();
+ // Quick toggle remains available in dock even when tile library collapsed.
+ const dock=$('dockScroller');if(dock)createBtn(dock,'rom22LibraryDock','▦ Библиотека',()=>toggle.click());
+}
+function setupAssistant(){
+ $('rom22PatternIdeas')?.addEventListener('click',()=>{
+  const prompt=$('rom16Prompt')?.value.trim()||'Предложи несколько симметричных декоративных узоров для плитки';
+  $('rom16Close')?.click();
+  if($('rom22AssistPrompt'))$('rom22AssistPrompt').value=prompt.slice(0,1000);
+  const panel=$('aiPanel');if(panel){document.querySelectorAll('.modal.open').forEach(n=>n.classList.remove('open'));panel.classList.add('open')}
+ });
+ const btn=$('rom22AssistSend'),input=$('rom22AssistPrompt'),out=$('rom22AssistAnswer'),status=$('rom22AssistStatus');if(!btn)return;
+ btn.addEventListener('click',async()=>{
+  const prompt=input.value.trim()||$('aiShapeDescription')?.value.trim()||'';
+  if(prompt.length<3||prompt.length>1000){status.textContent='Введите описание узора от 3 до 1000 символов';return}
+  btn.disabled=true;status.textContent='Запрос отправляется в GUI…';out.textContent='';
+  try{
+   const result=await json('/api/ai/assist',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({topic:'tile',prompt,tile_shape:document.querySelector('[data-ai-shape].active')?.dataset.aiShape||'square',username:window.ROMEROS_UserName?.()||'Гость'})});
+   out.textContent=result.answer||'Ответ пуст';status.textContent='Готово · бесплатно';await wallet();
+  }catch(e){console.warn('[AI assistant]',e);status.textContent='Не удалось получить ответ. Повторите запрос позже.';await wallet()}
+  finally{btn.disabled=false}
+ });
+ $('rom22AssistToTexture')?.addEventListener('click',()=>{
+  if(!out.textContent.trim()){note('Сначала получите варианты узора');return}
+  const inp=$('rom13TexturePrompt');if(inp)inp.value=out.textContent.slice(0,1000);
+  $('aiPanel')?.classList.remove('open');window.ROMEROS_Extra?.openTexture?.();
+ });
+ // Opening AI from header goes to same assistant with optional helper tools.
+ const menu=$('headerAi');if(menu)menu.title='AI-помощник по узорам';
+}
+/* A physically circular dock — move existing DOM buttons, not clones: listeners preserved.
+ * Wheel/trackpad forward movement wraps last icon to first, backward vice versa.
+ * Fixed profile stays outside scroller. */
+function setupCircularDock(){
+ const box=$('dockScroller');if(!box)return;
+ box.setAttribute('aria-label','Круговое меню инструментов — колесо или свайп');
+ let moving=false;
+ const width=e=>e.getBoundingClientRect().width+parseFloat(getComputedStyle(box).columnGap||'5')||5;
+ function wrap(){if(moving||box.children.length<3)return;moving=true;
+  try{
+   for(let i=0;i<4;i++){
+    const first=box.firstElementChild,last=box.lastElementChild;if(!first||!last)break;
+    const limit=box.scrollWidth-box.clientWidth;
+    if(box.scrollLeft>limit-3&&limit>2){const w=width(first);box.append(first);box.scrollLeft=Math.max(0,box.scrollLeft-w)}
+    else if(box.scrollLeft<2&&limit>2&&box.dataset.backward==='1'){const w=width(last);box.prepend(last);box.scrollLeft+=w;box.dataset.backward='0'}
+    else break;
+   }
+  }finally{moving=false}
+ }
+ box.addEventListener('scroll',()=>{if(!moving)wrap()},{passive:true});
+ box.addEventListener('wheel',e=>{if(box.scrollWidth<=box.clientWidth)return;
+  const delta=Math.abs(e.deltaX)>Math.abs(e.deltaY)?e.deltaX:e.deltaY;
+  if(delta<0)box.dataset.backward='1';
+  if(delta<0&&box.scrollLeft<2)wrap();
+  box.scrollLeft+=delta;wrap();e.preventDefault();
+ },{passive:false});
+ // Swipe and touch: native scrolling stays enabled; when crossing end wraps to start.
+}
+function setupShop(){
+ const market=$('marketPanel');if(!market)return;
+ const claim=$('marketClaim');if(claim){claim.disabled=true;claim.hidden=true}
+ // Show backend wallet, not local reward. Market layout is fixed in CSS.
+ const tabs=market.querySelectorAll('[data-market-tab]');tabs.forEach(b=>b.setAttribute('type','button'));
+ // When opened, refresh official balance; no ad-hoc bonuses.
+ const obs=new MutationObserver(()=>{if(market.classList.contains('open'))wallet()});obs.observe(market,{attributes:true,attributeFilter:['class']});
+ const tabsRow=market.querySelector('.menu-tabs');if(tabsRow){tabsRow.setAttribute('role','tablist');tabsRow.querySelectorAll('button').forEach(x=>x.setAttribute('role','tab'))}
+}
+function init(){setupTile();setupTileLibrary();setupAssistant();setupShop();setupCircularDock();wallet();window.addEventListener('romeros:generated',wallet);}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>requestAnimationFrame(init));else requestAnimationFrame(init);
+window.ROMEROS_V22={wallet,tilePanel};
+})();
+</script>
+<script defer>/* v24: published GLB library, uploads are authenticated in GUI (never in browser). */
+(() => {
+  const $=id=>document.getElementById(id);
+  function init(){
+    const dock=$('dockScroller')||$('bottomDock'); if(!dock)return;
+    const button=document.createElement('button');button.type='button';button.textContent='▣ 3D с сервера';
+    const overlay=document.createElement('div');overlay.id='remoteGLBGallery';overlay.hidden=true;
+    overlay.style.cssText='position:fixed;inset:0;z-index:260;display:grid;place-items:center;background:#06111dba;padding:12px';
+    overlay.innerHTML='<section style="width:min(540px,100%);max-height:76dvh;overflow:auto;border-radius:15px;background:#192938;padding:16px;color:#eaf2fb"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><b>3D-модели с GUI</b><button id="remoteGLBClose">Закрыть</button></div><p style="color:#9fb4c6;font-size:12px">Модели опубликованы владельцем GUI. Можно добавить в сцену и наносить плитки.</p><div id="remoteGLBItems"></div></section>';
+    document.body.append(overlay);
+    const close=()=>overlay.style.display='none';
+    close();
+    $('remoteGLBClose').onclick=close;
+    overlay.addEventListener('click',e=>{if(e.target===overlay)close()});
+    button.onclick=async()=>{
+      overlay.hidden=false;
+      overlay.style.display='grid';
+      const list=$('remoteGLBItems');list.textContent='Загрузка моделей…';
+      try{
+        const response=await fetch('/api/published');if(!response.ok)throw new Error();
+        const data=await response.json();list.replaceChildren();
+        if(!data.models?.length){list.textContent='Опубликованных моделей пока нет';return;}
+        for(const item of data.models){
+          const row=document.createElement('div');row.style.cssText='display:flex;align-items:center;gap:8px;padding:10px;margin:6px 0;background:#25384a;border-radius:10px';
+          const name=document.createElement('span');name.style.flex='1';name.textContent=item.name;
+          const add=document.createElement('button');add.textContent='В сцену';
+          add.onclick=async()=>{
+            try{
+              if(!window.ROMEROS_GameScene?.importGLB)throw Error('Не подключён импорт GLB');
+              await window.ROMEROS_GameScene.importGLB(item.url);
+              close();
+            }catch(e){console.warn('[remote GLB]',e);add.textContent='Не удалось';}
+          };
+          row.append(name,add);list.append(row);
+        }
+      }catch(e){list.textContent='Удалённый сервер временно недоступен';}
+    };
+    dock.append(button);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();
+</script>
 </body>
 </html>
