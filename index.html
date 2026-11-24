@@ -1117,7 +1117,8 @@ const localTileBlobs = new Map();
 function builtinTileURL(index) {
   const number = String(index + 1).padStart(2, '0');
   const name = PATHS[index];
-  return `./assets/tiles/${number}_${name}.webp`;
+
+  return `https://raw.githubusercontent.com/Roman22022000/ArGameCam/main/assets/tiles/${number}_${name}.png`;
 }
 
 function tileURL(index) {
