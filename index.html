@@ -29,7 +29,8 @@ form.addEventListener('submit', async (event) => {
   status.textContent = 'Отправляем…';
   try {
     // Страница и API работают на одном адресе через Cloudflare Tunnel.
-    const response = await fetch('/api/phone', {
+    const response = await fetch(location.hostname === '127.0.0.1' || location.hostname === 'localhost'
+      ? '/api/phone' : 'https://phone.araicameragame.party/api/phone', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({phone: form.elements.phone.value, consent: form.elements.consent.checked})
